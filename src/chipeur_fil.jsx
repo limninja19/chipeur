@@ -1,0 +1,341 @@
+import { useState } from "react";
+
+const C = {
+  bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
+  accent: "#E8490A", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
+  pill: "#EDEBE8", border: "rgba(26,23,20,0.08)",
+};
+
+const fontLink = document.createElement("link");
+fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
+fontLink.rel = "stylesheet";
+if (!document.querySelector(`link[href="${fontLink.href}"]`)) document.head.appendChild(fontLink);
+
+// ─── STATUS BAR ───
+function StatusBar() {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
+      <span>9:41</span><span>●●●</span>
+    </div>
+  );
+}
+
+// ─── APP HEADER ───
+function AppHeader() {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 16px 4px", flexShrink: 0 }}>
+      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: C.ink }}>
+        Chi<span style={{ color: C.accent }}>p</span>eur
+      </div>
+      <div style={{ display: "flex", gap: 12, fontSize: 18 }}>
+        <span style={{ cursor: "pointer" }}>🔔</span>
+        <span style={{ cursor: "pointer" }}>💬</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── FIL TABS ───
+function FilTabs({ active, onSelect, setPage }) {
+  const tabs = ["Tout", "Fil de vie", "Pépites", "Voisins"];
+  return (
+    <div style={{ display: "flex", gap: 6, padding: "4px 12px 8px", overflowX: "auto", flexShrink: 0 }}>
+      {tabs.map(t => (
+        <button
+  key={t}
+  onClick={() => t === "Voisins" ? setPage("voisins") : onSelect(t)}
+  style={{
+          fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
+          border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+          background: active === t ? C.ink : C.pill,
+          color: active === t ? "#fff" : C.ink2,
+          fontFamily: "'DM Sans', sans-serif",
+        }}>{t}</button>
+      ))}
+    </div>
+  );
+}
+
+// ─── BANDEAU DÉFIS ───
+function BandeauDefis() {
+  const defis = [
+    { icon: "👗", title: "Montre ta pépite mode !", stats: "128 / 200 participants", grad: "linear-gradient(135deg,#E8490A,#F7A72D)" },
+    { icon: "🌿", title: "Look seconde main du mois", stats: "64 / 100 participants", grad: "linear-gradient(135deg,#7C3AED,#A855F7)" },
+    { icon: "📸", title: "Photo de quartier", stats: "31 / 50 participants", grad: "linear-gradient(135deg,#0F766E,#14B8A6)" },
+  ];
+  return (
+    <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
+      <div style={{
+        fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
+        letterSpacing: 0.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6,
+      }}>
+        Défis en cours
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+      </div>
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+        {defis.map((d, i) => (
+          <div key={i} style={{
+            flexShrink: 0, width: 180, borderRadius: 14, padding: "10px 12px",
+            cursor: "pointer", background: d.grad, position: "relative",
+          }}>
+            <div style={{ fontSize: 18, marginBottom: 4 }}>{d.icon}</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1.2, marginBottom: 4 }}>{d.title}</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>{d.stats}</div>
+            <button style={{
+              display: "inline-block", marginTop: 6, fontSize: 10, fontWeight: 700,
+              padding: "3px 10px", borderRadius: 8, background: "rgba(255,255,255,0.25)",
+              color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+            }}>Participer</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── REACTIONS ───
+function Reactions({ defaultActive }) {
+  const [active, setActive] = useState(defaultActive || null);
+  const emojis = ["🔥", "😍", "👀"];
+  return (
+    <div style={{ display: "flex", gap: 4, flex: 1 }}>
+      {emojis.map(e => (
+        <button key={e} onClick={() => setActive(e === active ? null : e)} style={{
+          fontSize: 13, padding: "5px 9px", borderRadius: 12,
+          border: `1px solid ${e === active ? C.accent : C.border}`,
+          background: e === active ? "#FFF0EB" : "transparent",
+          cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+        }}>{e}</button>
+      ))}
+    </div>
+  );
+}
+
+// ─── INTEREST BUTTON ───
+function InterestBtn({ defaultActive }) {
+  const [active, setActive] = useState(defaultActive || false);
+  return (
+    <button onClick={() => setActive(!active)} style={{
+      padding: "6px 14px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+      fontFamily: "'DM Sans', sans-serif",
+      border: `1.5px solid ${active ? C.accent : C.border}`,
+      background: active ? "#FFF0EB" : "transparent",
+      color: active ? C.accent : C.ink,
+      cursor: "pointer",
+    }}>{active ? "✓ Intéressée" : "Intéressée ?"}</button>
+  );
+}
+
+// ─── POST CARD VOISIN ───
+function PostVoisin({ setPage }) {
+  return (
+    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
+      {/* Header */}
+      <div
+  onClick={() => setPage("profil")}
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 12px 8px",
+    cursor: "pointer",
+  }}
+>
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>😊</div>
+        <div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>Camille R.</div>
+          <div style={{ fontSize: 10, color: C.ink2 }}>Quartier des Arts · 2h</div>
+        </div>
+      </div>
+      {/* Image */}
+      <div style={{ width: "100%", paddingTop: "75%", background: C.pill, position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44 }}>👗</div>
+        <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(26,23,20,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>👁 24 vues</div>
+      </div>
+      {/* Body */}
+      <div style={{ padding: "8px 12px" }}>
+        <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>Trouvé cette robe lin incroyable au vide-grenier ce matin !</div>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+          {["Lin", "Vintage", "Vide-grenier"].map(t => (
+            <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>
+          ))}
+        </div>
+      </div>
+      {/* Actions */}
+      <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
+        <Reactions defaultActive="🔥" />
+        <InterestBtn />
+      </div>
+    </div>
+  );
+}
+
+// ─── POST CARD VITRINE ───
+function PostVitrine() {
+  return (
+    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px" }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>👗</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>Atelier Mona</div>
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <span style={{ background: C.proBg, color: C.pro, fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 6 }}>★ Vitrine</span>
+          </div>
+        </div>
+        <div style={{ fontSize: 10, color: C.ink2 }}>1h</div>
+      </div>
+      {/* Image */}
+      <div style={{ width: "100%", paddingTop: "75%", background: C.pill, position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44 }}>👒</div>
+        <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(26,23,20,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>👁 87 vues</div>
+      </div>
+      {/* Body */}
+      <div style={{ padding: "8px 12px 0" }}>
+        <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.5 }}>Nouvelle collection chapeaux paille — été 2026</div>
+      </div>
+      {/* Pro Layer */}
+      <div style={{
+        background: C.proBg, margin: "8px 12px", borderRadius: 12, padding: "8px 10px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
+        <div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 800, color: C.pro }}>45€</div>
+          <div style={{ fontSize: 10, color: C.pro, opacity: 0.8 }}>S · M · L</div>
+        </div>
+        <button style={{
+          background: C.pro, color: "#fff", border: "none", borderRadius: 10,
+          padding: "7px 12px", fontSize: 11, fontWeight: 600,
+          fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
+        }}>Je commande →</button>
+      </div>
+      {/* Actions */}
+      <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
+        <Reactions />
+        <InterestBtn defaultActive={true} />
+      </div>
+    </div>
+  );
+}
+
+// ─── FAB MENU OVERLAY ───
+function FabMenu({ open, onClose }) {
+  if (!open) return null;
+  const items = [
+    { icon: "📸", label: "Nouveau post" },
+    { icon: "📅", label: "Nouvelle sortie" },
+    { icon: "🏆", label: "Créer un défi", pro: true },
+  ];
+  return (
+    <div onClick={onClose} style={{
+      position: "absolute", inset: 0, zIndex: 100,
+      background: "rgba(26,23,20,0.4)", display: "flex",
+      flexDirection: "column", justifyContent: "flex-end",
+      padding: "0 0 90px",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        display: "flex", flexDirection: "column", gap: 6,
+        alignItems: "center", padding: "0 60px 12px",
+      }}>
+        {items.map((item, i) => (
+          <button key={i} style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10,
+            background: C.card, border: "none", borderRadius: 14,
+            padding: "12px 16px", cursor: "pointer",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+            fontFamily: "'DM Sans', sans-serif",
+          }}>
+            <span style={{ fontSize: 18 }}>{item.icon}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{item.label}</span>
+            {item.pro && (
+              <span style={{
+                fontSize: 8, fontWeight: 700, background: C.proBg, color: C.pro,
+                padding: "2px 6px", borderRadius: 6, marginLeft: "auto",
+              }}>PRO</span>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── BOTTOM NAV ───
+function BottomNav({ active, onNavigate, onFab }) {
+  const items = [
+    { id: "fil", icon: "🏠", label: "Fil" },
+    { id: "sorties", icon: "📅", label: "Sorties" },
+    { id: "fab", isFab: true },
+    { id: "commerces", icon: "🏪", label: "Commerces" },
+    { id: "profil", icon: "👤", label: "Profil" },
+  ];
+  return (
+    <div style={{
+      height: 80, background: C.card, borderTop: `1px solid ${C.border}`,
+      display: "flex", alignItems: "center", justifyContent: "space-around", flexShrink: 0,
+    }}>
+      {items.map(item => {
+        if (item.isFab) {
+          return (
+            <div key="fab" onClick={onFab} style={{
+              width: 50, height: 50, borderRadius: 25, background: C.accent,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 22, color: "#fff", marginTop: -20, flexShrink: 0, cursor: "pointer",
+            }}>+</div>
+          );
+        }
+        const isActive = active === item.id;
+        return (
+          <div key={item.id} onClick={() => onNavigate(item.id)} style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            gap: 3, fontSize: 9, color: isActive ? C.accent : C.ink2, cursor: "pointer",
+          }}>
+            <div style={{ fontSize: 18 }}>{item.icon}</div>
+            <span>{item.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── MAIN ───
+export default function ChipeurFil({ setPage }) {
+  const [activeTab, setActiveTab] = useState("Tout");
+  const [fabOpen, setFabOpen] = useState(false);
+
+  return (
+    <div style={{
+      display: "flex", justifyContent: "center", alignItems: "center",
+      minHeight: "100vh", background: "#E8E4DF",
+      fontFamily: "'DM Sans', sans-serif",
+    }}>
+      <div style={{
+        width: 340, height: 720, background: C.bg, borderRadius: 40,
+        border: "8px solid #1A1714", overflow: "hidden",
+        fontFamily: "'DM Sans', sans-serif", color: C.ink,
+        display: "flex", flexDirection: "column", position: "relative",
+      }}>
+        <StatusBar />
+        <AppHeader />
+        <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
+        <BandeauDefis />
+
+        {/* Feed scroll area */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
+          <PostVoisin setPage={setPage} />
+        </div>
+
+        {/* FAB overlay */}
+        <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />
+
+        {/* Bottom nav */}
+       <BottomNav
+          active="fil"
+          onNavigate={setPage}
+          onFab={() => setPage("nouveau")}
+      />
+      </div>
+    </div>
+  );
+}
