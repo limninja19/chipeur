@@ -76,37 +76,116 @@ function FilTabs({ active, onSelect, setPage }) {
 }
 
 // ─── BANDEAU DÉFIS ───
+function DefiCard({ d }) {
+  const pct = Math.round((d.current / d.total) * 100);
+  return (
+    <div style={{
+      flexShrink: 0, width: 190, borderRadius: 18, overflow: "hidden",
+      cursor: "pointer", background: d.grad, position: "relative",
+    }}>
+      {/* Fond décoratif emoji géant */}
+      <div style={{
+        position: "absolute", right: -8, top: -6,
+        fontSize: 64, opacity: 0.15, lineHeight: 1,
+        pointerEvents: "none", userSelect: "none",
+      }}>{d.icon}</div>
+
+      <div style={{ padding: "12px 12px 10px", position: "relative" }}>
+        {/* Ligne haute : XP badge + timer */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{
+            background: "rgba(255,255,255,0.22)", backdropFilter: "blur(4px)",
+            borderRadius: 8, padding: "2px 8px",
+            fontSize: 9, fontWeight: 800, color: "#fff", letterSpacing: 0.3,
+          }}>⚡ +{d.xp} XP</div>
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>⏱ {d.timeLeft}</div>
+        </div>
+
+        {/* Titre */}
+        <div style={{
+          fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800,
+          color: "#fff", lineHeight: 1.2, marginBottom: 10,
+        }}>{d.title}</div>
+
+        {/* Barre de progression */}
+        <div style={{ marginBottom: 6 }}>
+          <div style={{
+            height: 5, borderRadius: 3,
+            background: "rgba(255,255,255,0.25)", overflow: "hidden",
+          }}>
+            <div style={{
+              height: "100%", borderRadius: 3,
+              width: `${pct}%`,
+              background: "rgba(255,255,255,0.85)",
+              transition: "width 0.6s ease",
+            }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>
+              👥 {d.current} participants
+            </div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)" }}>
+              objectif {d.total}
+            </div>
+          </div>
+        </div>
+
+        {/* Bouton participer */}
+        <button style={{
+          width: "100%", marginTop: 4,
+          padding: "7px 0", borderRadius: 10,
+          background: "rgba(255,255,255,0.95)",
+          color: d.btnColor, border: "none",
+          fontSize: 11, fontWeight: 700,
+          fontFamily: "'DM Sans', sans-serif",
+          cursor: "pointer", letterSpacing: 0.2,
+        }}>Participer →</button>
+      </div>
+    </div>
+  );
+}
+
 function BandeauDefis() {
   const defis = [
-    { icon: "👗", title: "Montre ta pépite mode !", stats: "128 / 200 participants", grad: "linear-gradient(135deg,#FF5733,#F7A72D)" },
-    { icon: "🌿", title: "Look seconde main du mois", stats: "64 / 100 participants", grad: "linear-gradient(135deg,#7C3AED,#A855F7)" },
-    { icon: "📸", title: "Photo de quartier", stats: "31 / 50 participants", grad: "linear-gradient(135deg,#0F766E,#14B8A6)" },
+    {
+      icon: "👗",
+      title: "Montre ta pépite du mois",
+      current: 128, total: 200,
+      xp: 20,
+      timeLeft: "3 jours",
+      grad: "linear-gradient(135deg,#FF5733 0%,#FF8C42 100%)",
+      btnColor: "#FF5733",
+    },
+    {
+      icon: "🌿",
+      title: "Look seconde main du mois",
+      current: 64, total: 100,
+      xp: 15,
+      timeLeft: "6 jours",
+      grad: "linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)",
+      btnColor: "#7C3AED",
+    },
+    {
+      icon: "📸",
+      title: "Photo de quartier",
+      current: 31, total: 50,
+      xp: 10,
+      timeLeft: "9 jours",
+      grad: "linear-gradient(135deg,#0F766E 0%,#14B8A6 100%)",
+      btnColor: "#0F766E",
+    },
   ];
   return (
     <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
       <div style={{
         fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
-        letterSpacing: 0.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6,
+        letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
       }}>
-        Défis en cours
+        🏆 Défis en cours
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
-        {defis.map((d, i) => (
-          <div key={i} style={{
-            flexShrink: 0, width: 180, borderRadius: 14, padding: "10px 12px",
-            cursor: "pointer", background: d.grad, position: "relative",
-          }}>
-            <div style={{ fontSize: 18, marginBottom: 4 }}>{d.icon}</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 800, color: "#fff", lineHeight: 1.2, marginBottom: 4 }}>{d.title}</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>{d.stats}</div>
-            <button style={{
-              display: "inline-block", marginTop: 6, fontSize: 10, fontWeight: 700,
-              padding: "3px 10px", borderRadius: 8, background: "rgba(255,255,255,0.25)",
-              color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-            }}>Participer</button>
-          </div>
-        ))}
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+        {defis.map((d, i) => <DefiCard key={i} d={d} />)}
       </div>
     </div>
   );
