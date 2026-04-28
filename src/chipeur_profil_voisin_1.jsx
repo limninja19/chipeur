@@ -203,9 +203,7 @@ export default function ChipeurProfilVoisin({ setPage }) {
   ]);
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#E8E4DF", fontFamily: dm }}>
-      <div style={{ width: 340, height: 720, background: C.bg, borderRadius: 40, border: "8px solid #1A1714", overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column", position: "relative" }}>
-        <StatusBar />
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
         {screen === "profil" && <>
           <ProfileHeader activeTab={activeTab} onTabChange={setActiveTab} onEditProfile={() => setScreen("edit")} setPage={setPage} />
@@ -243,7 +241,6 @@ export default function ChipeurProfilVoisin({ setPage }) {
   onNavigate={setPage}
   onFab={() => setPage("nouveau")}
 />
-      </div>
     </div>
   );
 }

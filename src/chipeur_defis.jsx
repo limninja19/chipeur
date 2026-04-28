@@ -174,9 +174,7 @@ export default function ChipeurDefis() {
   const filters = ["Tous", "En cours", "Terminés", "Mes défis"];
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#E8E4DF", fontFamily: dm }}>
-      <div style={{ width: 390, height: 780, background: C.bg, borderRadius: 40, overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", position: "relative", fontFamily: dm, color: C.ink }}>
-        <StatusBar />
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", display: "flex", flexDirection: "column", fontFamily: dm, color: C.ink }}>
 
         {screen === "list" && <>
           <div style={{ padding: "14px 20px 0", flexShrink: 0 }}>
@@ -198,7 +196,6 @@ export default function ChipeurDefis() {
         {screen === "success" && <SuccessScreen d={d} onBack={() => setScreen("list")} />}
 
         <BottomNav />
-      </div>
     </div>
   );
 }

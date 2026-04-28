@@ -44,9 +44,7 @@ export default function ChipeurCreerDefi() {
   };
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#E8E4DF", fontFamily: dm }}>
-      <div style={{ width: 340, height: 720, background: C.bg, borderRadius: 40, border: "8px solid #1A1714", overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
-        <StatusBar />
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px 6px", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
           <button style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink }}>←</button>
           <span style={{ fontSize: 13, fontWeight: 600 }}>Créer un défi</span>
@@ -138,7 +136,6 @@ export default function ChipeurCreerDefi() {
             <button onClick={() => setScreen("form")} style={{ background: C.pro, color: "#fff", border: "none", borderRadius: 16, padding: "13px 28px", fontSize: 14, fontWeight: 600, fontFamily: dm, cursor: "pointer", marginTop: 6 }}>Retour au dashboard</button>
           </div>
         )}
-      </div>
     </div>
   );
 }

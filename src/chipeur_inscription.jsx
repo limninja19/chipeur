@@ -491,17 +491,11 @@ export default function ChipeurInscription() {
 
   return (
     <div style={{
-      display: "flex", justifyContent: "center", alignItems: "center",
-      minHeight: "100vh", background: "#E8E4DF",
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      background: COLORS.bg, overflow: "hidden",
       fontFamily: "'DM Sans', sans-serif",
+      display: "flex", flexDirection: "column",
     }}>
-      <div style={{
-        width: 390, height: 780, background: COLORS.bg,
-        borderRadius: 40, overflow: "hidden", position: "relative",
-        boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.08)",
-        display: "flex", flexDirection: "column", flexShrink: 0,
-      }}>
-        <StatusBar />
 
         {screen === "inscription" && (
           <ScreenInscription onNext={() => setScreen("choix")} />
@@ -524,7 +518,6 @@ export default function ChipeurInscription() {
             onRestart={() => { setScreen("inscription"); setAccountType(null); }}
           />
         )}
-      </div>
     </div>
   );
 }

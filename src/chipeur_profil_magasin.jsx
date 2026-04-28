@@ -228,11 +228,9 @@ export default function ChipeurProfilMagasin() {
   const tabs = [{ id: "dashboard", label: "Dashboard" }, { id: "posts", label: "Mes posts" }, { id: "creer", label: "Créer" }, { id: "plan", label: "Mon plan" }];
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#E8E4DF", fontFamily: dm }}>
-      <div style={{ width: 340, height: 720, background: C.bg, borderRadius: 40, border: "8px solid #1A1714", overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column", position: "relative" }}>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
         {screen === "main" && <>
-          <StatusBar dark={true} />
           <MagHeader />
           <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
             {tabs.map(t => <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, fontSize: 10, fontWeight: 600, fontFamily: dm, padding: "10px 2px 8px", border: "none", background: "transparent", cursor: "pointer", color: activeTab === t.id ? C.accent : C.ink2, borderBottom: `2px solid ${activeTab === t.id ? C.accent : "transparent"}` }}>{t.label}</button>)}
@@ -246,7 +244,6 @@ export default function ChipeurProfilMagasin() {
         </>}
 
         {screen === "enrich" && <EnrichScreen onBack={() => setScreen("main")} />}
-      </div>
     </div>
   );
 }
