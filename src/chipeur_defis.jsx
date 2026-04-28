@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#E8490A", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)", gold: "#F7A72D" };
+const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)", gold: "#F7A72D" };
 const fontLink = document.createElement("link");
 fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
 fontLink.rel = "stylesheet";
@@ -9,7 +9,7 @@ const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
 const defisData = [
-  { id: 0, icon: "👟", title: "Défi Sneakers", sub: "Montre ta paire la plus stylée du quartier", participants: 47, objectif: 100, pct: 47, color: "orange", grad: "linear-gradient(135deg,#E8490A,#F7A72D)", fill: "#E8490A", timeLeft: "3 jours restants", tags: ["#Sneakers", "#Vintage", "#Streetwear", "#Local", "#Seconde main"], ended: false },
+  { id: 0, icon: "👟", title: "Défi Sneakers", sub: "Montre ta paire la plus stylée du quartier", participants: 47, objectif: 100, pct: 47, color: "orange", grad: "linear-gradient(135deg,#FF5733,#F7A72D)", fill: "#FF5733", timeLeft: "3 jours restants", tags: ["#Sneakers", "#Vintage", "#Streetwear", "#Local", "#Seconde main"], ended: false },
   { id: 1, icon: "🧥", title: "Vintage Revival", sub: "Ta meilleure pièce chinée cette semaine", participants: 28, objectif: 80, pct: 35, color: "purple", grad: "linear-gradient(135deg,#5B2D8E,#9B59B6)", fill: "#7B4FBA", timeLeft: "5 jours restants", tags: ["#Vintage", "#Chiné", "#Seconde main", "#Mode", "#Pépite"], ended: false },
   { id: 2, icon: "🌿", title: "Look Éco-Responsable", sub: "Mode durable, style local", participants: 102, objectif: 100, pct: 100, color: "teal", grad: "linear-gradient(135deg,#0A3D2E,#1D9E75)", fill: "#1D9E75", timeLeft: "Terminé · 102 posts", tags: ["#Éco", "#Durable", "#Local", "#Upcycling"], ended: true },
   { id: 3, icon: "🎒", title: "Rentrée Style", sub: "Ton look sac + tenue du jour", participants: 12, objectif: 60, pct: 20, color: "blue", grad: "linear-gradient(135deg,#185FA5,#378ADD)", fill: "#378ADD", timeLeft: "8 jours restants", tags: ["#Rentrée", "#OOTD", "#Sac", "#Tenue"], ended: false },

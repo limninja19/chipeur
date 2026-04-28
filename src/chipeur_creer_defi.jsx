@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#E8490A", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)" };
+const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)" };
 const fontLink = document.createElement("link");
 fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
 fontLink.rel = "stylesheet";
@@ -103,7 +103,7 @@ export default function ChipeurCreerDefi() {
             {/* Preview */}
             <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 12, marginBottom: 14 }}>
               <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Aperçu du défi</div>
-              <div style={{ borderRadius: 12, padding: "10px 12px", background: "linear-gradient(135deg,#E8490A,#F7A72D)", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div style={{ borderRadius: 12, padding: "10px 12px", background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ fontSize: 22 }}>{icone}</div>
                 <div>
                   <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 800, color: "#fff" }}>{titre}</div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#E8490A", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)", gold: "#F7A72D" };
+const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)", gold: "#F7A72D" };
 const fontLink = document.createElement("link");
 fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
 fontLink.rel = "stylesheet";
@@ -9,8 +9,8 @@ const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
 const voisinsData = [
-  { id: 0, avatar: "👩", bg: "#FEF3E0", name: "Ambre K.", level: "Légende Locale", levelBg: "#FFF0EB", levelColor: C.accent, dotGrad: "linear-gradient(135deg,#E8490A,#F7A72D)", bio: "Mode, vintage, bonne humeur. Je shoppe, je partage ✨", posts: "24", abonnes: "312", xp: "1 240", rang: "#1", xpColor: C.accent, isMe: false },
-  { id: 1, avatar: "👩‍🦰", bg: "#F7EEF7", name: "Sofia D.", level: "Légende Locale", levelBg: "#FFF0EB", levelColor: C.accent, dotGrad: "linear-gradient(135deg,#E8490A,#F7A72D)", bio: "Styliste amateur, fan de défis mode et de brocantes", posts: "18", abonnes: "204", xp: "890", rang: "#2", xpColor: C.accent, isMe: false },
+  { id: 0, avatar: "👩", bg: "#FEF3E0", name: "Ambre K.", level: "Légende Locale", levelBg: "#FFF0EB", levelColor: C.accent, dotGrad: "linear-gradient(135deg,#FF5733,#F7A72D)", bio: "Mode, vintage, bonne humeur. Je shoppe, je partage ✨", posts: "24", abonnes: "312", xp: "1 240", rang: "#1", xpColor: C.accent, isMe: false },
+  { id: 1, avatar: "👩‍🦰", bg: "#F7EEF7", name: "Sofia D.", level: "Légende Locale", levelBg: "#FFF0EB", levelColor: C.accent, dotGrad: "linear-gradient(135deg,#FF5733,#F7A72D)", bio: "Styliste amateur, fan de défis mode et de brocantes", posts: "18", abonnes: "204", xp: "890", rang: "#2", xpColor: C.accent, isMe: false },
   { id: 2, avatar: "🧑‍🦱", bg: "#E8F4FD", name: "Lucas M.", level: "Pépite du Quartier", levelBg: "#F0E6FC", levelColor: "#5B2D8E", dotGrad: "linear-gradient(135deg,#5B2D8E,#9B59B6)", bio: "Passionné de mode vintage & locale. Je chine, je partage.", posts: "24", abonnes: "138", xp: "720", rang: "#3", xpColor: "#5B2D8E", isMe: true },
   { id: 3, avatar: "🧑", bg: "#EBF5F0", name: "Théo R.", level: "Explorateur·trice", levelBg: C.proBg, levelColor: C.pro, dotGrad: "#1D9E75", bio: "Sneakers addict & streetwear lover", posts: "11", abonnes: "87", xp: "540", rang: "#4", xpColor: C.accent, isMe: false },
   { id: 4, avatar: "👨", bg: "#FFF3E0", name: "Romain V.", level: "Voisin·e Actif·ve", levelBg: C.pill, levelColor: C.ink2, dotGrad: C.pill, bio: "J'essaie des trucs, je partage ce qui marche", posts: "6", abonnes: "34", xp: "210", rang: "#8", xpColor: C.accent, isMe: false },
@@ -186,7 +186,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, color: C.ink }}>{v.name}</div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 5, height: 5, background: C.accent, borderRadius: "50%" }} />Nancy, Grand Est</div>
-            <div style={{ display: "inline-block", background: "linear-gradient(135deg,#E8490A,#F7A72D)", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 9px", borderRadius: 8, marginTop: 5 }}>{v.level}</div>
+            <div style={{ display: "inline-block", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 9px", borderRadius: 8, marginTop: 5 }}>{v.level}</div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 5, lineHeight: 1.4 }}>{v.bio}</div>
           </div>
         </div>

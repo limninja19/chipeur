@@ -2,12 +2,12 @@ import { useState } from "react";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
-  accent: "#E8490A", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
+  accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
   pill: "#EDEBE8", border: "rgba(26,23,20,0.08)",
 };
 
 const fontLink = document.createElement("link");
-fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
+fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Syne+Mono&family=DM+Sans:wght@400;500;600&display=swap";
 fontLink.rel = "stylesheet";
 if (!document.querySelector(`link[href="${fontLink.href}"]`)) document.head.appendChild(fontLink);
 
@@ -24,8 +24,27 @@ function StatusBar() {
 function AppHeader() {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 16px 4px", flexShrink: 0 }}>
-      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: C.ink }}>
-        Chi<span style={{ color: C.accent }}>p</span>eur
+      {/* Logo : icône pin + wordmark */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <svg width="28" height="28" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="pinGradFil" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#FF5733"/>
+              <stop offset="100%" stopColor="#FF8C42"/>
+            </linearGradient>
+          </defs>
+          <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradFil)"/>
+          <circle cx="36" cy="26" r="10" fill="white"/>
+          <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
+        </svg>
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
+            chi<span style={{ color: C.accent }}>p</span>eur
+          </div>
+          <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 7, letterSpacing: 2, color: C.accent, textTransform: "uppercase", lineHeight: 1.2 }}>
+            Découvre · Chope · Partage
+          </div>
+        </div>
       </div>
       <div style={{ display: "flex", gap: 12, fontSize: 18 }}>
         <span style={{ cursor: "pointer" }}>🔔</span>
@@ -59,7 +78,7 @@ function FilTabs({ active, onSelect, setPage }) {
 // ─── BANDEAU DÉFIS ───
 function BandeauDefis() {
   const defis = [
-    { icon: "👗", title: "Montre ta pépite mode !", stats: "128 / 200 participants", grad: "linear-gradient(135deg,#E8490A,#F7A72D)" },
+    { icon: "👗", title: "Montre ta pépite mode !", stats: "128 / 200 participants", grad: "linear-gradient(135deg,#FF5733,#F7A72D)" },
     { icon: "🌿", title: "Look seconde main du mois", stats: "64 / 100 participants", grad: "linear-gradient(135deg,#7C3AED,#A855F7)" },
     { icon: "📸", title: "Photo de quartier", stats: "31 / 50 participants", grad: "linear-gradient(135deg,#0F766E,#14B8A6)" },
   ];
