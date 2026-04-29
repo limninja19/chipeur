@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
 const C = {
@@ -22,14 +22,6 @@ const miniDefisInit = [
   { emoji: "✨", q: "Ma pépite mode du mois", sugs: ["Une veste vintage", "Des sneakers", "Un accessoire", "Une collab locale"], done: false },
 ];
 
-const postsInit = [
-  { id: 0, img: "https://images.unsplash.com/photo-1551537482-f2075a1d41f2?w=400&h=400&fit=crop", reaction: "🔥 18", pepite: true },
-  { id: 1, img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop", reaction: "💛 12" },
-  { id: 2, img: "https://images.unsplash.com/photo-1614093302611-8efc673ecd32?w=400&h=400&fit=crop", reaction: "🔥 9" },
-  { id: 3, img: "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=400&h=400&fit=crop", reaction: "👀 7" },
-  { id: 4, img: "https://images.unsplash.com/photo-1555529771-835f59fc5efe?w=400&h=400&fit=crop", reaction: "💛 5" },
-  { id: 5, img: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&h=400&fit=crop", reaction: "🤩 4" },
-];
 
 function BottomNav({ active, onNavigate, onFab }) {
   const items = [
@@ -167,7 +159,7 @@ function EditProfileScreen({ onBack, profile, updateProfile }) {
 }
 
 // ─── PARTIE SCROLLABLE : bannière + avatar + stats + réductions ───
-function ProfileTop({ onEditProfile, setPage, profile, onLogout }) {
+function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount }) {
   return (
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
@@ -224,10 +216,10 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout }) {
       {/* Stats row */}
       <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "10px 0" }}>
         {[
-          { n: "24", l: "posts" },
-          { n: "138", l: "abonnés" },
-          { n: "#3", l: "classement", color: C.gold },
-          { n: "+720", l: "XP ce mois", color: C.accent },
+          { n: String(postCount), l: "publications" },
+          { n: "0", l: "abonnés" },
+          { n: "#—", l: "classement", color: C.gold },
+          { n: "0", l: "XP ce mois", color: C.accent },
         ].map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: s.color || C.ink }}>{s.n}</div>
@@ -240,11 +232,11 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout }) {
       <div onClick={() => setPage("reductions")} style={{ padding: "10px 16px 0", cursor: "pointer" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg, #FFF8F6, #FFF0EB)", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,87,51,0.2)" }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎁</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: syne }}>Mes réductions</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>3 bons d'achat disponibles</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: syne, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mes réductions</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>Bons d'achat disponibles</div>
           </div>
-          <div style={{ background: C.accent, color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 10 }}>3 →</div>
+          <div style={{ background: C.accent, color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 10, flexShrink: 0 }}>→</div>
         </div>
       </div>
     </div>
@@ -275,16 +267,32 @@ function StickyTabs({ activeTab, onTabChange }) {
   );
 }
 
-function TabPosts({ posts, onDelete }) {
+function TabPosts({ posts, onDelete, loading }) {
+  if (loading) return <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>Chargement…</div>;
+  if (posts.length === 0) return (
+    <div style={{ textAlign: "center", padding: "40px 16px" }}>
+      <div style={{ fontSize: 36, marginBottom: 10 }}>📸</div>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun post pour l'instant</div>
+      <div style={{ fontSize: 12, color: C.ink2 }}>Publie ta première trouvaille depuis le fil !</div>
+    </div>
+  );
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
       {posts.map(p => (
-        <div key={p.id} style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "pointer", background: "#eee" }}>
-          <img src={p.img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <div key={p.id} style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "pointer", background: C.pill }}>
+          {p.image_url ? (
+            <img src={p.image_url} alt={p.content} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          ) : (
+            <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 10, boxSizing: "border-box" }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>📝</div>
+              <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 50)}{p.content?.length > 50 ? "…" : ""}</div>
+            </div>
+          )}
           <button onClick={e => { e.stopPropagation(); onDelete(p.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.65))", padding: "16px 8px 7px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 11, color: "#fff", fontWeight: 600 }}>{p.reaction}</span>
-            {p.pepite && <span style={{ background: "linear-gradient(90deg,#5B2D8E,#9B59B6)", borderRadius: 6, padding: "2px 6px", fontSize: 9, color: "#fff", fontWeight: 700 }}>✨ Pépite</span>}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.65))", padding: "16px 8px 7px" }}>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>
+              {new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+            </span>
           </div>
         </div>
       ))}
@@ -432,15 +440,36 @@ function TabRewards() {
 
 export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, user }) {
   const [screen, setScreen] = useState("profil");
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
   const [activeTab, setActiveTab] = useState("Posts");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [miniDefiIdx, setMiniDefiIdx] = useState(null);
   const [univers, setUnivers] = useState(miniDefisInit);
-  const [posts, setPosts] = useState(postsInit);
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const postCount = posts.length;
+
+  useEffect(() => {
+    if (!user?.id) { setPostsLoading(false); return; }
+    supabase
+      .from("posts")
+      .select("*")
+      .eq("author_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setPosts(data);
+        setPostsLoading(false);
+      });
+  }, [user?.id]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const handleDelete = async (id) => {
+    await supabase.from("posts").delete().eq("id", id);
+    setPosts(prev => prev.filter(p => p.id !== id));
+    setDeleteTarget(null);
+  };
 
   return (
     <div style={{
@@ -452,10 +481,10 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         <>
           {/* Zone scroll : bannière + avatar + stats + réductions + onglets sticky + contenu */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onLogout={handleLogout} />
+            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onLogout={handleLogout} postCount={postCount} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
-              {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} />}
+              {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={i => { setMiniDefiIdx(i); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis />}
               {activeTab === "Récompenses" && <TabRewards />}
@@ -479,7 +508,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
 
       {deleteTarget !== null && (
         <DeletePopup
-          onConfirm={() => { setPosts(prev => prev.filter(p => p.id !== deleteTarget)); setDeleteTarget(null); }}
+          onConfirm={() => handleDelete(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
         />
       )}
