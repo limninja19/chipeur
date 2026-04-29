@@ -22,11 +22,18 @@ const recentPosts = [
 ];
 
 function StatusBar() { return <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0 }}><span>9:41</span><span>●●●</span></div>; }
-function BottomNav() {
+function BottomNav({ setPage }) {
+  const items = [
+    { id: "fil", icon: "🏠", label: "Fil" },
+    { id: "sorties", icon: "📅", label: "Sorties" },
+    null,
+    { id: "commerces", icon: "🏪", label: "Commerces" },
+    { id: "profil", icon: "👤", label: "Profil" },
+  ];
   return <div style={{ height: 80, background: C.card, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-around", flexShrink: 0 }}>
-    {[{ icon: "🏠", label: "Fil", active: true }, { icon: "📅", label: "Sorties" }, null, { icon: "🏪", label: "Commerces" }, { icon: "👤", label: "Profil" }].map((it, i) => it === null ?
-      <div key="fab" style={{ width: 50, height: 50, borderRadius: 25, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", marginTop: -20, cursor: "pointer" }}>+</div> :
-      <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, fontSize: 9, color: it.active ? C.accent : C.ink2, cursor: "pointer" }}><div style={{ fontSize: 18 }}>{it.icon}</div><span>{it.label}</span></div>
+    {items.map((it, i) => it === null ?
+      <div key="fab" onClick={() => setPage("nouveau")} style={{ width: 50, height: 50, borderRadius: 25, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", marginTop: -20, cursor: "pointer" }}>+</div> :
+      <div key={i} onClick={() => setPage(it.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, fontSize: 9, color: C.ink2, cursor: "pointer" }}><div style={{ fontSize: 18 }}>{it.icon}</div><span>{it.label}</span></div>
     )}
   </div>;
 }
@@ -165,7 +172,7 @@ function SuccessScreen({ d, onBack }) {
   );
 }
 
-export default function ChipeurDefis() {
+export default function ChipeurDefis({ setPage }) {
   const [screen, setScreen] = useState("list");
   const [selectedId, setSelectedId] = useState(0);
   const [filter, setFilter] = useState("Tous");
@@ -195,7 +202,7 @@ export default function ChipeurDefis() {
 
         {screen === "success" && <SuccessScreen d={d} onBack={() => setScreen("list")} />}
 
-        <BottomNav />
+        <BottomNav setPage={setPage} />
     </div>
   );
 }

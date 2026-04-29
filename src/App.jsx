@@ -7,6 +7,7 @@ _font.rel = "stylesheet";
 if (!document.querySelector(`link[href="${_font.href}"]`)) document.head.appendChild(_font);
 
 import Fil from "./chipeur_fil";
+import Defis from "./chipeur_defis";
 import Sorties from "./chipeur_sorties";
 import NouveauPost from "./chipeur_nouveau_post";
 import Commerces from "./chipeur_commerces";
@@ -20,6 +21,7 @@ import PageVoisins from "./chipeur_page_voisins";
 export default function App() {
   const [page, setPage] = useState("fil");
 
+  if (page === "defis") return <Defis setPage={setPage} />;
   if (page === "inscription") return <Inscription setPage={setPage} />;
   if (page === "sorties") return <Sorties setPage={setPage} />;
   if (page === "nouveau") return <NouveauPost setPage={setPage} />;

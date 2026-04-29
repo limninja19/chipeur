@@ -76,7 +76,7 @@ function FilTabs({ active, onSelect, setPage }) {
 }
 
 // ─── BANDEAU DÉFIS ───
-function DefiCard({ d }) {
+function DefiCard({ d, setPage }) {
   const pct = Math.round((d.current / d.total) * 100);
   return (
     <div style={{
@@ -131,7 +131,7 @@ function DefiCard({ d }) {
         </div>
 
         {/* Bouton participer */}
-        <button style={{
+        <button onClick={() => setPage("defis")} style={{
           width: "100%", marginTop: 4,
           padding: "7px 0", borderRadius: 10,
           background: "rgba(255,255,255,0.95)",
@@ -145,7 +145,7 @@ function DefiCard({ d }) {
   );
 }
 
-function BandeauDefis() {
+function BandeauDefis({ setPage }) {
   const defis = [
     {
       icon: "👗",
@@ -185,7 +185,7 @@ function BandeauDefis() {
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-        {defis.map((d, i) => <DefiCard key={i} d={d} />)}
+        {defis.map((d, i) => <DefiCard key={i} d={d} setPage={setPage} />)}
       </div>
     </div>
   );
@@ -411,7 +411,7 @@ export default function ChipeurFil({ setPage }) {
     }}>
         <AppHeader />
         <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
-        <BandeauDefis />
+        <BandeauDefis setPage={setPage} />
 
         {/* Feed scroll area */}
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
