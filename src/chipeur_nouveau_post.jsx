@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "./supabase";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -127,13 +128,13 @@ function PepiteToggle() {
 }
 
 // ─── FORM: TROUVAILLE ───
-function FormDecouverte() {
+function FormDecouverte({ content, onChange }) {
   return (
     <>
-      <PhotoZone hasPhotoDefault={true} emoji="👗" />
+      <PhotoZone hasPhotoDefault={false} emoji="👗" />
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Description</label>
-        <textarea defaultValue="Trouvé cette robe lin au vide-grenier ce matin, qualité incroyable pour 8€ !" style={{
+        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Partage ta trouvaille avec le quartier..." style={{
           width: "100%", padding: "10px 12px", borderRadius: 12,
           border: `1.5px solid ${C.border}`, fontFamily: "'DM Sans', sans-serif",
           fontSize: 12, color: C.ink, background: C.card, outline: "none",
@@ -292,9 +293,12 @@ function SuccessScreen({ type, onBack }) {
 }
 
 // ─── MAIN ───
-export default function ChipeurNouveauPost() {
+export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [screen, setScreen] = useState("form");
   const [selectedType, setSelectedType] = useState("decouverte");
+  const [content, setContent] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
 
   const types = [
     { id: "decouverte", icon: "🛍️", name: "Trouvaille", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
@@ -303,8 +307,24 @@ export default function ChipeurNouveauPost() {
     { id: "bonplan", icon: "💡", name: "Bon plan", desc: "Un conseil, une adresse à ne pas rater", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
   ];
 
+  const handlePublish = async () => {
+    if (!content.trim()) { setPublishError("Écris quelque chose avant de publier !"); return; }
+    if (!user?.id) { setPublishError("Tu dois être connecté pour publier."); return; }
+    setPublishing(true);
+    setPublishError("");
+    const { error } = await supabase.from("posts").insert({
+      author_id: user.id,
+      content: content.trim(),
+      location: "Saint-Dié-des-Vosges",
+      tags: [],
+    });
+    setPublishing(false);
+    if (error) { setPublishError(error.message); return; }
+    setScreen("success");
+  };
+
   const formMap = {
-    decouverte: <FormDecouverte />,
+    decouverte: <FormDecouverte content={content} onChange={setContent} />,
     lieu: <FormLieu />,
     sortie: <FormSortie />,
     bonplan: <FormBonPlan />,
@@ -326,7 +346,7 @@ export default function ChipeurNouveauPost() {
               padding: "8px 16px 8px", borderBottom: `1px solid ${C.border}`,
               background: C.card, flexShrink: 0,
             }}>
-              <button style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>✕</button>
+              <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>✕</button>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700 }}>Nouveau post</div>
               <button onClick={() => setScreen("success")} style={{
                 background: C.accent, color: "#fff", border: "none", borderRadius: 20,
@@ -335,6 +355,9 @@ export default function ChipeurNouveauPost() {
               }}>Publier</button>
             </div>
 
+            {publishError && (
+              <div style={{ padding: "8px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 12 }}>⚠️ {publishError}</div>
+            )}
             {/* Scroll area */}
             <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 20px" }}>
               {/* Type selection */}
