@@ -49,24 +49,29 @@ function TagPills({ tags }) {
 // ─── PHOTO ZONE ───
 function PhotoZone({ onPhotoSelect, zoneId }) {
   const [preview, setPreview] = useState(null);
-  const [photoError, setPhotoError] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const [sizeError, setSizeError] = useState("");
   const inputId = zoneId || "photo-input-main";
 
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setPhotoError("");
+    setSizeError("");
+    setPreviewFailed(false);
 
-    // Vérifier la taille (max 20 Mo)
-    if (file.size > 20 * 1024 * 1024) {
-      setPhotoError("Photo trop grande (max 20 Mo). Essaie avec une photo moins lourde.");
+    if (file.size > 50 * 1024 * 1024) {
+      setSizeError("Fichier trop grand (max 50 Mo).");
       return;
     }
 
     const url = URL.createObjectURL(file);
     setPreview(url);
+    setFileName(file.name);
     onPhotoSelect && onPhotoSelect(file);
   };
+
+  const isVideo = fileName && (fileName.toLowerCase().endsWith(".mp4") || fileName.toLowerCase().endsWith(".mov") || fileName.toLowerCase().endsWith(".avi"));
 
   return (
     <div style={{ marginBottom: 14 }}>
@@ -77,27 +82,45 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
         style={{ display: "none" }}
         id={inputId}
       />
-      {photoError && (
+      {sizeError && (
         <div style={{ background: "#FFF0EE", color: "#C0392B", fontSize: 11, padding: "8px 12px", borderRadius: 10, marginBottom: 8 }}>
-          ⚠️ {photoError}
+          ⚠️ {sizeError}
         </div>
       )}
       <label htmlFor={inputId} style={{
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         width: "100%", aspectRatio: "4/3",
-        background: preview ? "transparent" : C.card,
-        borderRadius: 16, border: preview ? "none" : "2px dashed rgba(26,23,20,0.15)",
+        background: C.card,
+        borderRadius: 16, border: (preview && !previewFailed) ? "none" : "2px dashed rgba(26,23,20,0.15)",
         cursor: "pointer", overflow: "hidden", position: "relative",
       }}>
-        {preview ? (
+        {preview && !previewFailed && !isVideo ? (
           <>
-            <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} onError={() => setPhotoError("Format non supporté. Essaie avec une photo JPG ou PNG.")} />
+            <img
+              src={preview}
+              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }}
+              onError={() => setPreviewFailed(true)}
+            />
             <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.6)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>Changer 📷</div>
           </>
+        ) : preview && isVideo ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: 20 }}>
+            <div style={{ fontSize: 40 }}>🎬</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>Vidéo sélectionnée ✓</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>{fileName}</div>
+            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.7 }}>Appuie pour changer</div>
+          </div>
+        ) : preview && previewFailed ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: 20 }}>
+            <div style={{ fontSize: 40 }}>📷</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>Photo sélectionnée ✓</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>Aperçu non disponible — la photo sera quand même envoyée</div>
+            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.7 }}>Appuie pour changer</div>
+          </div>
         ) : (
           <>
             <div style={{ fontSize: 32, marginBottom: 6, opacity: 0.4 }}>📷</div>
-            <div style={{ fontSize: 11, color: C.ink2, fontWeight: 500 }}>Ajouter une photo</div>
+            <div style={{ fontSize: 11, color: C.ink2, fontWeight: 500 }}>Ajouter une photo ou vidéo</div>
             <div style={{ fontSize: 10, color: C.ink2, opacity: 0.6, marginTop: 3 }}>Appuie ici pour choisir depuis ta galerie</div>
           </>
         )}
