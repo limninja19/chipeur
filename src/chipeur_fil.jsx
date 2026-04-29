@@ -21,7 +21,7 @@ function StatusBar() {
 }
 
 // ─── APP HEADER ───
-function AppHeader({ setPage }) {
+function AppHeader({ setPage, profile }) {
   const voisins = [
     { emoji: "👩", bg: "#FEF3E0" },
     { emoji: "👩‍🦰", bg: "#F7EEF7" },
@@ -49,6 +49,7 @@ function AppHeader({ setPage }) {
           <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 7, letterSpacing: 2, color: C.accent, textTransform: "uppercase", lineHeight: 1.2 }}>
             Découvre · Chope · Partage
           </div>
+          {profile?.pseudo && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.ink2, marginTop: 1 }}>Bonjour {profile.pseudo} 👋</div>}
         </div>
       </div>
       {/* Droite : avatars voisins + icônes */}
@@ -456,7 +457,7 @@ function BottomNav({ active, onNavigate, onFab }) {
   );
 }
 
-export default function Fil({ setPage }) {
+export default function Fil({ setPage, profile }) {
   const [activeTab, setActiveTab] = useState("Tout");
   const [fabOpen, setFabOpen] = useState(false);
 
@@ -467,7 +468,7 @@ export default function Fil({ setPage }) {
       fontFamily: "'DM Sans', sans-serif", color: C.ink,
       display: "flex", flexDirection: "column",
     }}>
-      <AppHeader setPage={setPage} />
+      <AppHeader setPage={setPage} profile={profile} />
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
       <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
         <BandeauDefis setPage={setPage} />
