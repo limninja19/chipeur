@@ -442,6 +442,7 @@ function BottomNav({ active, onNavigate, onFab }) {
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", marginTop: -20, cursor: "pointer" }}>+</div>
           );
         }
+        return (
           <div key={item.id} onClick={() => onNavigate(item.id)} style={{
             display: "flex", flexDirection: "column", alignItems: "center",
             gap: 3, fontSize: 9, color: active === item.id ? C.accent : C.ink2, cursor: "pointer",
@@ -476,6 +477,9 @@ export default function Fil({ setPage }) {
       </div>
       {fabOpen && <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />}
       <BottomNav active="fil" onNavigate={setPage} onFab={() => setFabOpen(!fabOpen)} />
+    </div>
+  );
+}
     </div>
   );
 }
