@@ -77,47 +77,97 @@ function DeletePopup({ onConfirm, onCancel }) {
   );
 }
 
-function MiniDefiScreen({ defi, onBack, onSave }) {
-  const [mode, setMode] = useState("text");
-  const [value, setValue] = useState(defi.done ? (defi.a || "") : "");
+function MiniDefiScreen({ defi, onBack, onSave, user }) {
+  const [textValue, setTextValue] = useState(defi.done ? (defi.a || "") : "");
+  const [photoPreview, setPhotoPreview] = useState(defi.photoUrl || null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const hasText = textValue.trim().length > 0;
+  const hasPhoto = !!photoPreview;
+  const xpGained = (hasText ? 5 : 0) + (hasPhoto ? 5 : 0);
+
+  const handlePhotoFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    if (!hasText && !hasPhoto) return;
+    setSaving(true);
+    let photoUrl = photoPreview;
+    // Upload photo to Supabase if new file selected
+    if (photoFile && user?.id) {
+      const ext = photoFile.name.split(".").pop() || "jpg";
+      const path = `univers/${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile, { upsert: true, contentType: photoFile.type || "image/jpeg" });
+      if (!upErr) {
+        const { data } = supabase.storage.from("images").getPublicUrl(path);
+        photoUrl = data.publicUrl;
+      }
+    }
+    setSaved(true);
+    setTimeout(() => onSave(textValue, photoUrl, xpGained), 600);
+  };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", position: "relative" }}>
       <div style={{ padding: "12px 18px", display: "flex", alignItems: "center", gap: 10, background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <button onClick={onBack} style={{ width: 32, height: 32, background: C.pill, borderRadius: "50%", border: "none", fontSize: 15, cursor: "pointer" }}>‹</button>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, flex: 1 }}>{defi.q}</div>
-        <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, background: "#FFF0EB", padding: "3px 8px", borderRadius: 8 }}>+5 XP</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, background: "#FFF0EB", padding: "3px 8px", borderRadius: 8 }}>
+          +{xpGained > 0 ? xpGained : "5/10"} XP
+        </div>
       </div>
+
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 100px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
         <div style={{ fontSize: 52 }}>{defi.emoji}</div>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, textAlign: "center", lineHeight: 1.3 }}>{defi.q}</div>
-        <div style={{ fontSize: 12, color: C.ink2, textAlign: "center" }}>Texte ou photo — visible sur ton profil</div>
-        <div style={{ display: "flex", gap: 8, width: "100%" }}>
-          {["text", "photo"].map(m => (
-            <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: 9, borderRadius: 12, fontSize: 12, fontWeight: 600, border: `1.5px solid ${mode === m ? C.accent : C.border}`, background: mode === m ? C.accent : C.card, color: mode === m ? "#fff" : C.ink2, cursor: "pointer", fontFamily: dm }}>
-              {m === "text" ? "✏️ Texte" : "📷 Photo"}
-            </button>
-          ))}
-        </div>
-        {mode === "text" && (
-          <>
-            <input value={value} onChange={e => setValue(e.target.value)} placeholder="Ta réponse…" style={{ width: "100%", background: C.card, border: "2px solid rgba(255,87,51,0.25)", borderRadius: 16, padding: "12px 16px", fontSize: 14, fontFamily: dm, color: C.ink, outline: "none", textAlign: "center", boxSizing: "border-box" }} />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", width: "100%" }}>
+        <div style={{ fontSize: 12, color: C.ink2, textAlign: "center" }}>Texte (+5 XP) · Photo (+5 XP) · Les deux (+10 XP) !</div>
+
+        {/* Texte */}
+        <div style={{ width: "100%" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 6 }}>✏️ Ta réponse en texte <span style={{ color: C.accent }}>+5 XP</span></div>
+          <input value={textValue} onChange={e => setTextValue(e.target.value)} placeholder="Écris ta réponse…" style={{ width: "100%", background: C.card, border: `2px solid ${hasText ? C.accent : "rgba(255,87,51,0.2)"}`, borderRadius: 16, padding: "12px 16px", fontSize: 14, fontFamily: dm, color: C.ink, outline: "none", textAlign: "center", boxSizing: "border-box", transition: "border 0.2s" }} />
+          {defi.sugs && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: 8 }}>
               {defi.sugs.map(s => (
-                <button key={s} onClick={() => setValue(s)} style={{ padding: "7px 13px", borderRadius: 20, fontSize: 12, background: value === s ? C.accent : C.pill, color: value === s ? "#fff" : C.ink2, border: "none", cursor: "pointer", fontFamily: dm }}>{s}</button>
+                <button key={s} onClick={() => setTextValue(s)} style={{ padding: "7px 13px", borderRadius: 20, fontSize: 12, background: textValue === s ? C.accent : C.pill, color: textValue === s ? "#fff" : C.ink2, border: "none", cursor: "pointer", fontFamily: dm }}>{s}</button>
               ))}
             </div>
-          </>
-        )}
-        {mode === "photo" && (
-          <div style={{ width: "100%", aspectRatio: "4/3", background: C.pill, borderRadius: 16, border: "2px dashed rgba(255,87,51,0.3)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer", fontSize: 12, color: C.ink2 }}>
-            <div style={{ fontSize: 32 }}>📷</div>
-            <span>Appuie pour ajouter une photo</span>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Photo */}
+        <div style={{ width: "100%" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 6 }}>📷 Ajouter une photo <span style={{ color: C.accent }}>+5 XP</span></div>
+          <input type="file" accept="image/*" id={`defi-photo-${defi.emoji}`} style={{ display: "none" }} onChange={handlePhotoFile} />
+          <label htmlFor={`defi-photo-${defi.emoji}`} style={{ display: "block", width: "100%", cursor: "pointer" }}>
+            {photoPreview ? (
+              <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", borderRadius: 16, overflow: "hidden" }}>
+                <img src={photoPreview} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.6)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>Changer 📷</div>
+                <div style={{ position: "absolute", top: 8, left: 8, background: C.accent, color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 8 }}>+5 XP ✓</div>
+              </div>
+            ) : (
+              <div style={{ width: "100%", aspectRatio: "4/3", background: C.pill, borderRadius: 16, border: "2px dashed rgba(255,87,51,0.3)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <div style={{ fontSize: 32 }}>📷</div>
+                <span style={{ fontSize: 12, color: C.ink2, fontFamily: dm }}>Appuie pour choisir une photo</span>
+              </div>
+            )}
+          </label>
+        </div>
       </div>
-      <button onClick={() => { setSaved(true); setTimeout(() => onSave(value), 600); }} style={{ position: "absolute", bottom: 90, left: 20, right: 20, zIndex: 10, background: saved ? C.pro : C.accent, color: "#fff", border: "none", borderRadius: 16, padding: 14, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", textAlign: "center", transition: "background 0.3s" }}>
-        {saved ? "✓ Enregistré !" : "Enregistrer · +5 XP ✓"}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || (!hasText && !hasPhoto)}
+        style={{ position: "absolute", bottom: 90, left: 20, right: 20, zIndex: 10, background: saved ? C.pro : (hasText || hasPhoto) ? C.accent : C.pill, color: (hasText || hasPhoto) ? "#fff" : C.ink2, border: "none", borderRadius: 16, padding: 14, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: (hasText || hasPhoto) ? "pointer" : "not-allowed", textAlign: "center", transition: "background 0.3s" }}
+      >
+        {saved ? "✓ Enregistré !" : `Enregistrer · +${xpGained || "?"} XP`}
       </button>
     </div>
   );
@@ -249,9 +299,16 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount }) {
             </div>
           </div>
           {/* Boutons action */}
-          <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
-            <button onClick={onEditProfile} style={{ background: C.card, color: C.ink, border: `1px solid ${C.border}`, borderRadius: 12, padding: "7px 14px", fontSize: 12, fontWeight: 600, fontFamily: dm, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>✏️ Modifier</button>
-            <button onClick={onLogout} style={{ background: C.card, color: C.ink2, border: `1px solid ${C.border}`, borderRadius: 12, width: 34, height: 34, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }} title="Se déconnecter">🚪</button>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, paddingBottom: 4 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={onEditProfile} style={{ background: C.card, color: C.ink, border: `1px solid ${C.border}`, borderRadius: 12, padding: "7px 14px", fontSize: 12, fontWeight: 600, fontFamily: dm, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>✏️ Modifier</button>
+              <button onClick={onLogout} style={{ background: C.card, color: C.ink2, border: `1px solid ${C.border}`, borderRadius: 12, width: 34, height: 34, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }} title="Se déconnecter">🚪</button>
+            </div>
+            {/* Voir mes voisins */}
+            <button onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 5, background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "5px 10px", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
+              <span style={{ fontSize: 13 }}>👩👩‍🦰🧑</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: C.ink2, fontFamily: dm }}>Mes voisins</span>
+            </button>
           </div>
         </div>
 
@@ -380,41 +437,57 @@ function TabPosts({ posts, onDelete, loading }) {
   );
 }
 
+const DEFI_COLORS = [
+  { bg: "#FFF0EB", border: "rgba(255,87,51,0.35)", accent: "#FF5733" },
+  { bg: "#E8F4FD", border: "rgba(21,101,192,0.3)", accent: "#1565C0" },
+  { bg: "#EBF5F0", border: "rgba(10,61,46,0.3)", accent: "#0A3D2E" },
+  { bg: "#F5F0FF", border: "rgba(124,58,237,0.3)", accent: "#7C3AED" },
+  { bg: "#FFF8E8", border: "rgba(180,83,9,0.3)", accent: "#B45309" },
+  { bg: "#F0FDF9", border: "rgba(15,118,110,0.3)", accent: "#0F766E" },
+];
+const DONE_COLOR = { bg: "#EBF5F0", border: "rgba(10,61,46,0.4)", accent: "#0A3D2E" };
+
 function TabUnivers({ items, onOpen }) {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>Mon univers</div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, background: "#FFF0EB", padding: "3px 10px", borderRadius: 8 }}>+5 XP par réponse</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, background: "#FFF0EB", padding: "3px 10px", borderRadius: 8 }}>+5 à +10 XP</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {items.map((it, i) => (
-          <div key={i} onClick={() => onOpen(i)} style={{ background: it.done ? C.card : "transparent", borderRadius: 16, overflow: "hidden", cursor: "pointer", border: it.done ? `1px solid ${C.border}` : "1px dashed rgba(255,87,51,0.25)", padding: it.hasPhoto ? 0 : 12 }}>
-            {it.hasPhoto ? (
-              <>
-                <div style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, background: it.photoBg }}>{it.photoEmoji}</div>
-                <div style={{ padding: "8px 10px" }}>
-                  <div style={{ fontSize: 9, color: C.ink2 }}>{it.q}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{it.a}</div>
-                  <div style={{ fontSize: 9, color: C.accent, fontWeight: 700, marginTop: 3 }}>+5 XP ✓</div>
+        {items.map((it, i) => {
+          const col = it.done ? DONE_COLOR : DEFI_COLORS[i % DEFI_COLORS.length];
+          return (
+            <div key={i} onClick={() => onOpen(i)} style={{ background: col.bg, borderRadius: 16, overflow: "hidden", cursor: "pointer", border: `1.5px solid ${col.border}`, padding: 0 }}>
+              {/* Photo si présente */}
+              {it.photoUrl ? (
+                <>
+                  <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
+                    <img src={it.photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                  <div style={{ padding: "8px 10px" }}>
+                    <div style={{ fontSize: 9, color: C.ink2 }}>{it.q}</div>
+                    {it.a && <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{it.a}</div>}
+                    <div style={{ fontSize: 9, fontWeight: 700, marginTop: 3, color: col.accent }}>✓ {it.xp || 5} XP</div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ padding: 12 }}>
+                  <div style={{ fontSize: 24, marginBottom: 6 }}>{it.emoji}</div>
+                  <div style={{ fontSize: 9, color: C.ink2, marginBottom: 4 }}>{it.q}</div>
+                  {it.done ? (
+                    <>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{it.a}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, marginTop: 4, color: col.accent }}>✓ {it.xp || 5} XP</div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 11, fontWeight: 700, color: col.accent }}>+ Répondre · +5/10 XP</div>
+                  )}
                 </div>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: 22, marginBottom: 4, opacity: it.done ? 1 : 0.4 }}>{it.emoji}</div>
-                <div style={{ fontSize: 9, color: C.ink2, marginBottom: 3 }}>{it.q}</div>
-                {it.done ? (
-                  <>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{it.a}</div>
-                    <div style={{ fontSize: 9, color: C.accent, fontWeight: 700, marginTop: 3 }}>+5 XP ✓</div>
-                  </>
-                ) : (
-                  <div style={{ fontSize: 11, color: C.accent, fontWeight: 600 }}>+ Répondre · +5 XP</div>
-                )}
-              </>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
     </>
   );
@@ -578,9 +651,12 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
       {screen === "minidefi" && miniDefiIdx !== null && (
         <MiniDefiScreen
           defi={univers[miniDefiIdx]}
+          user={user}
           onBack={() => { setScreen("profil"); setActiveTab("Mon univers"); }}
-          onSave={val => {
-            if (val) setUnivers(prev => prev.map((it, i) => i === miniDefiIdx ? { ...it, done: true, a: val } : it));
+          onSave={(val, photoUrl, xp) => {
+            setUnivers(prev => prev.map((it, i) => i === miniDefiIdx
+              ? { ...it, done: true, a: val || it.a, photoUrl: photoUrl || it.photoUrl, xp: (it.xp || 0) + (xp || 0) }
+              : it));
             setScreen("profil"); setActiveTab("Mon univers"); setMiniDefiIdx(null);
           }}
         />

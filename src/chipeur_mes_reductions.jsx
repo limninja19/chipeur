@@ -70,9 +70,12 @@ export default function MesReductions({ setPage }) {
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
         {screen === "list" && <>
-          <div style={{ padding: "6px 16px 10px", flexShrink: 0 }}>
-            <h1 style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, margin: 0 }}>Mes réductions</h1>
-            <p style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>Offres envoyées par les commerces du quartier</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px 6px", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
+            <button onClick={() => setPage("profil")} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: C.ink, lineHeight: 1, padding: 0 }}>←</button>
+            <div style={{ flex: 1 }}>
+              <h1 style={{ fontFamily: syne, fontSize: 18, fontWeight: 700, margin: 0 }}>Mes réductions</h1>
+              <p style={{ fontSize: 10, color: C.ink2, margin: 0 }}>Offres envoyées par les commerces du quartier</p>
+            </div>
           </div>
           <div style={{ display: "flex", gap: 6, padding: "0 12px 8px", overflowX: "auto", flexShrink: 0 }}>
             {filters.map(f => <button key={f.id} onClick={() => setFilter(f.id)} style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 20, border: "none", cursor: "pointer", whiteSpace: "nowrap", background: filter === f.id ? C.ink : C.pill, color: filter === f.id ? "#fff" : C.ink2, fontFamily: dm }}>{f.label}</button>)}
