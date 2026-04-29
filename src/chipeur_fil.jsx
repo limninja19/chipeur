@@ -480,6 +480,3 @@ export default function Fil({ setPage }) {
     </div>
   );
 }
-    </div>
-  );
-}
