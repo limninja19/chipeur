@@ -377,11 +377,11 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
             }}>
               <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>✕</button>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700 }}>Nouveau post</div>
-              <button onClick={() => setScreen("success")} style={{
-                background: C.accent, color: "#fff", border: "none", borderRadius: 20,
+              <button onClick={handlePublish} disabled={publishing} style={{
+                background: publishing ? "#ccc" : C.accent, color: "#fff", border: "none", borderRadius: 20,
                 padding: "6px 16px", fontSize: 12, fontWeight: 700,
-                fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
-              }}>Publier</button>
+                fontFamily: "'DM Sans', sans-serif", cursor: publishing ? "not-allowed" : "pointer",
+              }}>{publishing ? "..." : "Publier"}</button>
             </div>
 
             {publishError && (
@@ -449,7 +449,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
 
         {screen === "success" && (
           <>
-            <SuccessScreen type={selectedType} onBack={() => setScreen("form")} />
+            <SuccessScreen type={selectedType} onBack={() => setPage("fil")} />
           </>
         )}
     </div>
