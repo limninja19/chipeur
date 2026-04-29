@@ -126,7 +126,7 @@ function PepiteToggle() {
   );
 }
 
-// ─── FORM: DECOUVERTE ───
+// ─── FORM: TROUVAILLE ───
 function FormDecouverte() {
   return (
     <>
@@ -153,6 +153,37 @@ function FormDecouverte() {
         ]} />
       </div>
       <PepiteToggle />
+    </>
+  );
+}
+
+// ─── FORM: LIEU ───
+function FormLieu() {
+  const inputStyle = {
+    width: "100%", padding: "10px 12px", borderRadius: 12,
+    border: `1.5px solid ${C.border}`, fontFamily: "'DM Sans', sans-serif",
+    fontSize: 12, color: C.ink, background: C.card, outline: "none", boxSizing: "border-box",
+  };
+  return (
+    <>
+      <PhotoZone hasPhotoDefault={false} emoji="📍" />
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Nom du lieu</label>
+        <input type="text" placeholder="ex : Parc des Buttes, bord du canal…" style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Pourquoi tu l'aimes ?</label>
+        <textarea placeholder="Raconte ce qui rend cet endroit spécial…" style={{ ...inputStyle, resize: "none", height: 80, lineHeight: 1.5 }} />
+      </div>
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Type de lieu</label>
+        <TagPills tags={[
+          { label: "🌳 Parc", default: true }, { label: "🌊 Bord de l'eau", default: false },
+          { label: "🌿 Nature", default: false }, { label: "☕ Café caché", default: false },
+          { label: "🛍️ Adresse mode", default: false }, { label: "📸 Spot photo", default: false },
+          { label: "🏡 Quartier", default: false },
+        ]} />
+      </div>
     </>
   );
 }
@@ -231,10 +262,10 @@ function FormBonPlan() {
 // ─── SUCCESS SCREEN ───
 function SuccessScreen({ type, onBack }) {
   const msgs = {
-    decouverte: "Ta découverte est maintenant visible par tous les voisins du quartier.",
-    pepite: "Ta pépite est soumise à la communauté. Si elle est validée, tu gagnes +25 XP !",
+    decouverte: "Ta trouvaille est maintenant visible par tous les voisins du quartier. 🛍️",
+    lieu: "Ton spot est partagé ! Les voisins vont adorer le découvrir. 📍",
     sortie: "La sortie est ajoutée à la page Sorties. Les voisins peuvent maintenant dire qu'ils y vont !",
-    bonplan: "Ton bon plan est partagé avec le quartier !",
+    bonplan: "Ton bon plan est partagé avec le quartier ! 💡",
   };
   return (
     <div style={{
@@ -266,15 +297,15 @@ export default function ChipeurNouveauPost() {
   const [selectedType, setSelectedType] = useState("decouverte");
 
   const types = [
-    { id: "decouverte", icon: "👗", name: "Découverte", desc: "Une trouvaille mode, un coup de cœur" },
-    { id: "pepite", icon: "⭐", name: "Pépite", desc: "LA pièce incontournable du moment" },
-    { id: "sortie", icon: "📅", name: "Sortie", desc: "Un événement, une sortie à faire" },
-    { id: "bonplan", icon: "💡", name: "Bon plan", desc: "Un conseil, une adresse à ne pas rater" },
+    { id: "decouverte", icon: "🛍️", name: "Trouvaille", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
+    { id: "lieu", icon: "📍", name: "Lieu", desc: "Un spot nature, un endroit à découvrir", grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
+    { id: "sortie", icon: "🎉", name: "Sortie", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
+    { id: "bonplan", icon: "💡", name: "Bon plan", desc: "Un conseil, une adresse à ne pas rater", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
   ];
 
   const formMap = {
     decouverte: <FormDecouverte />,
-    pepite: <FormDecouverte />,
+    lieu: <FormLieu />,
     sortie: <FormSortie />,
     bonplan: <FormBonPlan />,
   };
@@ -311,24 +342,45 @@ export default function ChipeurNouveauPost() {
                 fontSize: 11, fontWeight: 700, color: C.ink2,
                 textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10,
               }}>Que veux-tu partager ?</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
                 {types.map(t => {
                   const isSelected = selectedType === t.id;
                   return (
                     <div key={t.id} onClick={() => setSelectedType(t.id)} style={{
-                      border: `1.5px solid ${isSelected ? C.accent : C.border}`,
-                      borderRadius: 16, padding: 12, cursor: "pointer",
-                      background: isSelected ? "#FFF8F6" : C.card,
-                      transition: "all 0.2s", textAlign: "left",
+                      borderRadius: 20, cursor: "pointer", overflow: "hidden",
+                      border: `2px solid ${isSelected ? "transparent" : C.border}`,
+                      background: isSelected ? t.grad : C.card,
+                      transition: "all 0.2s",
+                      boxShadow: isSelected ? "0 4px 16px rgba(0,0,0,0.12)" : "none",
+                      transform: isSelected ? "scale(1.02)" : "scale(1)",
                     }}>
+                      {/* Icône avec fond coloré */}
                       <div style={{
-                        width: 36, height: 36, borderRadius: 10,
-                        background: isSelected ? "#FFF0EB" : C.pill,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 18, marginBottom: 8,
-                      }}>{t.icon}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{t.name}</div>
-                      <div style={{ fontSize: 10, color: C.ink2, marginTop: 2, lineHeight: 1.3 }}>{t.desc}</div>
+                        padding: "18px 16px 10px",
+                        display: "flex", flexDirection: "column", gap: 8,
+                      }}>
+                        <div style={{
+                          width: 42, height: 42, borderRadius: 14,
+                          background: isSelected ? "rgba(255,255,255,0.25)" : t.light,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 20,
+                        }}>{t.icon}</div>
+                        <div>
+                          <div style={{
+                            fontSize: 13, fontWeight: 800,
+                            fontFamily: "'Syne', sans-serif",
+                            color: isSelected ? "#fff" : C.ink,
+                          }}>{t.name}</div>
+                          <div style={{
+                            fontSize: 10, lineHeight: 1.35, marginTop: 3,
+                            color: isSelected ? "rgba(255,255,255,0.8)" : C.ink2,
+                          }}>{t.desc}</div>
+                        </div>
+                      </div>
+                      {/* Barre indicatrice en bas */}
+                      {isSelected && (
+                        <div style={{ height: 3, background: "rgba(255,255,255,0.4)", margin: "0 16px 12px" }} />
+                      )}
                     </div>
                   );
                 })}
