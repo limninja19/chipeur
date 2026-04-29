@@ -224,51 +224,83 @@ function InterestBtn({ defaultActive }) {
   );
 }
 
+// ─── LIGHTBOX ───
+function Lightbox({ src, alt, onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(0,0,0,0.92)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}
+    >
+      <button onClick={onClose} style={{
+        position: "absolute", top: 16, right: 16,
+        background: "rgba(255,255,255,0.15)", border: "none",
+        color: "#fff", fontSize: 20, width: 38, height: 38,
+        borderRadius: "50%", cursor: "pointer", display: "flex",
+        alignItems: "center", justifyContent: "center",
+      }}>✕</button>
+      <img
+        src={src}
+        alt={alt}
+        onClick={e => e.stopPropagation()}
+        style={{
+          maxWidth: "100%", maxHeight: "90vh",
+          objectFit: "contain", borderRadius: 12,
+        }}
+      />
+    </div>
+  );
+}
+
 // ─── POST CARD VOISIN ───
 function PostVoisin({ setPage }) {
+  const [lightbox, setLightbox] = useState(false);
+  const imgSrc = "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800&h=1000&fit=crop&crop=center";
+
   return (
-    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
-      {/* Header */}
-      <div
-  onClick={() => setPage("profil")}
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "10px 12px 8px",
-    cursor: "pointer",
-  }}
->
-        <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>😊</div>
-        <div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>Camille R.</div>
-          <div style={{ fontSize: 10, color: C.ink2 }}>Quartier des Arts · 2h</div>
+    <>
+      {lightbox && <Lightbox src={imgSrc} alt="Robe lin Camille R." onClose={() => setLightbox(false)} />}
+      <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
+        {/* Header */}
+        <div onClick={() => setPage("profil")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px", cursor: "pointer" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>😊</div>
+          <div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>Camille R.</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>Quartier des Arts · 2h</div>
+          </div>
+        </div>
+        {/* Image cliquable */}
+        <div
+          onClick={() => setLightbox(true)}
+          style={{ width: "100%", paddingTop: "100%", background: C.pill, position: "relative", cursor: "zoom-in" }}
+        >
+          <img
+            src={imgSrc}
+            alt="Camille R. - robe lin vide-grenier"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+          />
+          <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(26,23,20,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>👁 24 vues</div>
+          <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.45)", color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>🔍 Agrandir</div>
+        </div>
+        {/* Body */}
+        <div style={{ padding: "8px 12px" }}>
+          <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>Trouvé cette robe lin incroyable au vide-grenier ce matin !</div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {["Lin", "Vintage", "Vide-grenier"].map(t => (
+              <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>
+            ))}
+          </div>
+        </div>
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
+          <Reactions defaultActive="🔥" />
+          <InterestBtn />
         </div>
       </div>
-      {/* Image */}
-      <div style={{ width: "100%", paddingTop: "75%", background: C.pill, position: "relative" }}>
-        <img
-          src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600&h=450&fit=crop&crop=top"
-          alt="Camille R. - robe lin vide-grenier"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-        <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(26,23,20,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>👁 24 vues</div>
-      </div>
-      {/* Body */}
-      <div style={{ padding: "8px 12px" }}>
-        <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>Trouvé cette robe lin incroyable au vide-grenier ce matin !</div>
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-          {["Lin", "Vintage", "Vide-grenier"].map(t => (
-            <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>
-          ))}
-        </div>
-      </div>
-      {/* Actions */}
-      <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
-        <Reactions defaultActive="🔥" />
-        <InterestBtn />
-      </div>
-    </div>
+    </>
   );
 }
 
