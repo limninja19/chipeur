@@ -274,7 +274,7 @@ function SuccessScreen({ type, onBack }) {
       padding: 24, textAlign: "center",
     }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
-      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: C.ink, marginBottom: 8 }}>Post publié !</div>
+      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Post publié !</div>
       <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 24 }}>{msgs[type] || msgs.decouverte}</div>
       <div style={{
         display: "inline-flex", alignItems: "center", gap: 6,
@@ -327,7 +327,7 @@ export default function ChipeurNouveauPost() {
               background: C.card, flexShrink: 0,
             }}>
               <button style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>✕</button>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800 }}>Nouveau post</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700 }}>Nouveau post</div>
               <button onClick={() => setScreen("success")} style={{
                 background: C.accent, color: "#fff", border: "none", borderRadius: 20,
                 padding: "6px 16px", fontSize: 12, fontWeight: 700,

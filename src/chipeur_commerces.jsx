@@ -121,7 +121,7 @@ function FeaturedCard({ com, onClick }) {
       </div>
       <div style={{ padding: "10px 12px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 15, color: C.ink }}>{com.name}</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: C.ink }}>{com.name}</div>
           <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 8, background: com.planBg, color: com.planColor }}>{com.plan}</span>
         </div>
         <div style={{ fontSize: 11, color: C.ink2, marginTop: 3 }}>{com.shortCat}</div>
@@ -202,7 +202,7 @@ function VitrineScreen({ com, onBack }) {
       {/* Body */}
       <div style={{ flex: 1, overflowY: "auto", padding: "0 18px 100px" }}>
         <div style={{ padding: "14px 0 0" }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: C.ink }}>{com.name}</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, color: C.ink }}>{com.name}</div>
           <div style={{ fontSize: 12, color: C.ink2, marginTop: 2 }}>{com.cat}</div>
         </div>
 
@@ -214,7 +214,7 @@ function VitrineScreen({ com, onBack }) {
             { n: com.posts, l: "posts" },
           ].map((s, i) => (
             <div key={i} style={{ background: C.pill, borderRadius: 12, padding: "8px 12px", textAlign: "center", flex: 1 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 16, color: C.ink }}>{s.n}</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: C.ink }}>{s.n}</div>
               <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
             </div>
           ))}
@@ -250,7 +250,7 @@ function VitrineScreen({ com, onBack }) {
             marginBottom: 8, border: "1px solid rgba(10,61,46,0.1)",
           }}>
             <div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: C.pro }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 17, color: C.pro }}>
                 {p.price} <span style={{ fontSize: 11, fontWeight: 400, color: C.ink2 }}>{p.unit}</span>
               </div>
               <div style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>{p.detail}</div>

@@ -45,7 +45,7 @@ function DefiCard({ d, onOpen, onParticipe }) {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
           <div style={{ fontSize: 32, lineHeight: 1 }}>{d.icon}</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 15, color: "#fff", lineHeight: 1.2 }}>{d.title}</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: "#fff", lineHeight: 1.2 }}>{d.title}</div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 3 }}>{d.sub}</div>
             <div style={{ background: "rgba(255,255,255,0.22)", borderRadius: 8, padding: "3px 8px", fontSize: 10, color: "#fff", fontWeight: 600, marginTop: 6, display: "inline-block" }}>{d.ended ? "✅" : "⏳"} {d.timeLeft}</div>
           </div>
@@ -53,7 +53,7 @@ function DefiCard({ d, onOpen, onParticipe }) {
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
           {[{ n: d.participants, l: "participants" }, { n: d.objectif, l: "objectif" }, { n: d.pct + "%", l: "complété" }].map((s, i) => (
             <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.18)", borderRadius: 10, padding: "6px 10px", flex: 1 }}>
-              <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 16, color: "#fff", lineHeight: 1 }}>{s.n}</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: "#fff", lineHeight: 1 }}>{s.n}</div>
               <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)", marginTop: 1 }}>{s.l}</div>
             </div>
           ))}
@@ -76,12 +76,12 @@ function DetailScreen({ d, onBack, onParticipe }) {
       <div style={{ padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12, flexShrink: 0, position: "relative", background: d.grad }}>
         <button onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 32, height: 32, background: "rgba(255,255,255,0.25)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "#fff", cursor: "pointer" }}>‹</button>
         <div style={{ fontSize: 40, textAlign: "center" }}>{d.icon}</div>
-        <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 17, color: "#fff", textAlign: "center" }}>{d.title}</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", textAlign: "center" }}>{d.title}</div>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.82)", textAlign: "center", lineHeight: 1.4 }}>{d.sub}</div>
         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
           {[{ n: d.participants, l: "participants" }, { n: d.ended ? "—" : d.timeLeft.split(" ")[0], l: d.ended ? "terminé" : "restants" }, { n: d.objectif, l: "objectif" }].map((s, i) => (
             <div key={i} style={{ background: "rgba(255,255,255,0.2)", borderRadius: 12, padding: "8px 14px", textAlign: "center" }}>
-              <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 17, color: "#fff" }}>{s.n}</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff" }}>{s.n}</div>
               <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)" }}>{s.l}</div>
             </div>
           ))}
@@ -192,7 +192,7 @@ function SuccessScreen({ d, onBack }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px", textAlign: "center", gap: 14 }}>
       <div style={{ width: 72, height: 72, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "#fff" }}>🔥</div>
-      <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 20, color: C.ink }}>Post publié !</div>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Post publié !</div>
       <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6 }}>Ton post est en ligne sur le fil.<br />Tu participes maintenant au <strong>{d.title}</strong>.</div>
       <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF8E8", color: "#B45309", fontSize: 13, fontWeight: 700, padding: "8px 18px", borderRadius: 20 }}>⚡ +15 XP gagnés</div>
       <button onClick={onBack} style={{ background: C.ink, color: "#fff", border: "none", borderRadius: 16, padding: "13px 28px", fontSize: 14, fontWeight: 600, fontFamily: dm, cursor: "pointer", marginTop: 6 }}>Voir les autres défis</button>
@@ -213,24 +213,7 @@ export default function ChipeurDefis({ setPage }) {
 
         {screen === "list" && <>
           <div style={{ padding: "14px 20px 0", flexShrink: 0 }}>
-            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 20, color: C.ink }}>Défis 🏆</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Défis 🏆</div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, marginBottom: 14 }}>Rejoins les challenges du quartier</div>
           </div>
-          <div style={{ display: "flex", gap: 6, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0 }}>
-            {filters.map(f => <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500, border: "none", cursor: "pointer", whiteSpace: "nowrap", fontFamily: dm, background: filter === f ? C.ink : C.pill, color: filter === f ? "#fff" : C.ink2 }}>{f}</button>)}
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 12px" }}>
-            {defisData.map(d => <DefiCard key={d.id} d={d} onOpen={id => { setSelectedId(id); setScreen("detail"); }} onParticipe={id => { setSelectedId(id); setScreen("participe"); }} />)}
-          </div>
-        </>}
-
-        {screen === "detail" && <DetailScreen d={d} onBack={() => setScreen("list")} onParticipe={() => setScreen("participe")} />}
-
-        {screen === "participe" && <ParticipeScreen d={d} onBack={() => setScreen("detail")} onPublish={() => setScreen("success")} />}
-
-        {screen === "success" && <SuccessScreen d={d} onBack={() => setScreen("list")} />}
-
-        <BottomNav setPage={setPage} />
-    </div>
-  );
-}
+          <div style={{ display: "flex", gap: 6, padding: "0 20px 12px", overflowX: "auto", flexShrink: 0

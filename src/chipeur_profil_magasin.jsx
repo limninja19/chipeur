@@ -15,12 +15,12 @@ function MagHeader() {
     <div style={{ background: C.pro, padding: "16px 16px 12px", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>👗</div>
-        <div><div style={{ fontFamily: syne, fontSize: 17, fontWeight: 800, color: "#fff" }}>Atelier Mona</div><span style={{ display: "inline-block", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 8, background: "#FFF3E0", color: "#E65100", marginTop: 3 }}>★ Premium</span></div>
+        <div><div style={{ fontFamily: syne, fontSize: 17, fontWeight: 700, color: "#fff" }}>Atelier Mona</div><span style={{ display: "inline-block", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 8, background: "#FFF3E0", color: "#E65100", marginTop: 3 }}>★ Premium</span></div>
       </div>
       <div style={{ display: "flex", marginTop: 12 }}>
         {[{ v: "1 284", l: "Vues ce mois" }, { v: "47", l: "Intéressés" }, { v: "12", l: "Posts" }, { v: "3", l: "Remises actives" }].map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? "1px solid rgba(255,255,255,0.15)" : "none" }}>
-            <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 800, color: "#fff" }}>{s.v}</div>
+            <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 700, color: "#fff" }}>{s.v}</div>
             <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>{s.l}</div>
           </div>
         ))}
@@ -45,7 +45,7 @@ function TabDashboard({ onEnrich }) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
       {[{ v: "284", l: "Vues aujourd'hui", d: "↑ +18% vs hier" }, { v: "12", l: "Nouveaux intéressés", d: "↑ +3 vs hier" }].map((r, i) => (
         <div key={i} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "10px 12px" }}>
-          <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 800, color: C.ink }}>{r.v}</div>
+          <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: C.ink }}>{r.v}</div>
           <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{r.l}</div>
           <div style={{ fontSize: 10, fontWeight: 600, color: C.pro, marginTop: 2 }}>{r.d}</div>
         </div>
@@ -100,7 +100,7 @@ function TabCreer() {
     {published ? (
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-        <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, color: C.ink, marginBottom: 6 }}>{mode === "remise" ? "Remise publiée !" : "Défi lancé !"}</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 6 }}>{mode === "remise" ? "Remise publiée !" : "Défi lancé !"}</div>
         <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16 }}>{mode === "remise" ? "Les voisins ciblés vont recevoir ta réduction." : "Ton défi apparaît dans la page Défis."}</div>
         <button onClick={() => setPublished(false)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: "10px 24px", fontSize: 13, fontWeight: 600, fontFamily: dm, cursor: "pointer" }}>Créer un autre</button>
       </div>
@@ -130,7 +130,7 @@ function TabCreer() {
       <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: 10, display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <div style={{ width: 36, height: 36, borderRadius: 10, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>👗</div>
         <div style={{ flex: 1 }}><div style={{ fontSize: 9, fontWeight: 600, color: "#1565C0", background: "#E8F4FD", display: "inline-block", padding: "2px 6px", borderRadius: 6, marginBottom: 3 }}>Ciblée pour toi</div><div style={{ fontSize: 12, fontWeight: 600 }}>Atelier Mona</div><div style={{ fontSize: 10, color: C.ink2 }}>Collection lin -15%</div></div>
-        <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 800, color: C.accent }}>-15%</div>
+        <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: C.accent }}>-15%</div>
       </div>
       <button onClick={() => setPublished(true)} style={{ width: "100%", padding: 12, borderRadius: 14, background: C.accent, color: "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>Publier la remise</button>
     </> : <>
@@ -161,7 +161,7 @@ function TabCreer() {
 function TabPlan() {
   return <>
     <div style={{ background: C.pro, borderRadius: 18, padding: 16, marginBottom: 10 }}>
-      <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 800, color: "#fff" }}>Plan Premium</div>
+      <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 700, color: "#fff" }}>Plan Premium</div>
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>59,90€ / mois</div>
       <div style={{ fontSize: 11, color: C.accent2, marginTop: 6 }}>Renouvellement le 25 mai 2026</div>
     </div>
@@ -190,7 +190,7 @@ function EnrichScreen({ onBack }) {
         {published ? (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
-            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, color: C.ink, marginBottom: 6 }}>Post enrichi !</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 6 }}>Post enrichi !</div>
             <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16 }}>Le Pro Layer est visible sur le post de Camille.</div>
             <button onClick={onBack} style={{ background: C.pro, color: "#fff", border: "none", borderRadius: 14, padding: "10px 24px", fontSize: 13, fontWeight: 600, fontFamily: dm, cursor: "pointer" }}>Retour au dashboard</button>
           </div>
@@ -208,7 +208,7 @@ function EnrichScreen({ onBack }) {
           <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, marginTop: 4 }}>Aperçu Pro Layer</div>
           <div style={{ background: C.proBg, borderRadius: 12, padding: 10, border: "1px solid rgba(10,61,46,0.12)", marginBottom: 12 }}>
             <div style={{ fontSize: 10, color: C.pro, fontWeight: 600, marginBottom: 4 }}>★ Enrichi par Atelier Mona</div>
-            <div style={{ fontFamily: syne, fontSize: 15, fontWeight: 800, color: C.pro }}>89€</div>
+            <div style={{ fontFamily: syne, fontSize: 15, fontWeight: 700, color: C.pro }}>89€</div>
             <div style={{ fontSize: 11, color: C.pro, opacity: 0.8 }}>XS · S · M · L</div>
             <div style={{ fontSize: 10, color: C.pro, opacity: 0.7, marginTop: 3 }}>Lin 100% naturel, coupe ample, 3 coloris</div>
           </div>

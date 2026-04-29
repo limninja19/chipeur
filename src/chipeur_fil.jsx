@@ -38,7 +38,7 @@ function AppHeader() {
           <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
         </svg>
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
           <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 7, letterSpacing: 2, color: C.accent, textTransform: "uppercase", lineHeight: 1.2 }}>
@@ -96,14 +96,14 @@ function DefiCard({ d, setPage }) {
           <div style={{
             background: "rgba(255,255,255,0.22)", backdropFilter: "blur(4px)",
             borderRadius: 8, padding: "2px 8px",
-            fontSize: 9, fontWeight: 800, color: "#fff", letterSpacing: 0.3,
+            fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: 0.3,
           }}>⚡ +{d.xp} XP</div>
           <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>⏱ {d.timeLeft}</div>
         </div>
 
         {/* Titre */}
         <div style={{
-          fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800,
+          fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700,
           color: "#fff", lineHeight: 1.2, marginBottom: 10,
         }}>{d.title}</div>
 
@@ -334,7 +334,7 @@ function PostVitrine() {
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 800, color: C.pro }}>45€</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: C.pro }}>45€</div>
           <div style={{ fontSize: 10, color: C.pro, opacity: 0.8 }}>S · M · L</div>
         </div>
         <button style={{
@@ -413,56 +413,4 @@ function BottomNav({ active, onNavigate, onFab }) {
           return (
             <div key="fab" onClick={onFab} style={{
               width: 50, height: 50, borderRadius: 25, background: C.accent,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 22, color: "#fff", marginTop: -20, flexShrink: 0, cursor: "pointer",
-            }}>+</div>
-          );
-        }
-        const isActive = active === item.id;
-        return (
-          <div key={item.id} onClick={() => onNavigate(item.id)} style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 3, fontSize: 9, color: isActive ? C.accent : C.ink2, cursor: "pointer",
-          }}>
-            <div style={{ fontSize: 18 }}>{item.icon}</div>
-            <span>{item.label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── MAIN ───
-export default function ChipeurFil({ setPage }) {
-  const [activeTab, setActiveTab] = useState("Tout");
-  const [fabOpen, setFabOpen] = useState(false);
-
-  return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      background: C.bg, overflow: "hidden",
-      fontFamily: "'DM Sans', sans-serif", color: C.ink,
-      display: "flex", flexDirection: "column",
-    }}>
-        <AppHeader />
-        <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
-        <BandeauDefis setPage={setPage} />
-
-        {/* Feed scroll area */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
-          <PostVoisin setPage={setPage} />
-        </div>
-
-        {/* FAB overlay */}
-        <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />
-
-        {/* Bottom nav */}
-       <BottomNav
-          active="fil"
-          onNavigate={setPage}
-          onFab={() => setPage("nouveau")}
-      />
-    </div>
-  );
-}
+              display: "flex", alignItems: "center", justifyContent: "cente

@@ -99,7 +99,7 @@ function Podium({ voisins, onOpen }) {
           return (
             <div key={v.id} onClick={() => onOpen(v.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <div style={{ width: s.w, height: s.w, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: s.fs, border: `2px solid ${s.rc}`, background: v.bg }}>{v.avatar}</div>
-              <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 11, color: s.rc }}>{s.rank}</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: s.rc }}>{s.rank}</div>
               <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", textAlign: "center", maxWidth: 60 }}>{v.name}</div>
               <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)" }}>{v.xp} XP</div>
             </div>
@@ -184,9 +184,9 @@ function ExtProfile({ v, followed, onToggleFollow, onBack }) {
         <div style={{ padding: "14px 18px 12px", display: "flex", alignItems: "flex-start", gap: 14 }}>
           <div style={{ width: 60, height: 60, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, border: `2.5px solid ${C.gold}`, flexShrink: 0, background: v.bg }}>{v.avatar}</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, color: C.ink }}>{v.name}</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink }}>{v.name}</div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 5, height: 5, background: C.accent, borderRadius: "50%" }} />Nancy, Grand Est</div>
-            <div style={{ display: "inline-block", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 9px", borderRadius: 8, marginTop: 5 }}>{v.level}</div>
+            <div style={{ display: "inline-block", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8, marginTop: 5 }}>{v.level}</div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 5, lineHeight: 1.4 }}>{v.bio}</div>
           </div>
         </div>
@@ -195,7 +195,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack }) {
             <div key={i} style={{ display: "contents" }}>
               {i > 0 && <div style={{ width: 1, background: C.border, margin: "3px 0" }} />}
               <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 17, color: s.color || C.ink }}>{s.n}</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: s.color || C.ink }}>{s.n}</div>
                 <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{s.l}</div>
               </div>
             </div>
@@ -266,7 +266,7 @@ export default function ChipeurPageVoisins({ setPage }) {
 
         {screen === "list" && <>
           <div style={{ padding: "14px 18px 0", flexShrink: 0 }}>
-            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 20, color: C.ink }}>Voisins 🏘️</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Voisins 🏘️</div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, marginBottom: 10 }}>Les actifs de Nancy ce mois</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, borderRadius: 14, padding: "9px 14px", border: `1px solid ${C.border}`, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: C.ink2 }}>🔍</span>

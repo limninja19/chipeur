@@ -119,7 +119,7 @@ function ScreenInscription({ onNext }) {
       display: "flex", flexDirection: "column",
     }}>
       <div style={{
-        fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 26,
+        fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 26,
         color: COLORS.ink, textAlign: "center", marginBottom: 6,
       }}>
         chi<span style={{ color: COLORS.accent }}>p</span>eur
@@ -213,7 +213,7 @@ function ScreenChoixCompte({ onChoose }) {
     <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 32px", display: "flex", flexDirection: "column" }}>
       <StepDots current={1} />
       <div style={{
-        fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20,
+        fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20,
         color: COLORS.ink, marginBottom: 6,
       }}>Tu es plutôt…</div>
       <div style={{
@@ -312,7 +312,7 @@ function ScreenMagasin({ onBack, onValidate }) {
       }}>
         <StepDots current={2} />
         <div style={{
-          fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18,
+          fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18,
           color: COLORS.ink, marginBottom: 4,
         }}>Ton enseigne</div>
         <div style={{
@@ -403,7 +403,7 @@ function ScreenMagasin({ onBack, onValidate }) {
                   fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: COLORS.ink,
                 }}>{plan.name}</div>
                 <div style={{
-                  fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 18, color: COLORS.accent,
+                  fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18, color: COLORS.accent,
                 }}>
                   {plan.price}{" "}
                   <span style={{
@@ -453,7 +453,7 @@ function ScreenSuccess({ accountType, onRestart }) {
         fontSize: 32, color: "#fff",
       }}>✓</div>
       <div style={{
-        fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: COLORS.ink,
+        fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 22, color: COLORS.ink,
       }}>Bienvenue sur Chipeur !</div>
       <div style={{
         fontSize: 14, color: COLORS.ink2, lineHeight: 1.6,

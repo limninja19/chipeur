@@ -183,7 +183,7 @@ function Screen1({ onSuccess, isLogin, setIsLogin }) {
           <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
         </svg>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 34, lineHeight: 1, letterSpacing: -1, color: "#1A1A2E" }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 34, lineHeight: 1, letterSpacing: -1, color: "#1A1A2E" }}>
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
           <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 8, letterSpacing: 3, color: C.accent, textTransform: "uppercase" }}>
@@ -263,7 +263,7 @@ function Screen2({ onChoose }) {
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "28px 20px 40px", display: "flex", flexDirection: "column" }}>
       <StepDots step={1} />
-      <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 20, color: C.ink, marginBottom: 6 }}>Tu es plutôt…</div>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink, marginBottom: 6 }}>Tu es plutôt…</div>
       <div style={{ fontSize: 13, color: C.ink2, marginBottom: 24, lineHeight: 1.5 }}>
         Ce choix détermine comment tu utilises Chipeur. Tu ne pourras pas le changer ensuite.
       </div>
@@ -347,7 +347,7 @@ function Screen3({ onBack, onSuccess }) {
       </div>
       <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column" }}>
         <StepDots step={2} />
-        <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, color: C.ink, marginBottom: 4 }}>Ton enseigne</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 4 }}>Ton enseigne</div>
         <div style={{ fontSize: 12, color: C.ink2, marginBottom: 18 }}>Ces infos apparaîtront sur ta page Vitrine publique.</div>
 
         <ErrorMsg msg={error} />
@@ -393,7 +393,7 @@ function Screen3({ onBack, onSuccess }) {
               )}
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
                 <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>{p.name}</div>
-                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, color: C.accent }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.accent }}>
                   {p.price} <span style={{ fontSize: 11, fontWeight: 400, color: C.ink2, fontFamily: dm }}>/mois</span>
                 </div>
               </div>
@@ -426,7 +426,7 @@ function Screen4({ type, onGo }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px", textAlign: "center", gap: 16 }}>
       <div style={{ width: 72, height: 72, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "#fff" }}>✓</div>
-      <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 22, color: C.ink }}>Bienvenue sur Chipeur !</div>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: C.ink }}>Bienvenue sur Chipeur !</div>
       <div style={{ fontSize: 14, color: C.ink2, lineHeight: 1.6, maxWidth: 280 }}>
         {isMagasin
           ? "Ta vitrine est prête. Tu peux maintenant présenter ton enseigne aux voisins du quartier."

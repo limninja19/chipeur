@@ -110,7 +110,7 @@ function SortieCard({ data }) {
           display: "flex", flexDirection: "column", alignItems: "center",
           justifyContent: "center", padding: "12px 6px",
         }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{data.day}</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{data.day}</div>
           <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{data.month}</div>
         </div>
         <div style={{ flex: 1, padding: "10px 12px" }}>
@@ -119,7 +119,7 @@ function SortieCard({ data }) {
             padding: "2px 8px", borderRadius: 8, marginBottom: 4,
             background: ts.bg, color: ts.color,
           }}>{data.type}</span>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: C.ink, lineHeight: 1.2, marginBottom: 3 }}>{data.title}</div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.2, marginBottom: 3 }}>{data.title}</div>
           <div style={{ fontSize: 11, color: C.ink2, display: "flex", alignItems: "center", gap: 3 }}>
             <span style={{ fontSize: 11 }}>📍</span>{data.location}
           </div>
@@ -290,7 +290,7 @@ export default function ChipeurSorties({ setPage }) {
 
         {/* Page header */}
         <div style={{ padding: "4px 16px 8px", flexShrink: 0 }}>
-          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, margin: 0 }}>Sorties</h1>
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, margin: 0 }}>Sorties</h1>
           <p style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>Événements dans ton quartier</p>
         </div>
 

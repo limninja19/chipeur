@@ -32,14 +32,14 @@ function DetailScreen({ item, setPage }) {
       </div>
       <div style={{ height: 110, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0, background: item.logoBg }}>
         <div style={{ fontSize: 32, marginBottom: 6 }}>{item.emoji}</div>
-        <div style={{ fontFamily: syne, fontSize: 16, fontWeight: 800, color: C.pro }}>{item.name}</div>
+        <div style={{ fontFamily: syne, fontSize: 16, fontWeight: 700, color: C.pro }}>{item.name}</div>
         <div style={{ fontSize: 11, color: C.pro, opacity: 0.75, marginTop: 2 }}>Réduction ciblée · {item.amount}</div>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: 14 }}>
         <div style={{ fontSize: 12, color: C.ink2, marginBottom: 12, lineHeight: 1.5 }}>Offre exclusive envoyée car tu es intéressée par leurs créations. Valable sur toute la collection printemps-été.</div>
         <div style={{ background: C.bg, border: "1.5px dashed rgba(26,23,20,0.2)", borderRadius: 16, padding: 16, textAlign: "center", marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Ton code promo</div>
-          <div style={{ fontFamily: syne, fontSize: 28, fontWeight: 800, color: C.ink, letterSpacing: 5, marginBottom: 10 }}>{item.code}</div>
+          <div style={{ fontFamily: syne, fontSize: 28, fontWeight: 700, color: C.ink, letterSpacing: 5, marginBottom: 10 }}>{item.code}</div>
           <button onClick={() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }} style={{ width: "100%", padding: 11, borderRadius: 12, background: copied ? C.pro : C.accent, color: "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", transition: "background 0.3s" }}>{copied ? "Code copié !" : "Copier le code"}</button>
         </div>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 14 }}>
@@ -71,7 +71,7 @@ export default function MesReductions({ setPage }) {
 
         {screen === "list" && <>
           <div style={{ padding: "6px 16px 10px", flexShrink: 0 }}>
-            <h1 style={{ fontFamily: syne, fontSize: 20, fontWeight: 800, margin: 0 }}>Mes réductions</h1>
+            <h1 style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, margin: 0 }}>Mes réductions</h1>
             <p style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>Offres envoyées par les commerces du quartier</p>
           </div>
           <div style={{ display: "flex", gap: 6, padding: "0 12px 8px", overflowX: "auto", flexShrink: 0 }}>
@@ -89,7 +89,7 @@ export default function MesReductions({ setPage }) {
                       <div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{r.name}</div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
-                      <div style={{ fontFamily: syne, fontSize: 26, fontWeight: 800, color: C.accent, lineHeight: 1 }}>{r.amount}</div>
+                      <div style={{ fontFamily: syne, fontSize: 26, fontWeight: 700, color: C.accent, lineHeight: 1 }}>{r.amount}</div>
                       <div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{r.expiry}</div>
                     </div>
                   </div>
@@ -109,7 +109,7 @@ export default function MesReductions({ setPage }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px" }}>
                     <div style={{ width: 42, height: 42, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, background: r.logoBg }}>{r.emoji}</div>
                     <div style={{ flex: 1 }}><span style={{ display: "inline-block", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 8, marginBottom: 3, background: r.tagBg, color: r.tagColor }}>{r.tag}</span><div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{r.name}</div></div>
-                    <div style={{ textAlign: "right" }}><div style={{ fontFamily: syne, fontSize: 26, fontWeight: 800, color: C.ink2, lineHeight: 1 }}>{r.amount}</div><div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{r.expiry}</div></div>
+                    <div style={{ textAlign: "right" }}><div style={{ fontFamily: syne, fontSize: 26, fontWeight: 700, color: C.ink2, lineHeight: 1 }}>{r.amount}</div><div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{r.expiry}</div></div>
                   </div>
                 </div>
               ))}

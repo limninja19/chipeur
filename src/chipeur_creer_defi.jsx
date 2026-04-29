@@ -106,7 +106,7 @@ export default function ChipeurCreerDefi() {
               <div style={{ borderRadius: 12, padding: "10px 12px", background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ fontSize: 22 }}>{icone}</div>
                 <div>
-                  <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 800, color: "#fff" }}>{titre}</div>
+                  <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 700, color: "#fff" }}>{titre}</div>
                   <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", marginTop: 1 }}>Sponsorisé par Atelier Mona · {objectif} participants</div>
                 </div>
               </div>
@@ -130,7 +130,7 @@ export default function ChipeurCreerDefi() {
         {screen === "success" && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center", gap: 14 }}>
             <div style={{ fontSize: 56 }}>🚀</div>
-            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 20, color: C.ink }}>Défi lancé !</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Défi lancé !</div>
             <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6 }}>Ton défi "<strong>{titre}</strong>" est visible dans la page Défis avec ton logo et le badge sponsorisé.</div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.proBg, color: C.pro, fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>✓ Objectif : {objectif} participants</div>
             <button onClick={() => setScreen("form")} style={{ background: C.pro, color: "#fff", border: "none", borderRadius: 16, padding: "13px 28px", fontSize: 14, fontWeight: 600, fontFamily: dm, cursor: "pointer", marginTop: 6 }}>Retour au dashboard</button>
