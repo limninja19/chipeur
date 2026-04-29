@@ -14,12 +14,12 @@ const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
 const miniDefisInit = [
-  { emoji: "🐾", q: "Mon animal de compagnie", sugs: ["Un chien", "Un chat", "Pas d'animal", "Plusieurs !"], a: "Milo, mon golden 🐶", done: true, hasPhoto: true, photoBg: "#E8F4FD", photoEmoji: "🐶" },
-  { emoji: "📍", q: "Mon endroit préféré", sugs: ["Place Stanislas", "Un café du coin", "La campagne", "Mon canapé"], a: "Place Stanislas le dimanche", done: true },
-  { emoji: "🏪", q: "Mon magasin préféré", sugs: ["Secondhand Co.", "Atelier Mona", "TrendBox", "Autre"], a: "Secondhand Co. — sans hésiter", done: true },
-  { emoji: "🍽️", q: "Mon resto du quartier", sugs: ["Maison Fuji", "Un kebab", "Je cuisine !", "Livraison only"], a: "Maison Fuji, les ramen !", done: true },
-  { emoji: "🎵", q: "Ma playlist du moment", sugs: ["R&B / Soul", "Indie / Rock", "Hip-hop", "Classique"], done: false },
-  { emoji: "✨", q: "Ma pépite mode du mois", sugs: ["Une veste vintage", "Des sneakers", "Un accessoire", "Une collab locale"], done: false },
+  { emoji: "🐾", q: "Mon animal de compagnie", sugs: ["Un chien", "Un chat", "Pas d'animal", "Plusieurs !"] },
+  { emoji: "📍", q: "Mon endroit préféré", sugs: ["Le marché", "Un café du coin", "La forêt", "Mon canapé"] },
+  { emoji: "🏪", q: "Mon magasin préféré du quartier", sugs: ["Une boutique mode", "Un commerce local", "Le marché", "Autre"] },
+  { emoji: "🍽️", q: "Mon resto préféré", sugs: ["Un resto local", "Un kebab", "Je cuisine !", "Livraison only"] },
+  { emoji: "🎵", q: "Ma playlist du moment", sugs: ["R&B / Soul", "Indie / Rock", "Hip-hop", "Classique"] },
+  { emoji: "✨", q: "Ma pépite mode du mois", sugs: ["Une veste vintage", "Des sneakers", "Un accessoire", "Une collab locale"] },
 ];
 
 
@@ -598,6 +598,15 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
   const [miniDefiIdx, setMiniDefiIdx] = useState(null);
   const [univers, setUnivers] = useState(miniDefisInit);
   const [posts, setPosts] = useState([]);
+
+  // Charger l'univers sauvegardé depuis le profil
+  useEffect(() => {
+    if (!profile?.univers?.length) return;
+    setUnivers(miniDefisInit.map((defi, i) => {
+      const saved = profile.univers[i];
+      return saved ? { ...defi, done: saved.done || false, a: saved.a || "", photoUrl: saved.photoUrl || null, xp: saved.xp || 0 } : defi;
+    }));
+  }, [profile]);
   const [postsLoading, setPostsLoading] = useState(true);
   const postCount = posts.length;
 
@@ -653,10 +662,14 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
           defi={univers[miniDefiIdx]}
           user={user}
           onBack={() => { setScreen("profil"); setActiveTab("Mon univers"); }}
-          onSave={(val, photoUrl, xp) => {
-            setUnivers(prev => prev.map((it, i) => i === miniDefiIdx
+          onSave={async (val, photoUrl, xp) => {
+            const updated = univers.map((it, i) => i === miniDefiIdx
               ? { ...it, done: true, a: val || it.a, photoUrl: photoUrl || it.photoUrl, xp: (it.xp || 0) + (xp || 0) }
-              : it));
+              : it);
+            setUnivers(updated);
+            // Sauvegarder dans Supabase
+            const toSave = updated.map(it => ({ done: it.done || false, a: it.a || "", photoUrl: it.photoUrl || null, xp: it.xp || 0 }));
+            await updateProfile({ univers: toSave });
             setScreen("profil"); setActiveTab("Mon univers"); setMiniDefiIdx(null);
           }}
         />
