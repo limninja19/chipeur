@@ -295,7 +295,7 @@ export default function ChipeurCommerces({ setPage }) {
 
           {/* Feed scrollable */}
           <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 12px" }}>
-            {featured && <FeaturedCard com={featured} onClick={() => setPage("profilMagasin")} />}
+            {featured && <FeaturedCard com={featured} onClick={() => { setSelectedCom(featured); setScreen("vitrine"); }} />}
             {others.map((c, i) => (
               <ComCard key={i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
             ))}
