@@ -285,7 +285,8 @@ export default function ChipeurPageVoisins({ setPage, user }) {
         // Pour chaque profil, compter ses posts
         const withCounts = await Promise.all(data.map(async (p, i) => {
           const { count } = await supabase.from("posts").select("*", { count: "exact", head: true }).eq("author_id", p.id);
-          const xp = (count || 0) * 10;
+          const universXp = (p.univers || []).reduce((sum, it) => sum + (it?.xp || 0), 0);
+          const xp = (count || 0) * 10 + universXp;
           const lvl = getLevel(xp);
           return {
             ...p,

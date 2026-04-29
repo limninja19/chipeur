@@ -577,8 +577,7 @@ export default function Fil({ setPage, profile }) {
       <VilleToggle filtreVille={filtreVille} setFiltreVille={setFiltreVille} quartier={profile?.quartier} />
       <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
         <BandeauDefis setPage={setPage} />
-        <div style={{ textAlign: "center", fontSize: 9, color: C.ink2, opacity: 0.4, marginBottom: 4 }}>v2.1 — {new Date().toLocaleTimeString("fr-FR")}</div>
-        {fetchError && (
+{fetchError && (
           <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 12, padding: "12px 14px", margin: "8px 0", fontSize: 12, color: "#C0392B" }}>
             ⚠️ Erreur : {fetchError}
           </div>

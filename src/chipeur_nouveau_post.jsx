@@ -227,31 +227,37 @@ function FormDecouverte({ content, onChange, onPhotoSelect }) {
 }
 
 // ─── FORM: LIEU ───
-function FormLieu() {
+function FormLieu({ fields, onChange, onPhotoSelect }) {
   const inputStyle = {
     width: "100%", padding: "10px 12px", borderRadius: 12,
     border: `1.5px solid ${C.border}`, fontFamily: "'DM Sans', sans-serif",
     fontSize: 12, color: C.ink, background: C.card, outline: "none", boxSizing: "border-box",
   };
+  const LIEU_TYPES = ["🌳 Parc", "🌊 Bord de l'eau", "🌿 Nature", "☕ Café caché", "🛍️ Adresse mode", "📸 Spot photo", "🏡 Quartier"];
   return (
     <>
-      <PhotoZone hasPhotoDefault={false} emoji="📍" />
+      <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-lieu" />
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Nom du lieu</label>
-        <input type="text" placeholder="ex : Parc des Buttes, bord du canal…" style={inputStyle} />
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Nom du lieu *</label>
+        <input type="text" value={fields.nom} onChange={e => onChange("nom", e.target.value)} placeholder="ex : Parc des Buttes, bord du canal…" style={inputStyle} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Pourquoi tu l'aimes ?</label>
-        <textarea placeholder="Raconte ce qui rend cet endroit spécial…" style={{ ...inputStyle, resize: "none", height: 80, lineHeight: 1.5 }} />
+        <textarea value={fields.desc} onChange={e => onChange("desc", e.target.value)} placeholder="Raconte ce qui rend cet endroit spécial…" style={{ ...inputStyle, resize: "none", height: 80, lineHeight: 1.5 }} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Type de lieu</label>
-        <TagPills tags={[
-          { label: "🌳 Parc", default: true }, { label: "🌊 Bord de l'eau", default: false },
-          { label: "🌿 Nature", default: false }, { label: "☕ Café caché", default: false },
-          { label: "🛍️ Adresse mode", default: false }, { label: "📸 Spot photo", default: false },
-          { label: "🏡 Quartier", default: false },
-        ]} />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+          {LIEU_TYPES.map(t => (
+            <button key={t} onClick={() => onChange("type", fields.type === t ? "" : t)} style={{
+              fontSize: 11, padding: "5px 12px", borderRadius: 20,
+              border: `1.5px solid ${fields.type === t ? C.ink : C.border}`,
+              background: fields.type === t ? C.ink : C.card,
+              color: fields.type === t ? "#fff" : C.ink2,
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s",
+            }}>{t}</button>
+          ))}
+        </div>
       </div>
     </>
   );
@@ -310,13 +316,13 @@ function FormSortie({ fields, onChange }) {
 }
 
 // ─── FORM: BON PLAN ───
-function FormBonPlan() {
+function FormBonPlan({ content, onChange, onPhotoSelect }) {
   return (
     <>
-      <PhotoZone hasPhotoDefault={false} />
+      <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-bonplan" />
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Ton conseil ou adresse</label>
-        <textarea placeholder="Partage ton bon plan avec les voisins..." style={{
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Ton conseil ou adresse *</label>
+        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Partage ton bon plan avec les voisins..." style={{
           width: "100%", padding: "10px 12px", borderRadius: 12,
           border: `1.5px solid ${C.border}`, fontFamily: "'DM Sans', sans-serif",
           fontSize: 12, color: C.ink, background: C.card, outline: "none",
@@ -381,6 +387,11 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   // Sortie fields
   const [sortieFields, setSortieFields] = useState({ title: "", date: "", time: "", lieu: "", desc: "", type: "" });
   const updateSortieField = (key, val) => setSortieFields(prev => ({ ...prev, [key]: val }));
+  // Lieu fields
+  const [lieuFields, setLieuFields] = useState({ nom: "", desc: "", type: "" });
+  const updateLieuField = (key, val) => setLieuFields(prev => ({ ...prev, [key]: val }));
+  // Photo pour lieu (séparée de la photo post normal)
+  const [lieuPhotoFile, setLieuPhotoFile] = useState(null);
 
   const types = [
     { id: "decouverte", icon: "🛍️", name: "Trouvaille", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
@@ -421,7 +432,41 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       return;
     }
 
-    // ── CAS POST (trouvaille, lieu, bon plan) ──
+    // ── CAS LIEU ──
+    if (selectedType === "lieu") {
+      if (!lieuFields.nom.trim() && !lieuFields.desc.trim()) {
+        setPublishing(false);
+        setPublishError("Ajoute un nom de lieu ou une description !");
+        return;
+      }
+      const nomLieu = lieuFields.nom.trim();
+      const descLieu = lieuFields.desc.trim();
+      const textContent = [nomLieu, lieuFields.type, descLieu].filter(Boolean).join(" — ");
+      let image_url = null;
+      if (lieuPhotoFile) {
+        const ext = (lieuPhotoFile.name.split(".").pop() || "jpg").toLowerCase();
+        const safeExt = ["jpg","jpeg","png","gif","webp"].includes(ext) ? ext : "jpg";
+        const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
+        const { error: upErr } = await supabase.storage.from("images").upload(path, lieuPhotoFile, { contentType: lieuPhotoFile.type || "image/jpeg", upsert: false });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+          image_url = urlData.publicUrl;
+        }
+      }
+      const { error } = await supabase.from("posts").insert({
+        author_id: user.id,
+        content: textContent,
+        image_url,
+        location: profile?.quartier || "Saint-Dié-des-Vosges",
+        tags: lieuFields.type ? [lieuFields.type] : [],
+      });
+      setPublishing(false);
+      if (error) { setPublishError("Erreur Supabase : " + error.message); return; }
+      setScreen("success");
+      return;
+    }
+
+    // ── CAS POST (trouvaille, bon plan) ──
     if (!content.trim()) { setPublishing(false); setPublishError("Écris quelque chose avant de publier !"); return; }
 
     let image_url = null;
@@ -458,9 +503,9 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
 
   const formMap = {
     decouverte: <FormDecouverte content={content} onChange={setContent} onPhotoSelect={setPhotoFile} />,
-    lieu: <FormLieu />,
+    lieu: <FormLieu fields={lieuFields} onChange={updateLieuField} onPhotoSelect={setLieuPhotoFile} />,
     sortie: <FormSortie fields={sortieFields} onChange={updateSortieField} />,
-    bonplan: <FormBonPlan />,
+    bonplan: <FormBonPlan content={content} onChange={setContent} onPhotoSelect={setPhotoFile} />,
   };
 
   return (
