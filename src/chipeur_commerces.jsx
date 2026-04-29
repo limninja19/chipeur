@@ -5,10 +5,6 @@ const C = {
   accent: "#FF5733", pro: "#0A3D2E", proBg: "#EBF5F0",
   pill: "#EDEBE8", border: "rgba(26,23,20,0.08)",
 };
-const fontLink = document.createElement("link");
-fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
-fontLink.rel = "stylesheet";
-if (!document.querySelector(`link[href="${fontLink.href}"]`)) document.head.appendChild(fontLink);
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 

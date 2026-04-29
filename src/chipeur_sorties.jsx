@@ -7,10 +7,6 @@ const C = {
   pill: "#EDEBE8", border: "rgba(26,23,20,0.08)",
 };
 
-const fontLink = document.createElement("link");
-fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
-fontLink.rel = "stylesheet";
-if (!document.querySelector(`link[href="${fontLink.href}"]`)) document.head.appendChild(fontLink);
 
 // ─── STATUS BAR ───
 function StatusBar() {
