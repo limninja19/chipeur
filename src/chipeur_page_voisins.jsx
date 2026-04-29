@@ -168,96 +168,182 @@ function VoisinCard({ v, followed, onToggleFollow, onOpen }) {
   );
 }
 
-function ExtProfile({ v, followed, onToggleFollow, onBack }) {
-  const [tab, setTab] = useState("univers");
+// Questions univers (même ordre que dans chipeur_profil_voisin_1.jsx)
+const UNIVERS_DEFS = [
+  { emoji: "🐾", q: "Animal de compagnie" },
+  { emoji: "📍", q: "Endroit préféré" },
+  { emoji: "🏪", q: "Magasin préféré du quartier" },
+  { emoji: "🍽️", q: "Resto préféré" },
+  { emoji: "🎵", q: "Playlist du moment" },
+  { emoji: "✨", q: "Pépite mode du mois" },
+];
 
-  const univers = [
-    { emoji: "🐾", q: "Animal de compagnie", a: "Luna, ma chatte tigre 🐱" },
-    { emoji: "📍", q: "Endroit préféré", a: "Le marché du samedi matin" },
-    { emoji: "🏪", q: "Magasin préféré", a: "Atelier Mona, sans hésiter !" },
-    { emoji: "🍽️", q: "Resto du quartier", a: "Le Petit Zinc, le dimanche" },
-    { emoji: "🎵", q: "Playlist du moment", a: "R&B / Soul – Erykah Badu" },
-    { emoji: "✨", q: "Pépite mode du mois", a: "Un trench camel chiné 5€" },
-  ];
-  const posts = [
-    { emoji: "👗", bg: "#FEF3E0", r: "🔥 22" }, { emoji: "🧥", bg: "#F7EEF7", r: "💛 15" },
-    { emoji: "👠", bg: "#F0EBE3", r: "🔥 11" }, { emoji: "🕶️", bg: "#EBF5F0", r: "👀 8" },
-    { emoji: "🧣", bg: "#FFF3E0", r: "💛 6" }, { emoji: "👜", bg: "#E8F4FD", r: "🤩 5" },
-  ];
-  const trophees = ["✨ 1ère Pépite", "🏆 Top 1 du mois", "🔥 Série 14 jours", "👑 Légende Locale", "🎯 5 Défis remportés"];
+function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking }) {
+  const [tab, setTab] = useState("univers");
+  const [vPosts, setVPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+
+  // Charger les vrais posts de ce voisin quand on ouvre son profil
+  useEffect(() => {
+    if (!v?.id) return;
+    setPostsLoading(true);
+    supabase.from("posts").select("*").eq("author_id", v.id).order("created_at", { ascending: false })
+      .then(({ data }) => { setVPosts(data || []); setPostsLoading(false); });
+  }, [v?.id]);
+
+  // Univers réel depuis v.univers (JSONB Supabase)
+  const univers = UNIVERS_DEFS.map((def, i) => {
+    const saved = v.univers?.[i];
+    return { ...def, a: saved?.a || null, photoUrl: saved?.photoUrl || null, done: saved?.done || false };
+  });
+
+  const universDone = univers.filter(u => u.done);
+
+  // Trophées calculés depuis les vraies données
+  const trophees = [];
+  if (v.xp >= 300) trophees.push("👑 Légende Locale");
+  if (v.xp >= 150) trophees.push("✨ Pépite du Quartier");
+  if (v.xp >= 50) trophees.push("🗺️ Explorateur·trice");
+  if (v.postCount >= 1) trophees.push("📸 1er post publié");
+  if (universDone.length >= 3) trophees.push("🌟 Univers en route");
+  if (universDone.length === 6) trophees.push("🏆 Univers complet");
+  if (trophees.length === 0) trophees.push("🌱 Tout juste arrivé·e");
+
+  // Rang dans le classement
+  const rang = voisinsRanking ? voisinsRanking.findIndex(v2 => v2.id === v.id) + 1 : null;
 
   const tabs = ["univers", "posts", "trophees"];
-  const tabLabels = { univers: "Son univers", posts: "Posts", trophees: "Trophées" };
+  const tabLabels = { univers: "Son univers", posts: `Posts (${v.postCount || 0})`, trophees: "Trophées" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Header */}
       <div style={{ background: C.card, flexShrink: 0, borderBottom: `1px solid ${C.border}` }}>
         <div style={{ padding: "12px 16px 0" }}>
           <button onClick={onBack} style={{ width: 32, height: 32, background: C.pill, borderRadius: "50%", border: "none", fontSize: 15, cursor: "pointer" }}>‹</button>
         </div>
-        <div style={{ padding: "14px 18px 12px", display: "flex", alignItems: "flex-start", gap: 14 }}>
-          <div style={{ width: 60, height: 60, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, border: `2.5px solid ${C.gold}`, flexShrink: 0, background: v.bg }}>{v.avatar}</div>
+        <div style={{ padding: "10px 18px 10px", display: "flex", alignItems: "flex-start", gap: 14 }}>
+          {/* Avatar */}
+          <div style={{ width: 60, height: 60, borderRadius: "50%", border: `2.5px solid ${C.gold}`, flexShrink: 0, background: v.bg, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
+            {v.avatar_url ? <img src={v.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🧑"}
+          </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink }}>{v.name}</div>
-            <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 5, height: 5, background: C.accent, borderRadius: "50%" }} />Nancy, Grand Est</div>
-            <div style={{ display: "inline-block", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8, marginTop: 5 }}>{v.level}</div>
-            <div style={{ fontSize: 12, color: C.ink2, marginTop: 5, lineHeight: 1.4 }}>{v.bio}</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink }}>{v.pseudo || "Voisin·e"}{v.isMe && <span style={{ fontSize: 11, color: C.accent, marginLeft: 6 }}>👋 Toi</span>}</div>
+            <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 5, height: 5, background: C.accent, borderRadius: "50%", flexShrink: 0 }} />
+              {v.quartier || "Saint-Dié-des-Vosges"}
+            </div>
+            <div style={{ display: "inline-block", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8, marginTop: 4 }}>{v.level}</div>
+            {v.bio && <div style={{ fontSize: 12, color: C.ink2, marginTop: 5, lineHeight: 1.4 }}>{v.bio}</div>}
           </div>
         </div>
-        <div style={{ display: "flex", padding: "8px 18px 12px" }}>
-          {[{ n: v.posts, l: "posts" }, { n: v.abonnes, l: "abonnés" }, { n: v.xp, l: "XP ce mois", color: C.accent }, { n: v.rang, l: "classement", color: C.gold }].map((s, i) => (
+        {/* Stats */}
+        <div style={{ display: "flex", padding: "4px 18px 10px" }}>
+          {[
+            { n: String(v.postCount || 0), l: "posts" },
+            { n: String(v.xp || 0), l: "XP total", color: C.accent },
+            { n: rang ? `#${rang}` : "#—", l: "classement", color: C.gold },
+            { n: String(universDone.length) + "/6", l: "univers" },
+          ].map((s, i) => (
             <div key={i} style={{ display: "contents" }}>
               {i > 0 && <div style={{ width: 1, background: C.border, margin: "3px 0" }} />}
               <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: s.color || C.ink }}>{s.n}</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: s.color || C.ink }}>{s.n}</div>
                 <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{s.l}</div>
               </div>
             </div>
           ))}
         </div>
-        <div style={{ padding: "0 18px 12px", display: "flex", gap: 8 }}>
+        {/* Boutons */}
+        <div style={{ padding: "0 18px 10px", display: "flex", gap: 8 }}>
           {v.isMe ? (
-            <button style={{ flex: 1, border: "none", borderRadius: 14, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm, background: C.pill, color: C.ink2 }}>C'est moi 👋</button>
+            <div style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 14, padding: 10, fontSize: 13, fontWeight: 600, textAlign: "center", fontFamily: dm, color: C.ink2 }}>C'est moi 👋</div>
           ) : (
             <button onClick={onToggleFollow} style={{ flex: 1, border: "none", borderRadius: 14, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm, background: followed ? C.pill : C.accent, color: followed ? C.ink2 : "#fff", transition: "all 0.2s" }}>{followed ? "Suivi ✓" : "+ Suivre"}</button>
           )}
           <button style={{ width: 44, height: 44, background: C.pill, borderRadius: 14, border: "none", fontSize: 18, cursor: "pointer" }}>💬</button>
         </div>
+        {/* Onglets */}
         <div style={{ display: "flex", borderTop: `1px solid ${C.border}` }}>
-          {tabs.map(t => <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "9px 0", textAlign: "center", fontSize: 11, fontWeight: tab === t ? 600 : 500, border: "none", background: "none", cursor: "pointer", color: tab === t ? C.accent : C.ink2, fontFamily: dm, borderBottom: `2px solid ${tab === t ? C.accent : "transparent"}` }}>{tabLabels[t]}</button>)}
+          {tabs.map(t => <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "9px 0", textAlign: "center", fontSize: 10, fontWeight: tab === t ? 700 : 500, border: "none", background: "none", cursor: "pointer", color: tab === t ? C.accent : C.ink2, fontFamily: dm, borderBottom: `2px solid ${tab === t ? C.accent : "transparent"}` }}>{tabLabels[t]}</button>)}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 12px" }}>
+      {/* Contenu onglets */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 16px" }}>
+
+        {/* ─ UNIVERS ─ */}
         {tab === "univers" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {univers.map((u, i) => (
-              <div key={i} style={{ background: C.card, borderRadius: 14, padding: 10, border: `1px solid ${C.border}` }}>
-                <div style={{ fontSize: 18, marginBottom: 3 }}>{u.emoji}</div>
-                <div style={{ fontSize: 9, color: C.ink2, marginBottom: 3 }}>{u.q}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{u.a}</div>
-              </div>
-            ))}
-          </div>
+          univers.some(u => u.done) ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {univers.map((u, i) => u.done ? (
+                <div key={i} style={{ background: C.card, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                  {u.photoUrl && (
+                    <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
+                      <img src={u.photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  )}
+                  <div style={{ padding: 10 }}>
+                    <div style={{ fontSize: 18, marginBottom: 3 }}>{u.emoji}</div>
+                    <div style={{ fontSize: 9, color: C.ink2, marginBottom: 3 }}>{u.q}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{u.a || "—"}</div>
+                  </div>
+                </div>
+              ) : (
+                <div key={i} style={{ background: C.pill, borderRadius: 14, padding: 10, border: `1px solid ${C.border}`, opacity: 0.4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", aspectRatio: "1" }}>
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>{u.emoji}</div>
+                  <div style={{ fontSize: 9, color: C.ink2, textAlign: "center" }}>{u.q}</div>
+                  <div style={{ fontSize: 9, color: C.ink2, marginTop: 4 }}>Non rempli</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px 16px" }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>🌱</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Univers pas encore rempli</div>
+              <div style={{ fontSize: 12, color: C.ink2 }}>{v.pseudo || "Ce voisin"} n'a pas encore partagé son univers.</div>
+            </div>
+          )
         )}
+
+        {/* ─ POSTS ─ */}
         {tab === "posts" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-            {posts.map((p, i) => (
-              <div key={i} style={{ borderRadius: 10, aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, position: "relative", overflow: "hidden", background: p.bg, cursor: "pointer" }}>
-                {p.emoji}
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.5))", padding: "3px 5px", fontSize: 9, color: "#fff" }}>{p.r}</div>
-              </div>
-            ))}
-          </div>
+          postsLoading ? (
+            <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2 }}>Chargement…</div>
+          ) : vPosts.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 16px" }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>📸</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun post pour l'instant</div>
+              <div style={{ fontSize: 12, color: C.ink2 }}>{v.pseudo || "Ce voisin"} n'a pas encore publié.</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+              {vPosts.map(p => (
+                <div key={p.id} style={{ borderRadius: 10, aspectRatio: "1", overflow: "hidden", background: C.pill, position: "relative" }}>
+                  {p.image_url ? (
+                    <img src={p.image_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 6, boxSizing: "border-box" }}>
+                      <div style={{ fontSize: 9, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 40)}</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         )}
-        {tab === "trophees" && <>
-          <div style={{ marginBottom: 12, fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Trophées débloqués</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {trophees.map((t, i) => (
-              <div key={i} style={{ background: "#FFFBF0", border: "1px solid rgba(247,167,45,0.3)", borderRadius: 12, padding: "6px 12px", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: C.ink }}>{t}</div>
-            ))}
-          </div>
-        </>}
+
+        {/* ─ TROPHÉES ─ */}
+        {tab === "trophees" && (
+          <>
+            <div style={{ marginBottom: 12, fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Trophées débloqués</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {trophees.map((t, i) => (
+                <div key={i} style={{ background: "#FFFBF0", border: "1px solid rgba(247,167,45,0.3)", borderRadius: 12, padding: "6px 12px", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: C.ink }}>{t}</div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -366,6 +452,7 @@ export default function ChipeurPageVoisins({ setPage, user }) {
             followed={!!follows[selectedVoisin.id]}
             onToggleFollow={() => toggleFollow(selectedVoisin.id)}
             onBack={() => setScreen("list")}
+            voisinsRanking={voisins}
           />
         )}
 
