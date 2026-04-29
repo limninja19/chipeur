@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "./supabase";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -130,19 +131,20 @@ function MiniDefiScreen({ defi, onBack, onSave }) {
   );
 }
 
-function EditProfileScreen({ onBack }) {
-  const [name, setName] = useState("Lucas M.");
-  const [bio, setBio] = useState("Passionné de mode vintage & locale. Je chine, je partage.");
-  const [loc, setLoc] = useState("Nancy, Grand Est");
+function EditProfileScreen({ onBack, profile, updateProfile }) {
+  const [name, setName] = useState(profile?.pseudo || "");
+  const [bio, setBio] = useState(profile?.bio || "");
+  const [loc, setLoc] = useState(profile?.quartier || "Saint-Dié-des-Vosges");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const inp = { width: "100%", padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.card, outline: "none", boxSizing: "border-box" };
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2 }}>←</button>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, flex: 1 }}>Modifier le profil</div>
-        <button onClick={() => { setSaved(true); setTimeout(onBack, 800); }} style={{ background: saved ? C.pro : C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 12, fontWeight: 700, fontFamily: dm, cursor: "pointer", transition: "background 0.3s" }}>
-          {saved ? "✓ Sauvé" : "Sauver"}
+        <button onClick={async () => { setSaving(true); await updateProfile({ pseudo: name, bio, quartier: loc }); setSaved(true); setSaving(false); setTimeout(onBack, 800); }} style={{ background: saved ? C.pro : C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 12, fontWeight: 700, fontFamily: dm, cursor: "pointer", transition: "background 0.3s" }}>
+          {saving ? "..." : saved ? "✓ Sauvé" : "Sauver"}
         </button>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 18px" }}>
@@ -165,7 +167,7 @@ function EditProfileScreen({ onBack }) {
 }
 
 // ─── PARTIE SCROLLABLE : bannière + avatar + stats + réductions ───
-function ProfileTop({ onEditProfile, setPage }) {
+function ProfileTop({ onEditProfile, setPage, profile, onLogout }) {
   return (
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
@@ -191,19 +193,19 @@ function ProfileTop({ onEditProfile, setPage }) {
           {/* Boutons action */}
           <div style={{ display: "flex", gap: 8, paddingBottom: 4 }}>
             <button onClick={onEditProfile} style={{ background: C.card, color: C.ink, border: `1px solid ${C.border}`, borderRadius: 12, padding: "7px 14px", fontSize: 12, fontWeight: 600, fontFamily: dm, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>✏️ Modifier</button>
-            <button style={{ background: C.card, color: C.ink2, border: `1px solid ${C.border}`, borderRadius: 12, width: 34, height: 34, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>⚙️</button>
+            <button onClick={onLogout} style={{ background: C.card, color: C.ink2, border: `1px solid ${C.border}`, borderRadius: 12, width: 34, height: 34, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }} title="Se déconnecter">🚪</button>
           </div>
         </div>
 
         {/* Nom + localisation + bio */}
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, lineHeight: 1 }}>Lucas M.</div>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, lineHeight: 1 }}>{profile?.pseudo || "Mon profil"}</div>
           <div style={{ fontSize: 11, color: C.ink2, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 5, height: 5, background: C.accent, borderRadius: "50%", flexShrink: 0 }} />
-            Nancy, Grand Est
+            {profile?.quartier || "Saint-Dié-des-Vosges"}
           </div>
           <div style={{ fontSize: 12, color: C.ink2, marginTop: 6, lineHeight: 1.5 }}>
-            Passionné de mode vintage & locale. Je chine, je partage.
+            {profile?.bio || "Ajoute une bio dans ton profil ✏️"}
           </div>
         </div>
 
@@ -428,8 +430,12 @@ function TabRewards() {
   );
 }
 
-export default function ChipeurProfilVoisin({ setPage }) {
+export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, user }) {
   const [screen, setScreen] = useState("profil");
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
   const [activeTab, setActiveTab] = useState("Posts");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [miniDefiIdx, setMiniDefiIdx] = useState(null);
@@ -446,7 +452,7 @@ export default function ChipeurProfilVoisin({ setPage }) {
         <>
           {/* Zone scroll : bannière + avatar + stats + réductions + onglets sticky + contenu */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} />
+            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onLogout={handleLogout} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} />}
@@ -458,7 +464,7 @@ export default function ChipeurProfilVoisin({ setPage }) {
         </>
       )}
 
-      {screen === "edit" && <EditProfileScreen onBack={() => setScreen("profil")} />}
+      {screen === "edit" && <EditProfileScreen onBack={() => setScreen("profil")} profile={profile} updateProfile={updateProfile} />}
 
       {screen === "minidefi" && miniDefiIdx !== null && (
         <MiniDefiScreen
