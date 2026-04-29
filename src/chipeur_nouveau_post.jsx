@@ -367,13 +367,16 @@ export default function ChipeurNouveauPost() {
                         }}>{t.icon}</div>
                         <div>
                           <div style={{
-                            fontSize: 13, fontWeight: 800,
+                            fontSize: 14, fontWeight: 700,
                             fontFamily: "'Syne', sans-serif",
+                            letterSpacing: -0.2,
+                            lineHeight: 1.2,
                             color: isSelected ? "#fff" : C.ink,
                           }}>{t.name}</div>
                           <div style={{
-                            fontSize: 10, lineHeight: 1.35, marginTop: 3,
-                            color: isSelected ? "rgba(255,255,255,0.8)" : C.ink2,
+                            fontSize: 11, lineHeight: 1.4, marginTop: 4,
+                            fontFamily: "'DM Sans', sans-serif",
+                            color: isSelected ? "rgba(255,255,255,0.82)" : C.ink2,
                           }}>{t.desc}</div>
                         </div>
                       </div>
