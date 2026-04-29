@@ -247,7 +247,11 @@ function PostVoisin({ setPage }) {
       </div>
       {/* Image */}
       <div style={{ width: "100%", paddingTop: "75%", background: C.pill, position: "relative" }}>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44 }}>👗</div>
+        <img
+          src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600&h=450&fit=crop&crop=top"
+          alt="Camille R. - robe lin vide-grenier"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
         <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(26,23,20,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>👁 24 vues</div>
       </div>
       {/* Body */}
