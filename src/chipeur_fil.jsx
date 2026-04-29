@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabase";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -331,6 +332,58 @@ function PostVoisin({ setPage }) {
   );
 }
 
+
+// ─── POST CARD RÉEL (Supabase) ───
+function PostCard({ post, setPage }) {
+  const [lightbox, setLightbox] = useState(false);
+  const timeAgo = (ts) => {
+    const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
+    if (diff < 1) return "À l'instant";
+    if (diff < 60) return diff + "min";
+    if (diff < 1440) return Math.floor(diff / 60) + "h";
+    return Math.floor(diff / 1440) + "j";
+  };
+
+  return (
+    <>
+      {lightbox && post.image_url && <Lightbox src={post.image_url} alt={post.content} onClose={() => setLightbox(false)} />}
+      <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
+        {/* Header */}
+        <div onClick={() => setPage("profil")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px", cursor: "pointer" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+            {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} /> : "😊"}
+          </div>
+          <div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>{post.profiles?.pseudo || "Voisin·e"}</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</div>
+          </div>
+        </div>
+        {/* Image si présente */}
+        {post.image_url && (
+          <div onClick={() => setLightbox(true)} style={{ width: "100%", paddingTop: "80%", position: "relative", cursor: "zoom-in" }}>
+            <img src={post.image_url} alt={post.content} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.45)", color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>🔍 Agrandir</div>
+          </div>
+        )}
+        {/* Contenu */}
+        <div style={{ padding: "10px 12px 6px" }}>
+          <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>{post.content}</div>
+          {post.tags?.length > 0 && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {post.tags.map(t => <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>)}
+            </div>
+          )}
+        </div>
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
+          <Reactions defaultActive="🔥" />
+          <InterestBtn />
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── POST CARD VITRINE ───
 function PostVitrine() {
   return (
@@ -460,6 +513,19 @@ function BottomNav({ active, onNavigate, onFab }) {
 export default function Fil({ setPage, profile }) {
   const [activeTab, setActiveTab] = useState("Tout");
   const [fabOpen, setFabOpen] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("posts")
+      .select("*, profiles(pseudo, avatar_url)")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setPosts(data);
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div style={{
@@ -472,9 +538,20 @@ export default function Fil({ setPage, profile }) {
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
       <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
         <BandeauDefis setPage={setPage} />
-        <PostVoisin setPage={setPage} />
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>Chargement du fil…</div>
+        ) : posts.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 16px" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🏘️</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 6 }}>Le fil est vide pour l'instant</div>
+            <div style={{ fontSize: 13, color: C.ink2 }}>Sois le premier à partager une trouvaille de ton quartier !</div>
+          </div>
+        ) : (
+          posts.map((post, i) => (
+            <PostCard key={post.id} post={post} setPage={setPage} />
+          ))
+        )}
         <PostVitrine />
-        <PostVoisin setPage={setPage} />
       </div>
       {fabOpen && <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />}
       <BottomNav active="fil" onNavigate={setPage} onFab={() => setFabOpen(!fabOpen)} />
