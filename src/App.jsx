@@ -53,12 +53,10 @@ export default function App() {
   const [user, setUser] = useState(undefined); // undefined = chargement en cours
 
   useEffect(() => {
-    // Récupère la session actuelle
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    // Écoute les changements d'auth (login, logout, OAuth redirect)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -69,19 +67,16 @@ export default function App() {
   // Chargement initial
   if (user === undefined) return <SplashScreen />;
 
+  // Inscription accessible même sans compte
+  if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => { setPage("fil"); }} />;
+
   // Non connecté → page de connexion
   if (user === null) {
-    return (
-      <Connexion
-        setPage={setPage}
-        onAuth={() => setPage("fil")}
-      />
-    );
+    return <Connexion setPage={setPage} onAuth={() => setPage("fil")} />;
   }
 
   // Connecté → app normale
   if (page === "defis") return <Defis setPage={setPage} />;
-  if (page === "inscription") return <Inscription setPage={setPage} />;
   if (page === "sorties") return <Sorties setPage={setPage} />;
   if (page === "nouveau") return <NouveauPost setPage={setPage} />;
   if (page === "commerces") return <Commerces setPage={setPage} />;

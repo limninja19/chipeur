@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "./supabase";
 
 const COLORS = {
   bg: "#F5F2EE",
@@ -134,7 +135,7 @@ function ScreenInscription({ onNext }) {
       <Field label="PRÉNOM" placeholder="Comment tu t'appelles ?" value={prenom} onChange={setPrenom} />
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
       <Field label="MOT DE PASSE" type="password" placeholder="8 caractères minimum" value={mdp} onChange={setMdp} />
-      <button onClick={onNext} style={{
+      <button onClick={() => onNext({ prenom, email, mdp })} style={{
         width: "100%", background: COLORS.accent, color: "#fff", border: "none",
         borderRadius: 16, padding: 15, fontSize: 15, fontWeight: 600,
         fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 8,
@@ -436,7 +437,7 @@ function ScreenMagasin({ onBack, onValidate }) {
 }
 
 // ─── SCREEN 4 : SUCCESS ───
-function ScreenSuccess({ accountType, onRestart }) {
+function ScreenSuccess({ accountType, onRestart, onFinish }) {
   const msg = accountType === "voisin"
     ? "Ton compte Voisin·e est prêt. Rejoins le fil du quartier !"
     : "Ton compte est prêt. Rejoins le fil du quartier et commence à partager.";
@@ -459,7 +460,7 @@ function ScreenSuccess({ accountType, onRestart }) {
         fontSize: 14, color: COLORS.ink2, lineHeight: 1.6,
         fontFamily: "'DM Sans', sans-serif",
       }}>{msg}</div>
-      <button onClick={() => {/* navigate to feed */}} style={{
+      <button onClick={() => onFinish && onFinish()} style={{
         background: COLORS.ink, color: "#fff", border: "none",
         borderRadius: 16, padding: "14px 32px", fontSize: 14, fontWeight: 600,
         fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 8,
@@ -476,14 +477,22 @@ function ScreenSuccess({ accountType, onRestart }) {
 }
 
 // ─── APP SHELL ───
-export default function ChipeurInscription() {
+export default function ChipeurInscription({ setPage, onAuth }) {
   const [screen, setScreen] = useState("inscription");
   const [accountType, setAccountType] = useState(null);
+  const [creds, setCreds] = useState({ prenom: "", email: "", mdp: "" });
+  const [signupError, setSignupError] = useState("");
 
-  const handleChoose = (type) => {
+  const handleChoose = async (type) => {
     setAccountType(type);
     if (type === "voisin") {
-      setTimeout(() => setScreen("success"), 180);
+      const { error } = await supabase.auth.signUp({
+        email: creds.email,
+        password: creds.mdp,
+        options: { data: { pseudo: creds.prenom } },
+      });
+      if (error) { setSignupError(error.message); return; }
+      setScreen("success");
     } else {
       setScreen("magasin");
     }
@@ -497,8 +506,11 @@ export default function ChipeurInscription() {
       display: "flex", flexDirection: "column",
     }}>
 
+        {signupError && (
+          <div style={{ padding: "10px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 13, textAlign: "center" }}>⚠️ {signupError}</div>
+        )}
         {screen === "inscription" && (
-          <ScreenInscription onNext={() => setScreen("choix")} />
+          <ScreenInscription onNext={(d) => { setCreds(d); setScreen("choix"); }} />
         )}
 
         {screen === "choix" && (
@@ -516,6 +528,7 @@ export default function ChipeurInscription() {
           <ScreenSuccess
             accountType={accountType}
             onRestart={() => { setScreen("inscription"); setAccountType(null); }}
+            onFinish={() => onAuth ? onAuth() : setPage("fil")}
           />
         )}
     </div>

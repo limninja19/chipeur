@@ -148,7 +148,7 @@ export default function Connexion({ setPage, onAuth }) {
           }}>
             ✅ {success}
             <div style={{ marginTop: 12 }}>
-              <button onClick={() => { setSuccess(""); setMode("login"); }}
+              <button type="button" onClick={() => { setSuccess(""); setMode("login"); }}
                 style={{ color: C.accent, fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontSize: 14 }}>
                 Retour à la connexion
               </button>
@@ -268,24 +268,24 @@ export default function Connexion({ setPage, onAuth }) {
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
             {mode === "login" && (
               <>
-                <button onClick={() => { setError(""); setMode("reset"); }}
+                <button type="button" onClick={() => { setError(""); setMode("reset"); }}
                   style={{ color: C.ink2, background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
                   Mot de passe oublié ?
                 </button>
-                <button onClick={() => { setError(""); setMode("signup"); }}
+                <button type="button" onClick={() => setPage("inscription")}
                   style={{ color: C.accent, fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontSize: 14 }}>
                   Pas encore de compte ? Rejoindre
                 </button>
               </>
             )}
             {mode === "signup" && (
-              <button onClick={() => { setError(""); setMode("login"); }}
+              <button type="button" onClick={() => { setError(""); setMode("login"); }}
                 style={{ color: C.ink2, background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
                 Déjà un compte ? Se connecter
               </button>
             )}
             {mode === "reset" && (
-              <button onClick={() => { setError(""); setMode("login"); }}
+              <button type="button" onClick={() => { setError(""); setMode("login"); }}
                 style={{ color: C.ink2, background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
                 ← Retour à la connexion
               </button>
