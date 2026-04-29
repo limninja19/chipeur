@@ -516,12 +516,15 @@ export default function Fil({ setPage, profile }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [fetchError, setFetchError] = useState(null);
+
   useEffect(() => {
     supabase
       .from("posts")
       .select("*, profiles(pseudo, avatar_url)")
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { setFetchError(error.message); console.error("Posts error:", error); }
         if (data) setPosts(data);
         setLoading(false);
       });
@@ -538,6 +541,11 @@ export default function Fil({ setPage, profile }) {
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
       <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
         <BandeauDefis setPage={setPage} />
+        {fetchError && (
+          <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 12, padding: "12px 14px", margin: "8px 0", fontSize: 12, color: "#C0392B" }}>
+            ⚠️ Erreur : {fetchError}
+          </div>
+        )}
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>Chargement du fil…</div>
         ) : posts.length === 0 ? (
