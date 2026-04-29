@@ -442,7 +442,6 @@ function BottomNav({ active, onNavigate, onFab }) {
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", marginTop: -20, cursor: "pointer" }}>+</div>
           );
         }
-        return (
           <div key={item.id} onClick={() => onNavigate(item.id)} style={{
             display: "flex", flexDirection: "column", alignItems: "center",
             gap: 3, fontSize: 9, color: active === item.id ? C.accent : C.ink2, cursor: "pointer",
@@ -470,7 +469,6 @@ export default function Fil({ setPage }) {
       <AppHeader setPage={setPage} />
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
       <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
-        {/* Carrousel défis — défile avec le contenu */}
         <BandeauDefis setPage={setPage} />
         <PostVoisin setPage={setPage} />
         <PostVitrine />
