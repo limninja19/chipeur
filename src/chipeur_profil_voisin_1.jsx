@@ -123,35 +123,99 @@ function MiniDefiScreen({ defi, onBack, onSave }) {
   );
 }
 
-function EditProfileScreen({ onBack, profile, updateProfile }) {
+const VILLES = [
+  "Saint-Dié-des-Vosges",
+  "Gérardmer",
+  "Fraize",
+  "Senones",
+  "Bruyères",
+  "Épinal",
+  "Remiremont",
+  "Alentours de Saint-Dié",
+  "Autre",
+];
+
+function EditProfileScreen({ onBack, profile, updateProfile, user }) {
   const [name, setName] = useState(profile?.pseudo || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [loc, setLoc] = useState(profile?.quartier || "Saint-Dié-des-Vosges");
+  const [avatarPreview, setAvatarPreview] = useState(profile?.avatar_url || null);
+  const [avatarFile, setAvatarFile] = useState(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const inp = { width: "100%", padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.card, outline: "none", boxSizing: "border-box" };
+
+  const handleAvatarFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    let avatar_url = profile?.avatar_url || null;
+    if (avatarFile && user?.id) {
+      const ext = avatarFile.name.split(".").pop() || "jpg";
+      const path = `avatars/${user.id}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, avatarFile, { upsert: true, contentType: avatarFile.type || "image/jpeg" });
+      if (!upErr) {
+        const { data } = supabase.storage.from("images").getPublicUrl(path);
+        avatar_url = data.publicUrl;
+      }
+    }
+    await updateProfile({ pseudo: name, bio, quartier: loc, avatar_url });
+    setSaved(true);
+    setSaving(false);
+    setTimeout(onBack, 800);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2 }}>←</button>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, flex: 1 }}>Modifier le profil</div>
-        <button onClick={async () => { setSaving(true); await updateProfile({ pseudo: name, bio, quartier: loc }); setSaved(true); setSaving(false); setTimeout(onBack, 800); }} style={{ background: saved ? C.pro : C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 12, fontWeight: 700, fontFamily: dm, cursor: "pointer", transition: "background 0.3s" }}>
+        <button onClick={handleSave} disabled={saving} style={{ background: saved ? C.pro : C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 12, fontWeight: 700, fontFamily: dm, cursor: saving ? "not-allowed" : "pointer", transition: "background 0.3s" }}>
           {saving ? "..." : saved ? "✓ Sauvé" : "Sauver"}
         </button>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 18px" }}>
+        {/* Photo de profil */}
+        <input type="file" accept="image/*" id="avatar-input" style={{ display: "none" }} onChange={handleAvatarFile} />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#E8F4FD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, border: `3px solid ${C.gold}`, position: "relative" }}>
-            🧑‍🦱
-            <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#fff", border: `2px solid ${C.card}`, cursor: "pointer" }}>📷</div>
-          </div>
-          <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginTop: 8, cursor: "pointer" }}>Changer la photo</div>
+          <label htmlFor="avatar-input" style={{ cursor: "pointer", position: "relative" }}>
+            <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#E8F4FD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, border: `3px solid ${C.gold}`, overflow: "hidden" }}>
+              {avatarPreview
+                ? <img src={avatarPreview} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : "🧑‍🦱"}
+            </div>
+            <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#fff", border: `2px solid ${C.card}` }}>📷</div>
+          </label>
+          <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginTop: 10 }}>Appuie pour changer la photo</div>
         </div>
-        <div style={{ marginBottom: 16 }}><label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Prénom</label><input value={name} onChange={e => setName(e.target.value)} style={inp} /></div>
-        <div style={{ marginBottom: 16 }}><label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Ville</label><input value={loc} onChange={e => setLoc(e.target.value)} style={inp} /></div>
-        <div style={{ marginBottom: 16 }}><label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Bio</label><textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} style={{ ...inp, resize: "none", lineHeight: 1.5 }} /></div>
+
+        {/* Pseudo */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Pseudo</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Ton pseudo visible par les voisins" style={inp} />
+        </div>
+
+        {/* Ville — menu déroulant */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Ville / Secteur</label>
+          <select value={loc} onChange={e => setLoc(e.target.value)} style={{ ...inp, appearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36 }}>
+            {VILLES.map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+
+        {/* Bio */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Bio</label>
+          <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} placeholder="Dis quelque chose sur toi…" style={{ ...inp, resize: "none", lineHeight: 1.5 }} />
+        </div>
+
         <div style={{ fontSize: 10, color: C.ink2, lineHeight: 1.5, padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
-          Ta bio et ton prénom sont visibles par tous les voisins du quartier.
+          Ton pseudo, ta ville et ta bio sont visibles par tous les voisins du quartier.
         </div>
       </div>
     </div>
@@ -178,8 +242,10 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount }) {
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: -30 }}>
           {/* Avatar */}
           <div style={{ position: "relative", width: 68, height: 68 }}>
-            <div style={{ width: 68, height: 68, borderRadius: "50%", background: "#E8F4FD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, border: `3px solid ${C.card}`, boxShadow: "0 2px 12px rgba(26,23,20,0.15)" }}>
-              🧑‍🦱
+            <div style={{ width: 68, height: 68, borderRadius: "50%", background: "#E8F4FD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, border: `3px solid ${C.card}`, boxShadow: "0 2px 12px rgba(26,23,20,0.15)", overflow: "hidden" }}>
+              {profile?.avatar_url
+                ? <img src={profile.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : "🧑‍🦱"}
             </div>
           </div>
           {/* Boutons action */}
@@ -201,16 +267,30 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount }) {
           </div>
         </div>
 
-        {/* XP bar */}
-        <div style={{ marginTop: 10, marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: C.accent }}>⚡ 720 XP</span>
-            <span style={{ fontSize: 10, color: C.ink2 }}>Prochain niveau → 1000 XP</span>
-          </div>
-          <div style={{ height: 5, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: "72%", borderRadius: 3, background: "linear-gradient(90deg,#FF5733,#F7A72D)" }} />
-          </div>
-        </div>
+        {/* XP bar réaliste */}
+        {(() => {
+          const xp = postCount * 10;
+          const levels = [
+            { name: "Débutant·e", min: 0, max: 50 },
+            { name: "Explorateur·trice", min: 50, max: 150 },
+            { name: "Pépite du Quartier", min: 150, max: 300 },
+            { name: "Légende Locale", min: 300, max: 500 },
+          ];
+          const lvl = levels.find(l => xp < l.max) || levels[levels.length - 1];
+          const pct = Math.min(100, Math.round(((xp - lvl.min) / (lvl.max - lvl.min)) * 100));
+          const nextXp = lvl.max - xp;
+          return (
+            <div style={{ marginTop: 10, marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: C.accent }}>⚡ {xp} XP · {lvl.name}</span>
+                <span style={{ fontSize: 10, color: C.ink2 }}>{nextXp > 0 ? `+${nextXp} XP pour progresser` : "Niveau max 🏆"}</span>
+              </div>
+              <div style={{ height: 5, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: "linear-gradient(90deg,#FF5733,#F7A72D)", transition: "width 0.6s ease" }} />
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Stats row */}
@@ -493,7 +573,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         </>
       )}
 
-      {screen === "edit" && <EditProfileScreen onBack={() => setScreen("profil")} profile={profile} updateProfile={updateProfile} />}
+      {screen === "edit" && <EditProfileScreen onBack={() => setScreen("profil")} profile={profile} updateProfile={updateProfile} user={user} />}
 
       {screen === "minidefi" && miniDefiIdx !== null && (
         <MiniDefiScreen
