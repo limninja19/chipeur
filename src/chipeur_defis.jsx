@@ -445,11 +445,32 @@ function SuccessScreen({ d, onBack }) {
 
 export default function ChipeurDefis({ setPage }) {
   const [screen, setScreen] = useState("list");
-  const [selectedId, setSelectedId] = useState(0);
+  const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState("Tous");
+  const [defis, setDefis] = useState(defisData); // fallback sur les données statiques
+  const [loading, setLoading] = useState(true);
 
-  const d = defisData[selectedId];
-  const filters = ["Tous", "En cours", "Terminés", "Mes défis"];
+  useEffect(() => {
+    supabase
+      .from("defis")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          // Adapter les données Supabase au format attendu
+          setDefis(data.map((d, i) => ({
+            ...d,
+            pct: Math.min(100, Math.round((d.participants / d.objectif) * 100)),
+            fill: "#FF5733",
+            tags: d.tags || [],
+          })));
+        }
+        setLoading(false);
+      });
+  }, []);
+
+  const d = selectedId !== null ? defis.find(d => d.id === selectedId) || defis[0] : defis[0];
+  const filters = ["Tous", "En cours", "Terminés"];
 
   return (
     <div style={{
@@ -489,7 +510,9 @@ export default function ChipeurDefis({ setPage }) {
             ))}
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 100px" }}>
-            {defisData
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2 }}>Chargement…</div>
+            ) : defis
               .filter(d => {
                 if (filter === "Tous") return true;
                 if (filter === "Terminés") return d.ended;

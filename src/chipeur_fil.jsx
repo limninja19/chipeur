@@ -103,6 +103,35 @@ function FilTabs({ active, onSelect, setPage }) {
   );
 }
 
+// ─── FILTRE VILLE TOGGLE ───
+function VilleToggle({ filtreVille, setFiltreVille, quartier }) {
+  if (!quartier) return null;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px 10px", flexShrink: 0 }}>
+      <button
+        onClick={() => setFiltreVille(false)}
+        style={{
+          fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
+          border: "none", cursor: "pointer", whiteSpace: "nowrap",
+          background: !filtreVille ? C.accent : C.pill,
+          color: !filtreVille ? "#fff" : C.ink2,
+          fontFamily: "'DM Sans', sans-serif",
+          transition: "all 0.15s",
+        }}>🌍 Tout le fil</button>
+      <button
+        onClick={() => setFiltreVille(true)}
+        style={{
+          fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
+          border: "none", cursor: "pointer", whiteSpace: "nowrap",
+          background: filtreVille ? C.accent : C.pill,
+          color: filtreVille ? "#fff" : C.ink2,
+          fontFamily: "'DM Sans', sans-serif",
+          transition: "all 0.15s",
+        }}>📍 {quartier}</button>
+    </div>
+  );
+}
+
 // ─── BANDEAU DÉFIS ───
 function DefiCard({ d, setPage }) {
   const pct = Math.round((d.current / d.total) * 100);
@@ -515,20 +544,26 @@ export default function Fil({ setPage, profile }) {
   const [fabOpen, setFabOpen] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [fetchError, setFetchError] = useState(null);
+  const [filtreVille, setFiltreVille] = useState(false);
 
-  useEffect(() => {
-    supabase
+  const loadPosts = () => {
+    setLoading(true);
+    let q = supabase
       .from("posts")
       .select("*, profiles(pseudo, avatar_url)")
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) { setFetchError(error.message); console.error("Posts error:", error); }
-        if (data) setPosts(data);
-        setLoading(false);
-      });
-  }, []);
+      .order("created_at", { ascending: false });
+    if (filtreVille && profile?.quartier) {
+      q = q.eq("location", profile.quartier);
+    }
+    q.then(({ data, error }) => {
+      if (error) { setFetchError(error.message); console.error("Posts error:", error); }
+      if (data) setPosts(data);
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => { loadPosts(); }, [filtreVille]);
 
   return (
     <div style={{
@@ -539,6 +574,7 @@ export default function Fil({ setPage, profile }) {
     }}>
       <AppHeader setPage={setPage} profile={profile} />
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
+      <VilleToggle filtreVille={filtreVille} setFiltreVille={setFiltreVille} quartier={profile?.quartier} />
       <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
         <BandeauDefis setPage={setPage} />
         <div style={{ textAlign: "center", fontSize: 9, color: C.ink2, opacity: 0.4, marginBottom: 4 }}>v2.1 — {new Date().toLocaleTimeString("fr-FR")}</div>

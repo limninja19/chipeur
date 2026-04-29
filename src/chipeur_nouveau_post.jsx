@@ -258,7 +258,9 @@ function FormLieu() {
 }
 
 // ─── FORM: SORTIE ───
-function FormSortie() {
+const SORTIE_TYPES = ["Vide-grenier", "Marché", "Fête", "Concert", "Sport", "Expo", "Gratuit"];
+
+function FormSortie({ fields, onChange }) {
   const inputStyle = {
     width: "100%", padding: "10px 12px", borderRadius: 12,
     border: `1.5px solid ${C.border}`, fontFamily: "'DM Sans', sans-serif",
@@ -267,33 +269,41 @@ function FormSortie() {
   return (
     <>
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Titre de la sortie</label>
-        <input type="text" placeholder="ex : Vide-grenier de la Plaine" style={inputStyle} />
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Titre de la sortie *</label>
+        <input type="text" value={fields.title} onChange={e => onChange("title", e.target.value)} placeholder="ex : Vide-grenier de la Plaine" style={inputStyle} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Date</label>
-          <input type="text" placeholder="26/04/2026" style={inputStyle} />
+          <input type="text" value={fields.date} onChange={e => onChange("date", e.target.value)} placeholder="ex : 26/04/2026" style={inputStyle} />
         </div>
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Heure</label>
-          <input type="text" placeholder="9h – 18h" style={inputStyle} />
+          <input type="text" value={fields.time} onChange={e => onChange("time", e.target.value)} placeholder="ex : 9h – 18h" style={inputStyle} />
         </div>
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lieu</label>
-        <input type="text" placeholder="ex : Place Jean Jaurès" style={inputStyle} />
+        <input type="text" value={fields.lieu} onChange={e => onChange("lieu", e.target.value)} placeholder="ex : Place Jean Jaurès" style={inputStyle} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Description (optionnel)</label>
-        <textarea placeholder="Donne envie aux voisins d'y aller..." style={{ ...inputStyle, resize: "none", height: 80, lineHeight: 1.5 }} />
+        <textarea value={fields.desc} onChange={e => onChange("desc", e.target.value)} placeholder="Donne envie aux voisins d'y aller..." style={{ ...inputStyle, resize: "none", height: 80, lineHeight: 1.5 }} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Type de sortie</label>
-        <TagPills tags={[
-          { label: "Vide-grenier" }, { label: "Marché" }, { label: "Fête" },
-          { label: "Concert" }, { label: "Sport" }, { label: "Expo" }, { label: "Gratuit" },
-        ]} />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+          {SORTIE_TYPES.map(t => (
+            <button key={t} onClick={() => onChange("type", fields.type === t ? "" : t)} style={{
+              fontSize: 11, padding: "5px 12px", borderRadius: 20,
+              border: `1.5px solid ${fields.type === t ? C.ink : C.border}`,
+              background: fields.type === t ? C.ink : C.card,
+              color: fields.type === t ? "#fff" : C.ink2,
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              transition: "all 0.2s",
+            }}>{t}</button>
+          ))}
+        </div>
       </div>
     </>
   );
@@ -368,6 +378,9 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
+  // Sortie fields
+  const [sortieFields, setSortieFields] = useState({ title: "", date: "", time: "", lieu: "", desc: "", type: "" });
+  const updateSortieField = (key, val) => setSortieFields(prev => ({ ...prev, [key]: val }));
 
   const types = [
     { id: "decouverte", icon: "🛍️", name: "Trouvaille", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
@@ -377,15 +390,43 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   ];
 
   const handlePublish = async () => {
-    if (!content.trim()) { setPublishError("Écris quelque chose avant de publier !"); return; }
     if (!user?.id) { setPublishError("Tu dois être connecté pour publier."); return; }
     setPublishing(true);
     setPublishError("");
 
+    // ── CAS SORTIE ──
+    if (selectedType === "sortie") {
+      if (!sortieFields.title.trim()) {
+        setPublishing(false);
+        setPublishError("Le titre de la sortie est obligatoire !");
+        return;
+      }
+      const { error } = await supabase.from("sorties").insert({
+        author_id: user.id,
+        title: sortieFields.title.trim(),
+        date_text: sortieFields.date.trim() || null,
+        time_text: sortieFields.time.trim() || null,
+        lieu: sortieFields.lieu.trim() || null,
+        description: sortieFields.desc.trim() || null,
+        type: sortieFields.type || null,
+        ville: profile?.quartier || "Saint-Dié-des-Vosges",
+      });
+      setPublishing(false);
+      if (error) {
+        console.error("Sortie insert error:", error);
+        setPublishError("Erreur Supabase : " + error.message);
+        return;
+      }
+      setScreen("success");
+      return;
+    }
+
+    // ── CAS POST (trouvaille, lieu, bon plan) ──
+    if (!content.trim()) { setPublishing(false); setPublishError("Écris quelque chose avant de publier !"); return; }
+
     let image_url = null;
     if (photoFile) {
       const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
-      // HEIC/HEIF → on force jpeg car iOS convertit automatiquement
       const safeExt = ["jpg","jpeg","png","gif","webp","mp4","mov"].includes(ext) ? ext : "jpg";
       const contentType = photoFile.type && photoFile.type !== "" ? photoFile.type : "image/jpeg";
       const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
@@ -393,7 +434,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       if (upErr) {
         setPublishing(false);
         setPublishError("❌ Upload photo échoué : " + upErr.message);
-        return; // on s'arrête — pas de post sans photo si l'upload a raté
+        return;
       }
       const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
       image_url = urlData.publicUrl;
@@ -403,7 +444,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       author_id: user.id,
       content: content.trim(),
       image_url,
-      location: "Saint-Dié-des-Vosges",
+      location: profile?.quartier || "Saint-Dié-des-Vosges",
       tags: [],
     });
     setPublishing(false);
@@ -418,7 +459,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const formMap = {
     decouverte: <FormDecouverte content={content} onChange={setContent} onPhotoSelect={setPhotoFile} />,
     lieu: <FormLieu />,
-    sortie: <FormSortie />,
+    sortie: <FormSortie fields={sortieFields} onChange={updateSortieField} />,
     bonplan: <FormBonPlan />,
   };
 

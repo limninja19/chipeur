@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabase";
 
 const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)", gold: "#F7A72D" };
 const fontLink = document.createElement("link");
@@ -8,13 +9,15 @@ if (!document.querySelector(`link[href="${fontLink.href}"]`)) document.head.appe
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
-const voisinsData = [
-  { id: 0, avatar: "👩", bg: "#FEF3E0", name: "Ambre K.", level: "Légende Locale", levelBg: "#FFF0EB", levelColor: C.accent, dotGrad: "linear-gradient(135deg,#FF5733,#F7A72D)", bio: "Mode, vintage, bonne humeur. Je shoppe, je partage ✨", posts: "24", abonnes: "312", xp: "1 240", rang: "#1", xpColor: C.accent, isMe: false },
-  { id: 1, avatar: "👩‍🦰", bg: "#F7EEF7", name: "Sofia D.", level: "Légende Locale", levelBg: "#FFF0EB", levelColor: C.accent, dotGrad: "linear-gradient(135deg,#FF5733,#F7A72D)", bio: "Styliste amateur, fan de défis mode et de brocantes", posts: "18", abonnes: "204", xp: "890", rang: "#2", xpColor: C.accent, isMe: false },
-  { id: 2, avatar: "🧑‍🦱", bg: "#E8F4FD", name: "Lucas M.", level: "Pépite du Quartier", levelBg: "#F0E6FC", levelColor: "#5B2D8E", dotGrad: "linear-gradient(135deg,#5B2D8E,#9B59B6)", bio: "Passionné de mode vintage & locale. Je chine, je partage.", posts: "24", abonnes: "138", xp: "720", rang: "#3", xpColor: "#5B2D8E", isMe: true },
-  { id: 3, avatar: "🧑", bg: "#EBF5F0", name: "Théo R.", level: "Explorateur·trice", levelBg: C.proBg, levelColor: C.pro, dotGrad: "#1D9E75", bio: "Sneakers addict & streetwear lover", posts: "11", abonnes: "87", xp: "540", rang: "#4", xpColor: C.accent, isMe: false },
-  { id: 4, avatar: "👨", bg: "#FFF3E0", name: "Romain V.", level: "Voisin·e Actif·ve", levelBg: C.pill, levelColor: C.ink2, dotGrad: C.pill, bio: "J'essaie des trucs, je partage ce qui marche", posts: "6", abonnes: "34", xp: "210", rang: "#8", xpColor: C.accent, isMe: false },
+const LEVELS = [
+  { name: "Débutant·e", min: 0, max: 50, bg: C.pill, color: C.ink2 },
+  { name: "Explorateur·trice", min: 50, max: 150, bg: C.proBg, color: C.pro },
+  { name: "Pépite du Quartier", min: 150, max: 300, bg: "#F0E6FC", color: "#5B2D8E" },
+  { name: "Légende Locale", min: 300, max: Infinity, bg: "#FFF0EB", color: C.accent },
 ];
+function getLevel(xp) {
+  return LEVELS.find(l => xp < l.max) || LEVELS[LEVELS.length - 1];
+}
 
 function StatusBar() { return <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0 }}><span>9:41</span><span>●●●</span></div>; }
 
@@ -87,26 +90,33 @@ function BottomNav({ active, onNavigate, onFab }) {
 }
 
 function Podium({ voisins, onOpen }) {
-  const top3 = [voisins[1], voisins[0], voisins[2]];
-  const sizes = { 0: { w: 44, fs: 18, rank: "#2", rc: "#B0BEC5", bh: 22 }, 1: { w: 52, fs: 18, rank: "#1 👑", rc: C.gold, bh: 32 }, 2: { w: 40, fs: 18, rank: "#3", rc: "#A0714A", bh: 16 } };
+  const order = [voisins[1], voisins[0], voisins[2]]; // 2nd, 1st, 3rd
+  const configs = [
+    { w: 44, rank: "#2", rc: "#B0BEC5", bh: 22 },
+    { w: 52, rank: "#1 👑", rc: C.gold, bh: 32 },
+    { w: 40, rank: "#3", rc: "#A0714A", bh: 16 },
+  ];
   return (
     <div style={{ background: "linear-gradient(135deg,#1A1714,#3D3530)", borderRadius: 20, padding: 16, marginBottom: 14, position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", right: -10, top: -10, fontSize: 72, opacity: 0.1 }}>🏆</div>
-      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>Classement du mois — Avril 2026</div>
+      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>Top 3 — Plus actifs</div>
       <div style={{ display: "flex", gap: 8, alignItems: "flex-end", justifyContent: "center", marginBottom: 12 }}>
-        {top3.map((v, i) => {
-          const s = sizes[i];
+        {order.map((v, i) => {
+          const s = configs[i];
+          if (!v) return <div key={i} style={{ width: s.w }} />;
           return (
             <div key={v.id} onClick={() => onOpen(v.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <div style={{ width: s.w, height: s.w, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: s.fs, border: `2px solid ${s.rc}`, background: v.bg }}>{v.avatar}</div>
+              <div style={{ width: s.w, height: s.w, borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, border: `2px solid ${s.rc}`, background: v.bg }}>
+                {v.avatar_url ? <img src={v.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🧑"}
+              </div>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: s.rc }}>{s.rank}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", textAlign: "center", maxWidth: 60 }}>{v.name}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", textAlign: "center", maxWidth: 60 }}>{v.pseudo || "Voisin·e"}</div>
               <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)" }}>{v.xp} XP</div>
             </div>
           );
         })}
       </div>
-      <div style={{ display: "flex", justifyContent: "center", gap: 4, alignItems: "flex-end", marginTop: 8 }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 4, alignItems: "flex-end" }}>
         <div style={{ width: 30, height: 22, borderRadius: "4px 4px 0 0", background: "#B0BEC5" }} />
         <div style={{ width: 36, height: 32, borderRadius: "4px 4px 0 0", background: C.gold }} />
         <div style={{ width: 26, height: 16, borderRadius: "4px 4px 0 0", background: "#A0714A" }} />
@@ -115,33 +125,37 @@ function Podium({ voisins, onOpen }) {
   );
 }
 
+function Avatar({ v, size = 48 }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", background: v.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.45, border: v.isMe ? `2px solid ${C.accent}` : "none", flexShrink: 0 }}>
+      {v.avatar_url ? <img src={v.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🧑"}
+    </div>
+  );
+}
+
 function VoisinCard({ v, followed, onToggleFollow, onOpen }) {
   return (
-    <div onClick={() => onOpen(v.id)} style={{
+    <div onClick={onOpen} style={{
       background: v.isMe ? "#FFF8F6" : C.card, borderRadius: 18, padding: "12px 14px", marginBottom: 8,
       border: `1px solid ${v.isMe ? "rgba(232,73,10,0.2)" : C.border}`,
       display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
     }}>
-      <div style={{ position: "relative", flexShrink: 0 }}>
-        <div style={{ width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: v.bg, border: v.isMe ? `2px solid ${C.accent}` : "none" }}>{v.avatar}</div>
-        <div style={{ position: "absolute", bottom: -2, right: -2, width: 14, height: 14, borderRadius: "50%", border: `2px solid ${C.card}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, background: v.dotGrad, color: "#fff" }}>{v.isMe ? "✦" : "★"}</div>
-      </div>
+      <Avatar v={v} size={48} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>{v.name}{v.isMe && <span style={{ fontSize: 9, color: C.accent }}> (toi)</span>}</div>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>{v.pseudo || "Voisin·e"}{v.isMe && <span style={{ fontSize: 9, color: C.accent }}> (toi)</span>}</div>
           <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 7, whiteSpace: "nowrap", background: v.levelBg, color: v.levelColor }}>{v.level}</span>
         </div>
-        <div style={{ fontSize: 11, color: C.ink2 }}>📍 Nancy, Grand Est</div>
-        <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.bio}</div>
+        {v.quartier && <div style={{ fontSize: 11, color: C.ink2 }}>📍 {v.quartier}</div>}
+        <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.bio || "Pas encore de bio"}</div>
         <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
-          <span style={{ fontSize: 10, color: C.ink2 }}>{v.posts} posts</span>
-          <span style={{ fontSize: 10, color: C.ink2 }}>· {v.abonnes} abonnés</span>
+          <span style={{ fontSize: 10, color: C.ink2 }}>{v.postCount} post{v.postCount > 1 ? "s" : ""}</span>
+          <span style={{ fontSize: 10, color: C.ink2 }}>· {v.xp} XP</span>
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: v.xpColor }}>{v.xp} XP</div>
         {v.isMe ? (
-          <span style={{ fontSize: 10, color: C.ink2 }}>#3 ce mois</span>
+          <span style={{ fontSize: 10, color: C.ink2 }}>C'est toi 👋</span>
         ) : (
           <button onClick={e => { e.stopPropagation(); onToggleFollow(v.id); }} style={{
             border: "none", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700,
@@ -249,61 +263,112 @@ function ExtProfile({ v, followed, onToggleFollow, onBack }) {
   );
 }
 
-export default function ChipeurPageVoisins({ setPage }) {
+const BG_COLORS = ["#FEF3E0","#F7EEF7","#E8F4FD","#EBF5F0","#FFF3E0","#F0E8FF"];
+
+export default function ChipeurPageVoisins({ setPage, user }) {
   const [screen, setScreen] = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState("Tous");
-  const [follows, setFollows] = useState({ 1: true });
-  const [fabOpen, setFabOpen] = useState(false);
+  const [follows, setFollows] = useState({});
+  const [voisins, setVoisins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("id, pseudo, bio, quartier, avatar_url, univers")
+      .not("pseudo", "is", null)
+      .order("created_at", { ascending: true })
+      .then(async ({ data }) => {
+        if (!data) { setLoading(false); return; }
+        // Pour chaque profil, compter ses posts
+        const withCounts = await Promise.all(data.map(async (p, i) => {
+          const { count } = await supabase.from("posts").select("*", { count: "exact", head: true }).eq("author_id", p.id);
+          const xp = (count || 0) * 10;
+          const lvl = getLevel(xp);
+          return {
+            ...p,
+            idx: i,
+            postCount: count || 0,
+            xp,
+            level: lvl.name,
+            levelBg: lvl.bg,
+            levelColor: lvl.color,
+            bg: BG_COLORS[i % BG_COLORS.length],
+            isMe: p.id === user?.id,
+          };
+        }));
+        // Trier par XP décroissant
+        withCounts.sort((a, b) => b.xp - a.xp);
+        setVoisins(withCounts);
+        setLoading(false);
+      });
+  }, [user?.id]);
 
   const toggleFollow = (id) => setFollows(prev => ({ ...prev, [id]: !prev[id] }));
   const openVoisin = (id) => { setSelectedId(id); setScreen("profile"); };
+  const filters = ["Tous", "Top XP 🏆", "Mon quartier 📍"];
+  const selectedVoisin = voisins.find(v => v.id === selectedId);
 
-  const filters = ["Tous", "Top XP 🏆", "Près de moi 📍", "Abonnements"];
+  const filtered = voisins.filter(v => {
+    if (search && !v.pseudo?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+  const top3 = filtered.slice(0, 3);
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", display: "flex", flexDirection: "column", fontFamily: dm, color: C.ink }}>
 
         {screen === "list" && <>
           <div style={{ padding: "14px 18px 0", flexShrink: 0 }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Voisins 🏘️</div>
-            <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, marginBottom: 10 }}>Les actifs de Nancy ce mois</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <button onClick={() => setPage("profil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2 }}>←</button>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Voisins 🏘️</div>
+            </div>
+            <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10 }}>
+              {loading ? "Chargement…" : `${voisins.length} voisin${voisins.length > 1 ? "s" : ""} inscrit${voisins.length > 1 ? "s" : ""}`}
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, borderRadius: 14, padding: "9px 14px", border: `1px solid ${C.border}`, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: C.ink2 }}>🔍</span>
-              <input placeholder="Recherche un voisin…" style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
-            </div>
-            <div style={{ display: "flex", gap: 6, paddingBottom: 10, overflowX: "auto" }}>
-              {filters.map(f => <button key={f} onClick={() => setFilter(f)} style={{ padding: "5px 13px", borderRadius: 20, fontSize: 11, fontWeight: 500, border: "none", cursor: "pointer", whiteSpace: "nowrap", fontFamily: dm, background: filter === f ? C.ink : C.pill, color: filter === f ? "#fff" : C.ink2 }}>{f}</button>)}
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche un voisin…" style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
             </div>
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 12px" }}>
-            <Podium voisins={voisinsData} onOpen={openVoisin} />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Tous les voisins</div>
-              <div style={{ fontSize: 11, color: C.ink2 }}>28 actifs ce mois</div>
-            </div>
-            {voisinsData.map(v => (
-              <VoisinCard key={v.id} v={v} followed={!!follows[v.id]} onToggleFollow={toggleFollow} onOpen={openVoisin} />
-            ))}
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2 }}>Chargement des voisins…</div>
+            ) : filtered.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 16px" }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>🏘️</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun voisin trouvé</div>
+                <div style={{ fontSize: 12, color: C.ink2 }}>Invite des amis à rejoindre Chipeur !</div>
+              </div>
+            ) : (
+              <>
+                {top3.length >= 3 && <Podium voisins={top3} onOpen={openVoisin} />}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Tous les voisins</div>
+                  <div style={{ fontSize: 11, color: C.ink2 }}>{filtered.length} inscrits</div>
+                </div>
+                {filtered.map(v => (
+                  <VoisinCard key={v.id} v={v} followed={!!follows[v.id]} onToggleFollow={toggleFollow} onOpen={() => openVoisin(v.id)} />
+                ))}
+              </>
+            )}
           </div>
         </>}
 
-        {screen === "profile" && selectedId !== null && (
+        {screen === "profile" && selectedVoisin && (
           <ExtProfile
-            v={voisinsData[selectedId]}
-            followed={!!follows[selectedId]}
-            onToggleFollow={() => toggleFollow(selectedId)}
+            v={selectedVoisin}
+            followed={!!follows[selectedVoisin.id]}
+            onToggleFollow={() => toggleFollow(selectedVoisin.id)}
             onBack={() => setScreen("list")}
           />
         )}
 
-        <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />
-        <BottomNav
-  active="voisins"
-  onNavigate={setPage}
-  onFab={() => setPage("nouveau")}
-/>
+        <BottomNav active="voisins" onNavigate={setPage} onFab={() => setPage("nouveau")} />
     </div>
   );
 }

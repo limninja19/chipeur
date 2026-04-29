@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabase";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -269,16 +270,63 @@ const sorties = [
   },
 ];
 
+const DATE_COLORS = ["#FF5733","#0F766E","#7C3AED","#185FA5","#B45309","#0A3D2E"];
+
+function RealSortieCard({ s, idx }) {
+  const col = DATE_COLORS[idx % DATE_COLORS.length];
+  const d = s.date_text ? new Date(s.date_text.split("/").reverse().join("-")) : null;
+  const day = d && !isNaN(d) ? d.getDate() : "—";
+  const month = d && !isNaN(d) ? d.toLocaleDateString("fr-FR", { month: "short" }) : "";
+  const typeStyles = {
+    "Vide-grenier": { bg: "#FFF3E0", color: "#C2410C" },
+    "Marché": { bg: "#EBF5F0", color: "#065F46" },
+    "Fête": { bg: "#F3E8FF", color: "#6B21A8" },
+    "Concert": { bg: "#EFF6FF", color: "#1E40AF" },
+    "Sport": { bg: "#F0FDF4", color: "#166534" },
+  };
+  const ts = typeStyles[s.type] || { bg: C.pill, color: C.ink2 };
+  return (
+    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
+      <div style={{ display: "flex" }}>
+        <div style={{ width: 52, flexShrink: 0, background: col, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 6px" }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{day}</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{month}</div>
+        </div>
+        <div style={{ flex: 1, padding: "10px 12px" }}>
+          <span style={{ display: "inline-block", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 8, marginBottom: 4, background: ts.bg, color: ts.color }}>{s.type || "Événement"}</span>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.2, marginBottom: 3 }}>{s.title}</div>
+          {s.lieu && <div style={{ fontSize: 11, color: C.ink2 }}>📍 {s.lieu} {s.time_text ? `· ${s.time_text}` : ""}</div>}
+          {s.description && <div style={{ fontSize: 11, color: C.ink2, marginTop: 4, lineHeight: 1.4 }}>{s.description}</div>}
+        </div>
+      </div>
+      <div style={{ padding: "8px 12px 10px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 11, color: C.ink2 }}>📍 {s.ville || "Saint-Dié"}</div>
+        <GoingBtn />
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN ───
 export default function ChipeurSorties({ setPage }) {
   const [filter, setFilter] = useState("Tous");
   const [fabOpen, setFabOpen] = useState(false);
+  const [realSorties, setRealSorties] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const groups = [
-    { key: "today", label: "Aujourd'hui · 26 avril", isToday: true },
-    { key: "demain", label: "Demain · 27 avril", isToday: false },
-    { key: "juillet", label: "14 juillet · Fête nationale", isToday: false },
-  ];
+  useEffect(() => {
+    supabase
+      .from("sorties")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setRealSorties(data);
+        setLoading(false);
+      });
+  }, []);
+
+  const filtered = filter === "Tous" ? realSorties
+    : realSorties.filter(s => s.type === filter);
 
   return (
     <div style={{
@@ -287,8 +335,6 @@ export default function ChipeurSorties({ setPage }) {
       fontFamily: "'DM Sans', sans-serif", color: C.ink,
       display: "flex", flexDirection: "column",
     }}>
-
-        {/* Page header */}
         <div style={{ padding: "4px 16px 8px", flexShrink: 0 }}>
           <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, margin: 0 }}>Sorties</h1>
           <p style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>Événements dans ton quartier</p>
@@ -296,29 +342,23 @@ export default function ChipeurSorties({ setPage }) {
 
         <Filters active={filter} onSelect={setFilter} />
 
-        {/* Scroll area */}
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
-          {groups.map(g => {
-            const items = sorties.filter(s => s.group === g.key);
-            if (items.length === 0) return null;
-            return (
-              <div key={g.key}>
-                <DayLabel label={g.label} isToday={g.isToday} />
-                {items.map((s, i) => <SortieCard key={i} data={s} />)}
-              </div>
-            );
-          })}
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2 }}>Chargement…</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 16px" }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>📅</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucune sortie pour l'instant</div>
+              <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16 }}>Sois le premier à partager un événement !</div>
+              <button onClick={() => setPage("nouveau")} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Ajouter une sortie</button>
+            </div>
+          ) : (
+            filtered.map((s, i) => <RealSortieCard key={s.id} s={s} idx={i} />)
+          )}
         </div>
 
-        {/* FAB overlay */}
         <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />
-
-        {/* Bottom nav */}
-        <BottomNav
-  active="sorties"
-  onNavigate={setPage}
-  onFab={() => setPage("nouveau")}
-/>
+        <BottomNav active="sorties" onNavigate={setPage} onFab={() => setPage("nouveau")} />
     </div>
   );
 }
