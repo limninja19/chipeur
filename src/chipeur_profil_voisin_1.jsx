@@ -273,7 +273,7 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
 }
 
 // ─── PARTIE SCROLLABLE : bannière + avatar + stats + réductions ───
-function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount }) {
+function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount, univers }) {
   return (
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
@@ -326,7 +326,8 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount }) {
 
         {/* XP bar réaliste */}
         {(() => {
-          const xp = postCount * 10;
+          const universXp = (univers || []).reduce((sum, it) => sum + (it.xp || 0), 0);
+          const xp = postCount * 10 + universXp;
           const levels = [
             { name: "Débutant·e", min: 0, max: 50 },
             { name: "Explorateur·trice", min: 50, max: 150 },
@@ -352,12 +353,16 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount }) {
 
       {/* Stats row */}
       <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "10px 0" }}>
-        {[
-          { n: String(postCount), l: "publications" },
-          { n: "0", l: "abonnés" },
-          { n: "#—", l: "classement", color: C.gold },
-          { n: "0", l: "XP ce mois", color: C.accent },
-        ].map((s, i) => (
+        {(() => {
+          const universXp = (univers || []).reduce((sum, it) => sum + (it.xp || 0), 0);
+          const totalXp = postCount * 10 + universXp;
+          return [
+            { n: String(postCount), l: "publications" },
+            { n: "0", l: "abonnés" },
+            { n: "#—", l: "classement", color: C.gold },
+            { n: String(totalXp), l: "XP total", color: C.accent },
+          ];
+        })().map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: s.color || C.ink }}>{s.n}</div>
             <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
@@ -643,7 +648,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         <>
           {/* Zone scroll : bannière + avatar + stats + réductions + onglets sticky + contenu */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onLogout={handleLogout} postCount={postCount} />
+            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onLogout={handleLogout} postCount={postCount} univers={univers} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
