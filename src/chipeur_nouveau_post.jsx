@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "./supabase";
+import heic2any from "heic2any";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -54,7 +55,7 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
   const [sizeError, setSizeError] = useState("");
   const inputId = zoneId || "photo-input-main";
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setSizeError("");
@@ -65,10 +66,25 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
       return;
     }
 
-    const url = URL.createObjectURL(file);
+    // Conversion HEIC → JPEG automatique (photos iPhone)
+    const isHeic = file.type === "image/heic" || file.type === "image/heif"
+      || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+
+    let finalFile = file;
+    if (isHeic) {
+      try {
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+        finalFile = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+      } catch (err) {
+        console.error("Conversion HEIC échouée:", err);
+        // On continue avec le fichier original, ça peut quand même marcher
+      }
+    }
+
+    const url = URL.createObjectURL(finalFile);
     setPreview(url);
-    setFileName(file.name);
-    onPhotoSelect && onPhotoSelect(file);
+    setFileName(finalFile.name);
+    onPhotoSelect && onPhotoSelect(finalFile);
   };
 
   const isVideo = fileName && (fileName.toLowerCase().endsWith(".mp4") || fileName.toLowerCase().endsWith(".mov") || fileName.toLowerCase().endsWith(".avi"));
@@ -369,16 +385,18 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
     let image_url = null;
     if (photoFile) {
       const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+      // HEIC/HEIF → on force jpeg car iOS convertit automatiquement
       const safeExt = ["jpg","jpeg","png","gif","webp","mp4","mov"].includes(ext) ? ext : "jpg";
+      const contentType = photoFile.type && photoFile.type !== "" ? photoFile.type : "image/jpeg";
       const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
-      const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile, { contentType: photoFile.type || "image/jpeg" });
+      const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile, { contentType, upsert: false });
       if (upErr) {
-        console.error("Upload error:", upErr);
-        setPublishError("Erreur upload photo : " + upErr.message + ". Le post sera publié sans photo.");
-      } else {
-        const { data } = supabase.storage.from("images").getPublicUrl(path);
-        image_url = data.publicUrl;
+        setPublishing(false);
+        setPublishError("❌ Upload photo échoué : " + upErr.message);
+        return; // on s'arrête — pas de post sans photo si l'upload a raté
       }
+      const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+      image_url = urlData.publicUrl;
     }
 
     const { error } = await supabase.from("posts").insert({
