@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabase";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -68,7 +69,7 @@ function StatusBar() {
   );
 }
 
-function BottomNav({ setPage }) {
+function BottomNav({ setPage, active }) {
   const items = [
     { id: "fil", icon: "🏠", label: "Fil" },
     { id: "sorties", icon: "📅", label: "Sorties" },
@@ -99,7 +100,7 @@ function BottomNav({ setPage }) {
           onClick={() => setPage(it.id)}
           style={{
             display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 3, fontSize: 9, color: C.ink2, cursor: "pointer",
+            gap: 3, fontSize: 9, color: active === it.id ? C.accent : C.ink2, cursor: "pointer",
           }}
         >
           <div style={{ fontSize: 18 }}>{it.icon}</div>
@@ -483,8 +484,9 @@ export default function ChipeurDefis({ setPage }) {
         <>
           <StatusBar />
           <div style={{ padding: "14px 20px 0", flexShrink: 0 }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>
-              Défis 🏆
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
+              <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>←</button>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Défis 🏆</div>
             </div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, marginBottom: 14 }}>
               Rejoins les challenges du quartier
@@ -529,7 +531,7 @@ export default function ChipeurDefis({ setPage }) {
             }
           </div>
           <button
-            onClick={() => setPage("creerDefi")}
+            onClick={() => setPage("nouveau")}
             style={{
               position: "absolute", bottom: 90, left: 20, right: 20,
               background: C.accent, color: "#fff", border: "none",
@@ -558,7 +560,7 @@ export default function ChipeurDefis({ setPage }) {
         <SuccessScreen d={d} onBack={() => setScreen("list")} />
       )}
 
-      <BottomNav setPage={setPage} />
+      <BottomNav setPage={setPage} active="defis" />
     </div>
   );
 }

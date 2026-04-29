@@ -595,7 +595,6 @@ export default function Fil({ setPage, profile }) {
             <PostCard key={post.id} post={post} setPage={setPage} />
           ))
         )}
-        <PostVitrine />
       </div>
       {fabOpen && <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} setPage={setPage} />}
       <BottomNav active="fil" onNavigate={setPage} onFab={() => setFabOpen(!fabOpen)} />

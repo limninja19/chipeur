@@ -158,12 +158,12 @@ function SortieCard({ data }) {
 }
 
 // ─── FAB MENU OVERLAY ───
-function FabMenu({ open, onClose }) {
+function FabMenu({ open, onClose, setPage }) {
   if (!open) return null;
   const items = [
-    { icon: "📸", label: "Nouveau post" },
-    { icon: "📅", label: "Nouvelle sortie" },
-    { icon: "🏆", label: "Créer un défi", pro: true },
+    { icon: "📸", label: "Nouveau post", page: "nouveau" },
+    { icon: "📅", label: "Nouvelle sortie", page: "nouveau" },
+    { icon: "🏆", label: "Créer un défi", page: "defis", pro: true },
   ];
   return (
     <div onClick={onClose} style={{
@@ -176,7 +176,7 @@ function FabMenu({ open, onClose }) {
         alignItems: "center", padding: "0 60px 12px",
       }}>
         {items.map((item, i) => (
-          <button key={i} style={{
+          <button key={i} onClick={() => { onClose(); setPage(item.page); }} style={{
             width: "100%", display: "flex", alignItems: "center", gap: 10,
             background: C.card, border: "none", borderRadius: 14,
             padding: "12px 16px", cursor: "pointer",
@@ -335,9 +335,12 @@ export default function ChipeurSorties({ setPage }) {
       fontFamily: "'DM Sans', sans-serif", color: C.ink,
       display: "flex", flexDirection: "column",
     }}>
-        <div style={{ padding: "4px 16px 8px", flexShrink: 0 }}>
-          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, margin: 0 }}>Sorties</h1>
-          <p style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>Événements dans ton quartier</p>
+        <div style={{ padding: "8px 16px 4px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>←</button>
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, margin: 0 }}>Sorties</h1>
+          </div>
+          <p style={{ fontSize: 11, color: C.ink2, marginTop: 1, marginLeft: 34 }}>Événements dans ton quartier</p>
         </div>
 
         <Filters active={filter} onSelect={setFilter} />
@@ -357,7 +360,7 @@ export default function ChipeurSorties({ setPage }) {
           )}
         </div>
 
-        <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />
+        <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} setPage={setPage} />
         <BottomNav active="sorties" onNavigate={setPage} onFab={() => setPage("nouveau")} />
     </div>
   );
