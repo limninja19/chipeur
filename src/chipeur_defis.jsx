@@ -110,9 +110,22 @@ function DetailScreen({ d, onBack, onParticipe }) {
 }
 
 function ParticipeScreen({ d, onBack, onPublish }) {
-  const [hasImg, setHasImg] = useState(false);
+  const [imgPreview, setImgPreview] = useState(null);
   const [activeTags, setActiveTags] = useState([d.tags[0]]);
+  const fileInputRef = useState(null);
   const toggleTag = t => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+
+  function handleFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setImgPreview(url);
+  }
+
+  function openPicker() {
+    document.getElementById("defi-file-input").click();
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
       <div style={{ padding: "14px 20px 0", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
@@ -124,17 +137,32 @@ function ParticipeScreen({ d, onBack, onPublish }) {
           <div style={{ fontSize: 22 }}>{d.icon}</div>
           <div><div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)" }}>Tu réponds au défi</div><div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "#fff" }}>{d.title}</div></div>
         </div>
-        <div onClick={() => setHasImg(!hasImg)} style={{
-          background: hasImg ? C.pill : C.card, border: hasImg ? `2px solid ${C.accent}` : "2px dashed rgba(232,73,10,0.3)",
+
+        {/* Input fichier caché — ouvre galerie/appareil photo */}
+        <input
+          id="defi-file-input"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          style={{ display: "none" }}
+        />
+
+        <div onClick={openPicker} style={{
+          background: imgPreview ? "#000" : C.card,
+          border: imgPreview ? `2px solid ${C.accent}` : "2px dashed rgba(255,87,51,0.35)",
           borderRadius: 18, aspectRatio: "4/3", display: "flex", flexDirection: "column", alignItems: "center",
           justifyContent: "center", gap: 8, cursor: "pointer", marginBottom: 14, position: "relative", overflow: "hidden",
         }}>
-          {hasImg ? (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 72, background: C.pill }}>{d.icon}</div>
+          {imgPreview ? (
+            <>
+              <img src={imgPreview} alt="preview" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 8 }}>Changer</div>
+            </>
           ) : <>
             <div style={{ fontSize: 36 }}>📷</div>
-            <div style={{ fontSize: 13, color: C.ink2 }}>Ajoute ta photo</div>
-            <div style={{ fontSize: 11, color: C.ink2, opacity: 0.6 }}>Appuie pour choisir</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>Ajoute ta photo</div>
+            <div style={{ fontSize: 11, color: C.ink2, opacity: 0.7 }}>Galerie ou appareil photo</div>
           </>}
         </div>
         <div style={{ marginBottom: 14 }}>
@@ -155,7 +183,7 @@ function ParticipeScreen({ d, onBack, onPublish }) {
           </div>
         </div>
       </div>
-      <button onClick={onPublish} style={{ position: "absolute", bottom: 90, left: 20, right: 20, background: C.accent, color: "#fff", border: "none", borderRadius: 18, padding: 16, fontSize: 15, fontWeight: 700, fontFamily: dm, cursor: "pointer", zIndex: 10 }}>Publier mon post 🔥</button>
+      <button onClick={onPublish} disabled={!imgPreview} style={{ position: "absolute", bottom: 90, left: 20, right: 20, background: imgPreview ? C.accent : "#ccc", color: "#fff", border: "none", borderRadius: 18, padding: 16, fontSize: 15, fontWeight: 700, fontFamily: dm, cursor: imgPreview ? "pointer" : "not-allowed", zIndex: 10 }}>Publier mon post 🔥</button>
     </div>
   );
 }
