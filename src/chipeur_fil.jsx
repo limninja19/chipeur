@@ -21,10 +21,15 @@ function StatusBar() {
 }
 
 // ─── APP HEADER ───
-function AppHeader() {
+function AppHeader({ setPage }) {
+  const voisins = [
+    { emoji: "👩", bg: "#FEF3E0" },
+    { emoji: "👩‍🦰", bg: "#F7EEF7" },
+    { emoji: "🧑", bg: "#E8F4FD" },
+  ];
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 16px 4px", flexShrink: 0 }}>
-      {/* Logo : icône pin + wordmark */}
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 16px 6px", flexShrink: 0 }}>
+      {/* Logo */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <svg width="28" height="28" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -46,9 +51,23 @@ function AppHeader() {
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 12, fontSize: 18 }}>
-        <span style={{ cursor: "pointer" }}>🔔</span>
-        <span style={{ cursor: "pointer" }}>💬</span>
+      {/* Droite : avatars voisins + icônes */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Avatars voisins actifs — cliquable → page voisins */}
+        <div onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+          {voisins.map((v, i) => (
+            <div key={i} style={{
+              width: 28, height: 28, borderRadius: "50%",
+              background: v.bg, border: `2px solid ${C.bg}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14, marginLeft: i === 0 ? 0 : -8,
+              position: "relative", zIndex: 3 - i,
+            }}>{v.emoji}</div>
+          ))}
+          <div style={{ marginLeft: 5, fontSize: 10, fontWeight: 600, color: C.ink2 }}>+24</div>
+        </div>
+        <span style={{ cursor: "pointer", fontSize: 20 }}>🔔</span>
+        <span style={{ cursor: "pointer", fontSize: 20 }}>💬</span>
       </div>
     </div>
   );
@@ -56,20 +75,27 @@ function AppHeader() {
 
 // ─── FIL TABS ───
 function FilTabs({ active, onSelect, setPage }) {
-  const tabs = ["Tout", "Fil de vie", "Pépites", "Voisins"];
+  const tabs = [
+    { id: "Tout", label: "Tout" },
+    { id: "Trouvailles", label: "Trouvailles" },
+    { id: "Lieux", label: "Lieux" },
+    { id: "Bons plans", label: "Bons plans" },
+    { id: "Défis", label: "Défis" },
+  ];
   return (
-    <div style={{ display: "flex", gap: 6, padding: "4px 12px 8px", overflowX: "auto", flexShrink: 0 }}>
+    <div style={{ display: "flex", gap: 6, padding: "4px 12px 10px", overflowX: "auto", flexShrink: 0, scrollbarWidth: "none" }}>
       {tabs.map(t => (
         <button
-  key={t}
-  onClick={() => t === "Voisins" ? setPage("voisins") : onSelect(t)}
-  style={{
-          fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
-          border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-          background: active === t ? C.ink : C.pill,
-          color: active === t ? "#fff" : C.ink2,
-          fontFamily: "'DM Sans', sans-serif",
-        }}>{t}</button>
+          key={t.id}
+          onClick={() => t.id === "Défis" ? setPage("defis") : onSelect(t.id)}
+          style={{
+            fontSize: 12, fontWeight: 600, padding: "7px 16px", borderRadius: 20,
+            border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+            background: active === t.id ? C.ink : C.pill,
+            color: active === t.id ? "#fff" : C.ink2,
+            fontFamily: "'DM Sans', sans-serif",
+            transition: "all 0.15s",
+          }}>{t.label}</button>
       ))}
     </div>
   );
@@ -413,4 +439,45 @@ function BottomNav({ active, onNavigate, onFab }) {
           return (
             <div key="fab" onClick={onFab} style={{
               width: 50, height: 50, borderRadius: 25, background: C.accent,
-              display: "flex", alignItems: "center", justifyContent: "cente
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", marginTop: -20, cursor: "pointer" }}>+</div>
+          );
+        }
+        return (
+          <div key={item.id} onClick={() => onNavigate(item.id)} style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            gap: 3, fontSize: 9, color: active === item.id ? C.accent : C.ink2, cursor: "pointer",
+          }}>
+            <div style={{ fontSize: 18 }}>{item.icon}</div>
+            <span>{item.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function Fil({ setPage }) {
+  const [activeTab, setActiveTab] = useState("Tout");
+  const [fabOpen, setFabOpen] = useState(false);
+
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      background: C.bg, overflow: "hidden",
+      fontFamily: "'DM Sans', sans-serif", color: C.ink,
+      display: "flex", flexDirection: "column",
+    }}>
+      <AppHeader setPage={setPage} />
+      <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
+        {/* Carrousel défis — défile avec le contenu */}
+        <BandeauDefis setPage={setPage} />
+        <PostVoisin setPage={setPage} />
+        <PostVitrine />
+        <PostVoisin setPage={setPage} />
+      </div>
+      {fabOpen && <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />}
+      <BottomNav active="fil" onNavigate={setPage} onFab={() => setFabOpen(!fabOpen)} />
+    </div>
+  );
+}
