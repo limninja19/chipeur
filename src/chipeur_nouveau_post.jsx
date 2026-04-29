@@ -47,13 +47,22 @@ function TagPills({ tags }) {
 }
 
 // ─── PHOTO ZONE ───
-function PhotoZone({ onPhotoSelect }) {
+function PhotoZone({ onPhotoSelect, zoneId }) {
   const [preview, setPreview] = useState(null);
-  const inputRef = { current: null };
+  const [photoError, setPhotoError] = useState("");
+  const inputId = zoneId || "photo-input-main";
 
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setPhotoError("");
+
+    // Vérifier la taille (max 20 Mo)
+    if (file.size > 20 * 1024 * 1024) {
+      setPhotoError("Photo trop grande (max 20 Mo). Essaie avec une photo moins lourde.");
+      return;
+    }
+
     const url = URL.createObjectURL(file);
     setPreview(url);
     onPhotoSelect && onPhotoSelect(file);
@@ -66,9 +75,14 @@ function PhotoZone({ onPhotoSelect }) {
         accept="image/*,video/*"
         onChange={handleFile}
         style={{ display: "none" }}
-        id="photo-input"
+        id={inputId}
       />
-      <label htmlFor="photo-input" style={{
+      {photoError && (
+        <div style={{ background: "#FFF0EE", color: "#C0392B", fontSize: 11, padding: "8px 12px", borderRadius: 10, marginBottom: 8 }}>
+          ⚠️ {photoError}
+        </div>
+      )}
+      <label htmlFor={inputId} style={{
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         width: "100%", aspectRatio: "4/3",
         background: preview ? "transparent" : C.card,
@@ -77,14 +91,14 @@ function PhotoZone({ onPhotoSelect }) {
       }}>
         {preview ? (
           <>
-            <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
-            <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.6)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>Changer</div>
+            <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} onError={() => setPhotoError("Format non supporté. Essaie avec une photo JPG ou PNG.")} />
+            <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.6)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>Changer 📷</div>
           </>
         ) : (
           <>
             <div style={{ fontSize: 32, marginBottom: 6, opacity: 0.4 }}>📷</div>
             <div style={{ fontSize: 11, color: C.ink2, fontWeight: 500 }}>Ajouter une photo</div>
-            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.6, marginTop: 3 }}>Photo ou vidéo depuis ta galerie</div>
+            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.6, marginTop: 3 }}>Appuie ici pour choisir depuis ta galerie</div>
           </>
         )}
       </label>
@@ -331,10 +345,14 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
 
     let image_url = null;
     if (photoFile) {
-      const ext = photoFile.name.split(".").pop();
-      const path = `posts/${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile);
-      if (!upErr) {
+      const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+      const safeExt = ["jpg","jpeg","png","gif","webp","mp4","mov"].includes(ext) ? ext : "jpg";
+      const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile, { contentType: photoFile.type || "image/jpeg" });
+      if (upErr) {
+        console.error("Upload error:", upErr);
+        setPublishError("Erreur upload photo : " + upErr.message + ". Le post sera publié sans photo.");
+      } else {
         const { data } = supabase.storage.from("images").getPublicUrl(path);
         image_url = data.publicUrl;
       }
@@ -348,7 +366,11 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       tags: [],
     });
     setPublishing(false);
-    if (error) { setPublishError(error.message); return; }
+    if (error) {
+      console.error("Insert error:", error);
+      setPublishError("Erreur Supabase : " + error.message);
+      return;
+    }
     setScreen("success");
   };
 
