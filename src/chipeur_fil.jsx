@@ -433,12 +433,12 @@ function PostVitrine() {
 }
 
 // ─── FAB MENU OVERLAY ───
-function FabMenu({ open, onClose }) {
+function FabMenu({ open, onClose, setPage }) {
   if (!open) return null;
   const items = [
-    { icon: "📸", label: "Nouveau post" },
-    { icon: "📅", label: "Nouvelle sortie" },
-    { icon: "🏆", label: "Créer un défi", pro: true },
+    { icon: "📸", label: "Nouveau post", page: "nouveau" },
+    { icon: "📅", label: "Nouvelle sortie", page: "sorties" },
+    { icon: "🏆", label: "Créer un défi", page: "defis", pro: true },
   ];
   return (
     <div onClick={onClose} style={{
@@ -452,7 +452,7 @@ function FabMenu({ open, onClose }) {
         alignItems: "center", padding: "0 60px 12px",
       }}>
         {items.map((item, i) => (
-          <button key={i} style={{
+          <button key={i} onClick={() => { onClose(); setPage(item.page); }} style={{
             width: "100%", display: "flex", alignItems: "center", gap: 10,
             background: C.card, border: "none", borderRadius: 14,
             padding: "12px 16px", cursor: "pointer",
@@ -561,7 +561,7 @@ export default function Fil({ setPage, profile }) {
         )}
         <PostVitrine />
       </div>
-      {fabOpen && <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} />}
+      {fabOpen && <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} setPage={setPage} />}
       <BottomNav active="fil" onNavigate={setPage} onFab={() => setFabOpen(!fabOpen)} />
     </div>
   );
