@@ -47,32 +47,47 @@ function TagPills({ tags }) {
 }
 
 // ─── PHOTO ZONE ───
-function PhotoZone({ hasPhotoDefault, emoji }) {
-  const [hasPhoto, setHasPhoto] = useState(hasPhotoDefault || false);
+function PhotoZone({ onPhotoSelect }) {
+  const [preview, setPreview] = useState(null);
+  const inputRef = { current: null };
+
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    onPhotoSelect && onPhotoSelect(file);
+  };
+
   return (
-    <div onClick={() => setHasPhoto(!hasPhoto)} style={{
-      width: "100%", aspectRatio: "4/3", background: hasPhoto ? C.pill : C.card,
-      borderRadius: 16, border: hasPhoto ? `1px solid ${C.border}` : "2px dashed rgba(26,23,20,0.15)",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      cursor: "pointer", marginBottom: 14, position: "relative", overflow: "hidden",
-      transition: "all 0.2s",
-    }}>
-      {hasPhoto ? (
-        <>
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 64 }}>{emoji || "👗"}</div>
-          <button onClick={e => { e.stopPropagation(); setHasPhoto(false); }} style={{
-            position: "absolute", bottom: 8, right: 8,
-            background: "rgba(26,23,20,0.6)", color: "#fff",
-            fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
-            border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-          }}>Changer la photo</button>
-        </>
-      ) : (
-        <>
-          <div style={{ fontSize: 32, marginBottom: 6, opacity: 0.4 }}>📷</div>
-          <div style={{ fontSize: 11, color: C.ink2, fontWeight: 500 }}>Ajouter une photo</div>
-        </>
-      )}
+    <div style={{ marginBottom: 14 }}>
+      <input
+        type="file"
+        accept="image/*,video/*"
+        onChange={handleFile}
+        style={{ display: "none" }}
+        id="photo-input"
+      />
+      <label htmlFor="photo-input" style={{
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        width: "100%", aspectRatio: "4/3",
+        background: preview ? "transparent" : C.card,
+        borderRadius: 16, border: preview ? "none" : "2px dashed rgba(26,23,20,0.15)",
+        cursor: "pointer", overflow: "hidden", position: "relative",
+      }}>
+        {preview ? (
+          <>
+            <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }} />
+            <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.6)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>Changer</div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 32, marginBottom: 6, opacity: 0.4 }}>📷</div>
+            <div style={{ fontSize: 11, color: C.ink2, fontWeight: 500 }}>Ajouter une photo</div>
+            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.6, marginTop: 3 }}>Photo ou vidéo depuis ta galerie</div>
+          </>
+        )}
+      </label>
     </div>
   );
 }
@@ -128,10 +143,10 @@ function PepiteToggle() {
 }
 
 // ─── FORM: TROUVAILLE ───
-function FormDecouverte({ content, onChange }) {
+function FormDecouverte({ content, onChange, onPhotoSelect }) {
   return (
     <>
-      <PhotoZone hasPhotoDefault={false} emoji="👗" />
+      <PhotoZone onPhotoSelect={onPhotoSelect} />
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Description</label>
         <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Partage ta trouvaille avec le quartier..." style={{
@@ -297,6 +312,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [screen, setScreen] = useState("form");
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
 
@@ -312,9 +328,22 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
     if (!user?.id) { setPublishError("Tu dois être connecté pour publier."); return; }
     setPublishing(true);
     setPublishError("");
+
+    let image_url = null;
+    if (photoFile) {
+      const ext = photoFile.name.split(".").pop();
+      const path = `posts/${user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile);
+      if (!upErr) {
+        const { data } = supabase.storage.from("images").getPublicUrl(path);
+        image_url = data.publicUrl;
+      }
+    }
+
     const { error } = await supabase.from("posts").insert({
       author_id: user.id,
       content: content.trim(),
+      image_url,
       location: "Saint-Dié-des-Vosges",
       tags: [],
     });
@@ -324,7 +353,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   };
 
   const formMap = {
-    decouverte: <FormDecouverte content={content} onChange={setContent} />,
+    decouverte: <FormDecouverte content={content} onChange={setContent} onPhotoSelect={setPhotoFile} />,
     lieu: <FormLieu />,
     sortie: <FormSortie />,
     bonplan: <FormBonPlan />,
