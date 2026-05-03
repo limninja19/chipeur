@@ -15,13 +15,6 @@ const COLORS = {
   borderFocus: "rgba(232,73,10,0.4)",
 };
 
-const fontLink = document.createElement("link");
-fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap";
-fontLink.rel = "stylesheet";
-if (!document.querySelector(`link[href="${fontLink.href}"]`)) {
-  document.head.appendChild(fontLink);
-}
-
 // ─── STATUS BAR ───
 function StatusBar({ light }) {
   return (

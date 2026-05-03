@@ -2,11 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { useProfile } from "./useProfile";
 
-const _font = document.createElement("link");
-_font.href = "https://fonts.googleapis.com/css2?family=Syne:wght@800&family=Syne+Mono&display=swap";
-_font.rel = "stylesheet";
-if (!document.querySelector(`link[href="${_font.href}"]`)) document.head.appendChild(_font);
-
 import Fil from "./chipeur_fil";
 import Defis from "./chipeur_defis";
 import Sorties from "./chipeur_sorties";

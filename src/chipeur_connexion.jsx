@@ -12,11 +12,6 @@ const C = {
   borderFocus: "rgba(255,87,51,0.4)",
 };
 
-const fontLink = document.createElement("link");
-fontLink.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap";
-fontLink.rel = "stylesheet";
-if (!document.querySelector(`link[href="${fontLink.href}"]`)) document.head.appendChild(fontLink);
-
 function Logo() {
   return (
     <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
