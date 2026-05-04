@@ -365,6 +365,79 @@ function FormBonPlan({ content, onChange, onPhotoSelect, activeTags, onTagToggle
   );
 }
 
+// ─── POPUP DROIT À L'IMAGE ───
+function DroitImagePopup({ onConfirm, onCancel }) {
+  const [nePlusAfficher, setNePlusAfficher] = useState(false);
+  const handlePublier = () => {
+    if (nePlusAfficher) localStorage.setItem("chipeur_droitimage_ok", "1");
+    onConfirm();
+  };
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(26,23,20,0.55)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+      zIndex: 200, padding: "0 0 0 0",
+    }}>
+      <div style={{
+        background: C.card, borderRadius: "24px 24px 0 0",
+        padding: "24px 20px 32px", width: "100%", maxWidth: 480,
+        boxShadow: "0 -4px 24px rgba(0,0,0,0.12)",
+      }}>
+        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 4 }}>
+          📸 Avant de publier
+        </div>
+        <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16, lineHeight: 1.5 }}>
+          En publiant ce contenu, vous confirmez :
+        </div>
+        {[
+          "être l'auteur·rice de la photo ou vidéo, ou disposer des droits nécessaires à sa diffusion",
+          "avoir obtenu l'accord des personnes identifiables apparaissant sur le contenu",
+          "que ce contenu respecte les CGU de Chipeur",
+        ].map((item, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "flex-start" }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: "50%", background: C.proBg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 10, color: C.pro, flexShrink: 0, marginTop: 1,
+            }}>✓</div>
+            <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.5 }}>{item}</div>
+          </div>
+        ))}
+        <div style={{
+          fontSize: 10, color: C.ink2, background: C.pill, borderRadius: 10,
+          padding: "8px 12px", marginBottom: 16, lineHeight: 1.5,
+        }}>
+          Chipeur ne pourra être tenu responsable en cas de non-respect de ces engagements.
+        </div>
+        <div
+          onClick={() => setNePlusAfficher(!nePlusAfficher)}
+          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, cursor: "pointer" }}
+        >
+          <div style={{
+            width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+            border: `2px solid ${nePlusAfficher ? C.accent : C.border}`,
+            background: nePlusAfficher ? C.accent : C.card,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.15s",
+          }}>
+            {nePlusAfficher && <span style={{ color: "#fff", fontSize: 11 }}>✓</span>}
+          </div>
+          <span style={{ fontSize: 12, color: C.ink2 }}>Ne plus afficher ce message</span>
+        </div>
+        <button onClick={handlePublier} style={{
+          width: "100%", background: C.accent, color: "#fff", border: "none",
+          borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 700,
+          fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginBottom: 10,
+        }}>Publier</button>
+        <button onClick={onCancel} style={{
+          width: "100%", background: "none", color: C.ink2, border: "none",
+          fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+        }}>Annuler</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── SUCCESS SCREEN ───
 function SuccessScreen({ type, onBack }) {
   const msgs = {
@@ -405,6 +478,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
+  const [showDroitImage, setShowDroitImage] = useState(false);
   // Tags (partagé entre trouvaille et bon plan)
   const [activeTags, setActiveTags] = useState([]);
   const handleTagToggle = (label) =>
@@ -424,6 +498,14 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
     { id: "sortie", icon: "🎉", name: "Sortie", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
     { id: "bonplan", icon: "💡", name: "Bon plan", desc: "Un conseil, une adresse à ne pas rater", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
   ];
+
+  const handlePublishClick = () => {
+    if (localStorage.getItem("chipeur_droitimage_ok") === "1") {
+      handlePublish();
+    } else {
+      setShowDroitImage(true);
+    }
+  };
 
   const handlePublish = async () => {
     if (!user?.id) { setPublishError("Tu dois être connecté pour publier."); return; }
@@ -551,7 +633,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
             }}>
               <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>✕</button>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700 }}>Nouveau post</div>
-              <button onClick={handlePublish} disabled={publishing} style={{
+              <button onClick={handlePublishClick} disabled={publishing} style={{
                 background: publishing ? "#ccc" : C.accent, color: "#fff", border: "none", borderRadius: 20,
                 padding: "6px 16px", fontSize: 12, fontWeight: 700,
                 fontFamily: "'DM Sans', sans-serif", cursor: publishing ? "not-allowed" : "pointer",
@@ -626,6 +708,13 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
             <SuccessScreen type={selectedType} onBack={() => setPage("fil")} />
           </>
         )}
+
+      {showDroitImage && (
+        <DroitImagePopup
+          onConfirm={() => { setShowDroitImage(false); handlePublish(); }}
+          onCancel={() => setShowDroitImage(false)}
+        />
+      )}
     </div>
   );
 }

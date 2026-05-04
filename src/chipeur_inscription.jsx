@@ -15,7 +15,30 @@ const COLORS = {
   borderFocus: "rgba(232,73,10,0.4)",
 };
 
-// (StatusBar supprimée — l'app est une vraie PWA, pas une maquette)
+// ─── CHECKBOX LÉGAL ───
+function CheckboxLegal({ checked, onChange, children }) {
+  return (
+    <div
+      onClick={() => onChange(!checked)}
+      style={{
+        display: "flex", alignItems: "flex-start", gap: 10,
+        marginBottom: 12, cursor: "pointer",
+      }}
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 1,
+        border: `2px solid ${checked ? COLORS.accent : COLORS.border}`,
+        background: checked ? COLORS.accent : COLORS.card,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "all 0.15s",
+      }}>
+        {checked && <span style={{ color: "#fff", fontSize: 11, lineHeight: 1 }}>✓</span>}
+      </div>
+      <div style={{ fontSize: 11, color: COLORS.ink2, lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif" }}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 // ─── STEP DOTS ───
@@ -75,6 +98,9 @@ function ScreenInscription({ onNext }) {
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
+  const [acceptCGU, setAcceptCGU] = useState(false);
+  const [acceptRGPD, setAcceptRGPD] = useState(false);
+  const canProceed = prenom.trim() && email.trim() && mdp.length >= 6 && acceptCGU && acceptRGPD;
 
   return (
     <div style={{
@@ -96,12 +122,33 @@ function ScreenInscription({ onNext }) {
       <StepDots current={0} />
       <Field label="PRÉNOM" placeholder="Comment tu t'appelles ?" value={prenom} onChange={setPrenom} />
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
-      <Field label="MOT DE PASSE" type="password" placeholder="8 caractères minimum" value={mdp} onChange={setMdp} />
-      <button onClick={() => onNext({ prenom, email, mdp })} style={{
-        width: "100%", background: COLORS.accent, color: "#fff", border: "none",
-        borderRadius: 16, padding: 15, fontSize: 15, fontWeight: 600,
-        fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 8,
-      }}>
+      <Field label="MOT DE PASSE" type="password" placeholder="6 caractères minimum" value={mdp} onChange={setMdp} />
+
+      <div style={{ marginBottom: 8 }}>
+        <CheckboxLegal checked={acceptCGU} onChange={setAcceptCGU}>
+          J'ai lu et j'accepte les{" "}
+          <a href="/cgu.html" target="_blank" onClick={e => e.stopPropagation()} style={{ color: COLORS.accent, fontWeight: 600 }}>
+            Conditions Générales d'Utilisation
+          </a>.
+        </CheckboxLegal>
+        <CheckboxLegal checked={acceptRGPD} onChange={setAcceptRGPD}>
+          J'ai lu et j'accepte la{" "}
+          <a href="/politique-confidentialite.html" target="_blank" onClick={e => e.stopPropagation()} style={{ color: COLORS.accent, fontWeight: 600 }}>
+            Politique de confidentialité
+          </a>{" "}
+          et le traitement de mes données personnelles conformément au RGPD.
+        </CheckboxLegal>
+      </div>
+
+      <button
+        onClick={() => canProceed && onNext({ prenom, email, mdp })}
+        disabled={!canProceed}
+        style={{
+          width: "100%", background: canProceed ? COLORS.accent : "#ccc", color: "#fff", border: "none",
+          borderRadius: 16, padding: 15, fontSize: 15, fontWeight: 600,
+          fontFamily: "'DM Sans', sans-serif", cursor: canProceed ? "pointer" : "not-allowed", marginTop: 8,
+          transition: "background 0.2s",
+        }}>
         Créer mon compte →
       </button>
       <div style={{
@@ -213,6 +260,7 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
   const [categorie, setCategorie] = useState("");
   const [adresse, setAdresse] = useState("");
   const [description, setDescription] = useState("");
+  const [acceptCGUM, setAcceptCGUM] = useState(false);
 
   const inputStyle = (name) => ({
     width: "100%",
@@ -403,15 +451,26 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
           ))}
         </div>
 
+        <div style={{ marginTop: 16 }}>
+          <CheckboxLegal checked={acceptCGUM} onChange={setAcceptCGUM}>
+            J'accepte les{" "}
+            <a href="/cgu-marchands.html" target="_blank" onClick={e => e.stopPropagation()} style={{ color: COLORS.accent, fontWeight: 600 }}>
+              Conditions Générales d'Utilisation Marchands
+            </a>
+            , notamment les obligations liées à la publication de contenu commercial, à l'exactitude des informations produits et aux modalités d'abonnement.
+          </CheckboxLegal>
+        </div>
+
         <button
           onClick={() => onValidate({ nom: nomMagasin, cat: categorie, adr: adresse, desc: description, plan: selectedPlan })}
-          disabled={loading || !nomMagasin.trim()}
+          disabled={loading || !nomMagasin.trim() || !acceptCGUM}
           style={{
-            width: "100%", background: loading || !nomMagasin.trim() ? "#ccc" : COLORS.accent,
+            width: "100%", background: loading || !nomMagasin.trim() || !acceptCGUM ? "#ccc" : COLORS.accent,
             color: "#fff", border: "none",
             borderRadius: 16, padding: 14, fontSize: 14, fontWeight: 600,
             fontFamily: "'DM Sans', sans-serif",
-            cursor: loading || !nomMagasin.trim() ? "not-allowed" : "pointer", marginTop: 16,
+            cursor: loading || !nomMagasin.trim() || !acceptCGUM ? "not-allowed" : "pointer", marginTop: 8,
+            transition: "background 0.2s",
           }}>
           {loading ? "⏳ Création du compte…" : "Choisir ce plan et continuer →"}
         </button>
