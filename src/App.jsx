@@ -42,6 +42,20 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Sync : si le profil existe mais que le role est manquant,
+  // on le récupère depuis les métadonnées Auth (cas commerçant avec email non confirmé à l'inscription)
+  useEffect(() => {
+    if (!user || !profile) return;
+    const metaRole = user.user_metadata?.role;
+    const metaPseudo = user.user_metadata?.pseudo;
+    if (metaRole && !profile.role) {
+      updateProfile({
+        role: metaRole,
+        ...(metaPseudo && !profile.pseudo ? { pseudo: metaPseudo } : {}),
+      });
+    }
+  }, [user, profile]);
+
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
 
   if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => setPage("fil")} />;
@@ -56,9 +70,12 @@ export default function App() {
   if (page === "nouveau") return <NouveauPost {...sharedProps} />;
   if (page === "commerces") return <Commerces {...sharedProps} />;
   if (page === "profil") {
-    if (profile?.role === "magasin" || profile?.role === "artisan") {
-      return <ProfilMagasin {...sharedProps} />;
-    }
+    // On vérifie le rôle dans la table profiles ET dans les métadonnées Auth Supabase
+    // (au cas où le trigger n'a pas encore copié le rôle dans profiles)
+    const roleProfil = profile?.role;
+    const roleMeta = user?.user_metadata?.role;
+    const isMarchand = ["magasin", "artisan"].includes(roleProfil) || ["magasin", "artisan"].includes(roleMeta);
+    if (isMarchand) return <ProfilMagasin {...sharedProps} />;
     return <ProfilVoisin {...sharedProps} />;
   }
   if (page === "reductions") return <MesReductions {...sharedProps} />;
