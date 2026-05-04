@@ -54,16 +54,6 @@ const recentPosts = [
   { avatar: "👟", bg: "#F0EBE3", name: "Théo R.", text: "Jordan 1 Low x look total blanc, chaque fois ça marche", fire: "🔥 7" },
 ];
 
-function StatusBar() {
-  return (
-    <div style={{
-      display: "flex", justifyContent: "space-between", alignItems: "center",
-      padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0,
-    }}>
-      <span>9:41</span><span>●●●</span>
-    </div>
-  );
-}
 
 function BottomNav({ setPage, active }) {
   const items = [
@@ -478,7 +468,6 @@ export default function ChipeurDefis({ setPage }) {
     }}>
       {screen === "list" && (
         <>
-          <StatusBar />
           <div style={{ padding: "14px 20px 0", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
               <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>←</button>

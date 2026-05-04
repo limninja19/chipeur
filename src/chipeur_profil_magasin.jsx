@@ -412,8 +412,8 @@ function TabPosts({ userId }) {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
       {posts.map((p, i) => (
         <div key={i} style={{ borderRadius: 12, aspectRatio: "1", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", cursor: "pointer" }}>
-          {p.photo_url
-            ? <img src={p.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          {p.image_url
+            ? <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             : <div style={{ fontSize: 13, color: C.ink2, padding: 8, textAlign: "center", lineHeight: 1.4 }}>{p.content?.substring(0, 40) || "Post"}</div>
           }
           <div style={{ position: "absolute", bottom: 5, left: 5, fontSize: 8, fontWeight: 600, color: C.ink2, background: "rgba(255,255,255,0.85)", padding: "2px 5px", borderRadius: 6 }}>

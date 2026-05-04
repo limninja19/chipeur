@@ -4,8 +4,6 @@ const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", acc
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
-function StatusBar() { return <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0 }}><span>9:41</span><span>●●●</span></div>; }
-
 function BottomNav({ active, onNavigate, onFab }) {
   const items = [{ id: "fil", icon: "🏠", label: "Fil" }, { id: "sorties", icon: "📅", label: "Sorties" }, { id: "fab", isFab: true }, { id: "commerces", icon: "🏪", label: "Commerces" }, { id: "profil", icon: "👤", label: "Profil", active: true }];
   return <div style={{ height: 80, background: C.card, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-around", flexShrink: 0 }}>{items.map(it => it.isFab ? <div key="fab" onClick={onFab} style={{ width: 50, height: 50, borderRadius: 25, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", marginTop: -20, cursor: "pointer" }}>+</div> : <div key={it.id} onClick={() => onNavigate(it.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, fontSize: 9, color: active === it.id ? C.accent : C.ink2, cursor: "pointer" }}><div style={{ fontSize: 18 }}>{it.icon}</div><span>{it.label}</span></div>)}</div>;

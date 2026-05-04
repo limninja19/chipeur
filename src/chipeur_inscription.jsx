@@ -15,38 +15,7 @@ const COLORS = {
   borderFocus: "rgba(232,73,10,0.4)",
 };
 
-// ─── STATUS BAR ───
-function StatusBar({ light }) {
-  return (
-    <div style={{
-      padding: "12px 28px 0",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      fontSize: 11,
-      fontWeight: 600,
-      color: light ? "#fff" : COLORS.ink,
-      flexShrink: 0,
-    }}>
-      <span>9:41</span>
-      <div style={{ display: "flex", gap: 5, alignItems: "center", fontSize: 10 }}>
-        <span>▲▲▲</span>
-        <div style={{
-          width: 20, height: 10,
-          border: `1.5px solid ${light ? "#fff" : COLORS.ink}`,
-          borderRadius: 3,
-          position: "relative",
-          display: "inline-block",
-        }}>
-          <div style={{
-            width: "70%", height: "100%",
-            background: light ? "#fff" : COLORS.ink,
-            borderRadius: 1.5,
-          }} />
-        </div>
-      </div>
-    </div>
-  );
+// (StatusBar supprimée — l'app est une vraie PWA, pas une maquette)
 }
 
 // ─── STEP DOTS ───

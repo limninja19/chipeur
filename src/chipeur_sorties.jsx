@@ -8,15 +8,6 @@ const C = {
 };
 
 
-// ─── STATUS BAR ───
-function StatusBar() {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
-      <span>9:41</span><span>●●●</span>
-    </div>
-  );
-}
-
 // ─── FILTERS ───
 function Filters({ active, onSelect }) {
   const filters = ["Tous", "Aujourd'hui", "Vide-grenier", "Marché", "Fête", "Concert", "Sport"];

@@ -11,8 +11,6 @@ const rewardOptions = [
   { id: "remise", title: "Remise pour tous les participants", sub: "Tous ceux qui participent reçoivent une réduction", hasVoucher: false, hasRemise: true },
 ];
 
-function StatusBar() { return <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0, background: C.pro, color: "#fff" }}><span>9:41</span><span>●●●</span></div>; }
-
 function Label({ children }) { return <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>{children}</div>; }
 function Input(props) { return <input {...props} style={{ width: "100%", padding: "9px 12px", borderRadius: 12, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 12, color: C.ink, background: C.bg, outline: "none", marginBottom: 10, boxSizing: "border-box", ...(props.style || {}) }} />; }
 

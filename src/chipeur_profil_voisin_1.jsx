@@ -274,10 +274,6 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount, univ
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
       <div style={{ height: 110, background: "linear-gradient(135deg, #1A1A2E 0%, #FF5733 60%, #F7A72D 100%)", position: "relative" }}>
-        <div style={{ padding: "10px 16px 0", display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>9:41</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>●●●</span>
-        </div>
         <div style={{ position: "absolute", top: 12, right: 14, background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)", borderRadius: 10, padding: "4px 10px", fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: 0.3 }}>
           ✦ Pépite du Quartier
         </div>
@@ -629,7 +625,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
   };
 
   const handleDelete = async (id) => {
-    await supabase.from("posts").delete().eq("id", id);
+    await supabase.from("posts").delete().eq("id", id).eq("author_id", user.id);
     setPosts(prev => prev.filter(p => p.id !== id));
     setDeleteTarget(null);
   };

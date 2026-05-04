@@ -9,27 +9,14 @@ const C = {
 };
 
 
-// ─── STATUS BAR ───
-function StatusBar() {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
-      <span>9:41</span><span>●●●</span>
-    </div>
-  );
-}
-
 // ─── TAG PILLS ───
-function TagPills({ tags }) {
-  const [active, setActive] = useState(tags.filter(t => t.default).map(t => t.label));
-  const toggle = (label) => {
-    setActive(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
-  };
+function TagPills({ tags, activeTags, onToggle }) {
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
       {tags.map(t => {
-        const isActive = active.includes(t.label);
+        const isActive = activeTags.includes(t.label);
         return (
-          <button key={t.label} onClick={() => toggle(t.label)} style={{
+          <button key={t.label} onClick={() => onToggle(t.label)} style={{
             fontSize: 11, padding: "5px 12px", borderRadius: 20,
             border: `1.5px solid ${isActive ? C.ink : C.border}`,
             background: isActive ? C.ink : C.card,
@@ -192,7 +179,7 @@ function PepiteToggle() {
 }
 
 // ─── FORM: TROUVAILLE ───
-function FormDecouverte({ content, onChange, onPhotoSelect }) {
+function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagToggle }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} />
@@ -211,11 +198,14 @@ function FormDecouverte({ content, onChange, onPhotoSelect }) {
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Tags</label>
-        <TagPills tags={[
-          { label: "Lin", default: true }, { label: "Vintage", default: true },
-          { label: "Été", default: false }, { label: "Vide-grenier", default: false },
-          { label: "Seconde main", default: false }, { label: "Mode durable", default: false },
-        ]} />
+        <TagPills
+          tags={[
+            { label: "Lin" }, { label: "Vintage" }, { label: "Été" },
+            { label: "Vide-grenier" }, { label: "Seconde main" }, { label: "Mode durable" },
+          ]}
+          activeTags={activeTags}
+          onToggle={onTagToggle}
+        />
       </div>
       <PepiteToggle />
     </>
@@ -312,7 +302,7 @@ function FormSortie({ fields, onChange }) {
 }
 
 // ─── FORM: BON PLAN ───
-function FormBonPlan({ content, onChange, onPhotoSelect }) {
+function FormBonPlan({ content, onChange, onPhotoSelect, activeTags, onTagToggle }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-bonplan" />
@@ -331,10 +321,11 @@ function FormBonPlan({ content, onChange, onPhotoSelect }) {
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Tags</label>
-        <TagPills tags={[
-          { label: "Adresse" }, { label: "Astuce" }, { label: "Promo" },
-          { label: "Qualité" }, { label: "Petit prix" },
-        ]} />
+        <TagPills
+          tags={[{ label: "Adresse" }, { label: "Astuce" }, { label: "Promo" }, { label: "Qualité" }, { label: "Petit prix" }]}
+          activeTags={activeTags}
+          onToggle={onTagToggle}
+        />
       </div>
     </>
   );
@@ -380,6 +371,10 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
+  // Tags (partagé entre trouvaille et bon plan)
+  const [activeTags, setActiveTags] = useState([]);
+  const handleTagToggle = (label) =>
+    setActiveTags(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
   // Sortie fields
   const [sortieFields, setSortieFields] = useState({ title: "", date: "", time: "", lieu: "", desc: "", type: "" });
   const updateSortieField = (key, val) => setSortieFields(prev => ({ ...prev, [key]: val }));
@@ -486,7 +481,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       content: content.trim(),
       image_url,
       location: profile?.quartier || "Saint-Dié-des-Vosges",
-      tags: [],
+      tags: activeTags,
     });
     setPublishing(false);
     if (error) {
@@ -498,10 +493,10 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   };
 
   const formMap = {
-    decouverte: <FormDecouverte content={content} onChange={setContent} onPhotoSelect={setPhotoFile} />,
+    decouverte: <FormDecouverte content={content} onChange={setContent} onPhotoSelect={setPhotoFile} activeTags={activeTags} onTagToggle={handleTagToggle} />,
     lieu: <FormLieu fields={lieuFields} onChange={updateLieuField} onPhotoSelect={setLieuPhotoFile} />,
     sortie: <FormSortie fields={sortieFields} onChange={updateSortieField} />,
-    bonplan: <FormBonPlan content={content} onChange={setContent} onPhotoSelect={setPhotoFile} />,
+    bonplan: <FormBonPlan content={content} onChange={setContent} onPhotoSelect={setPhotoFile} activeTags={activeTags} onTagToggle={handleTagToggle} />,
   };
 
   return (
@@ -543,7 +538,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
                 {types.map(t => {
                   const isSelected = selectedType === t.id;
                   return (
-                    <div key={t.id} onClick={() => setSelectedType(t.id)} style={{
+                    <div key={t.id} onClick={() => { setSelectedType(t.id); setActiveTags([]); }} style={{
                       borderRadius: 20, cursor: "pointer", overflow: "hidden",
                       border: `2px solid ${isSelected ? "transparent" : C.border}`,
                       background: isSelected ? t.grad : C.card,

@@ -15,8 +15,6 @@ function getLevel(xp) {
   return LEVELS.find(l => xp < l.max) || LEVELS[LEVELS.length - 1];
 }
 
-function StatusBar() { return <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px 4px", fontSize: 11, fontWeight: 600, flexShrink: 0 }}><span>9:41</span><span>●●●</span></div>; }
-
 function FabMenu({ open, onClose }) {
   if (!open) return null;
   return <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 100, background: "rgba(26,23,20,0.4)", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "0 0 90px" }}><div onClick={e => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", padding: "0 60px 12px" }}>{[{ icon: "📸", label: "Nouveau post" }, { icon: "📅", label: "Nouvelle sortie" }, { icon: "🏆", label: "Créer un défi", pro: true }].map((it, i) => <button key={i} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, background: C.card, border: "none", borderRadius: 14, padding: "12px 16px", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.12)", fontFamily: dm }}><span style={{ fontSize: 18 }}>{it.icon}</span><span style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{it.label}</span>{it.pro && <span style={{ fontSize: 8, fontWeight: 700, background: C.proBg, color: C.pro, padding: "2px 6px", borderRadius: 6, marginLeft: "auto" }}>PRO</span>}</button>)}</div></div>;
