@@ -254,7 +254,7 @@ function ScreenChoixCompte({ onChoose }) {
 
 // ─── SCREEN 3 : INSCRIPTION MAGASIN ───
 function ScreenMagasin({ onBack, onValidate, loading }) {
-  const [selectedPlan, setSelectedPlan] = useState("mixte");
+  const [selectedPlan, setSelectedPlan] = useState("test");
   const [focused, setFocused] = useState(null);
   const [nomMagasin, setNomMagasin] = useState("");
   const [categorie, setCategorie] = useState("");
@@ -278,6 +278,16 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
   });
 
   const plans = [
+    {
+      id: "test", name: "Je teste", price: "Gratuit", trial: true,
+      features: [
+        { text: "✓ 3 mois offerts", type: "star" },
+        { text: "✓ Plan Mixte complet", type: "star" },
+        { text: "✓ Vitrine + Sponsorisé", type: "ok" },
+        { text: "✓ Bons plans ciblés", type: "ok" },
+        { text: "→ 29,90€/mois ensuite", type: "off" },
+      ],
+    },
     {
       id: "deco", name: "Découverte", price: "9,90€",
       features: [
@@ -365,10 +375,14 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
               marginBottom: 0,
             }}>
             <option value="" disabled>Catégorie…</option>
-            <option>Mode</option>
-            <option>Beauté</option>
-            <option>Restauration</option>
-            <option>Sport</option>
+            <option>Mode & Prêt-à-porter</option>
+            <option>Beauté & Bien-être</option>
+            <option>Artisan</option>
+            <option>Restauration & Traiteur</option>
+            <option>Épicerie & Alimentation</option>
+            <option>Sport & Loisirs</option>
+            <option>Décoration & Maison</option>
+            <option>Services de proximité</option>
             <option>Autre</option>
           </select>
         </div>
@@ -412,7 +426,16 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
                 position: "relative",
               }}
             >
-              {plan.popular && (
+              {plan.trial && (
+                <div style={{
+                  position: "absolute", top: -1, right: 12,
+                  background: COLORS.pro, color: "#fff",
+                  fontSize: 9, fontWeight: 700, padding: "3px 8px",
+                  borderRadius: "0 0 8px 8px", letterSpacing: 0.3,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>🎁 Offre pilote</div>
+              )}
+              {plan.popular && !plan.trial && (
                 <div style={{
                   position: "absolute", top: -1, right: 12,
                   background: COLORS.accent, color: "#fff",
@@ -429,13 +452,18 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
                   fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: COLORS.ink,
                 }}>{plan.name}</div>
                 <div style={{
-                  fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18, color: COLORS.accent,
+                  fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18,
+                  color: plan.trial ? COLORS.pro : COLORS.accent,
                 }}>
                   {plan.price}{" "}
-                  <span style={{
+                  {!plan.trial && <span style={{
                     fontSize: 11, fontWeight: 400, color: COLORS.ink2,
                     fontFamily: "'DM Sans', sans-serif",
-                  }}>/mois</span>
+                  }}>/mois</span>}
+                  {plan.trial && <span style={{
+                    fontSize: 10, fontWeight: 400, color: COLORS.pro,
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}>pendant 3 mois</span>}
                 </div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
