@@ -9,7 +9,7 @@ function Label({ children }) { return <div style={{ fontSize: 11, fontWeight: 60
 function Input(props) { return <input {...props} style={{ width: "100%", padding: "9px 12px", borderRadius: 12, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 12, color: C.ink, background: C.bg, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />; }
 
 // ─── HEADER DU PROFIL MAGASIN ───
-function MagHeader({ profile, postCount, onEdit }) {
+function MagHeader({ profile, postCount, headerStats, onEdit }) {
   const name = profile?.pseudo || "Mon enseigne";
   const isArtisan = profile?.role === "artisan";
   const avatar = profile?.avatar_url;
@@ -43,10 +43,10 @@ function MagHeader({ profile, postCount, onEdit }) {
       {/* Stats */}
       <div style={{ display: "flex", marginTop: 12 }}>
         {[
-          { v: "—", l: "Vues ce mois" },
-          { v: "—", l: "Intéressés" },
           { v: postCount != null ? String(postCount) : "—", l: "Posts" },
-          { v: "0", l: "Remises actives" },
+          { v: headerStats?.reactions != null ? String(headerStats.reactions) : "—", l: "Réactions" },
+          { v: headerStats?.voisins != null ? String(headerStats.voisins) : "—", l: "Voisins touchés" },
+          { v: "—", l: "Remises actives" },
         ].map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? "1px solid rgba(255,255,255,0.15)" : "none" }}>
             <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 700, color: "#fff" }}>{s.v}</div>
@@ -181,107 +181,127 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
 }
 
 // ─── ONGLET DASHBOARD ───
+const REACTION_TYPES = [
+  { type: "veux",       emoji: "🛒", label: "Je le veux",    color: "#0F766E", bg: "#F0FDF9", highlight: true },
+  { type: "aime",       emoji: "❤️", label: "J'aime",        color: "#C0392B", bg: "#FFF0EE" },
+  { type: "kiffe",      emoji: "🔥", label: "Je kiffe",      color: "#E65100", bg: "#FFF3E0" },
+  { type: "style",      emoji: "✨", label: "Mon style",     color: "#7C3AED", bg: "#F5F3FF" },
+  { type: "recommande", emoji: "👍", label: "Je recommande", color: "#1565C0", bg: "#E8F4FD" },
+];
+
 function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
   const [period, setPeriod] = useState("semaine");
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeBar, setActiveBar] = useState(null);
+  // Métriques
   const [totalReactions, setTotalReactions] = useState(0);
+  const [reactionsByType, setReactionsByType] = useState({});
+  const [uniqueUsers, setUniqueUsers] = useState(0);
+  const [topPosts, setTopPosts] = useState([]);
 
-  useEffect(() => {
-    if (!userId) return;
-    loadChartData();
-  }, [period, userId]);
+  useEffect(() => { if (userId) loadData(); }, [period, userId]);
 
-  const loadChartData = async () => {
+  const loadData = async () => {
     setLoading(true);
     setActiveBar(null);
     const now = new Date();
     let startDate, labels;
 
     if (period === "semaine") {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 6);
-      startDate.setHours(0, 0, 0, 0);
-      const JOURS = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
+      startDate = new Date(now); startDate.setDate(startDate.getDate() - 6); startDate.setHours(0,0,0,0);
+      const JOURS = ["Di","Lu","Ma","Me","Je","Ve","Sa"];
       labels = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(now);
-        d.setDate(d.getDate() - (6 - i));
+        const d = new Date(now); d.setDate(d.getDate() - (6 - i));
         return { label: i === 6 ? "Auj." : JOURS[d.getDay()], date: new Date(d) };
       });
     } else if (period === "mois") {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 27);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = new Date(now); startDate.setDate(startDate.getDate() - 27); startDate.setHours(0,0,0,0);
       labels = Array.from({ length: 4 }, (_, i) => {
-        const end = new Date(now);
-        end.setDate(end.getDate() - (3 - i) * 7);
-        const start = new Date(end);
-        start.setDate(start.getDate() - 6);
-        return { label: `S${i + 1}`, start, end };
+        const end = new Date(now); end.setDate(end.getDate() - (3 - i) * 7);
+        const start = new Date(end); start.setDate(start.getDate() - 6);
+        return { label: `S${i+1}`, start, end };
       });
     } else {
-      startDate = new Date(now);
-      startDate.setMonth(startDate.getMonth() - 11);
-      startDate.setDate(1);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = new Date(now); startDate.setMonth(startDate.getMonth() - 11); startDate.setDate(1); startDate.setHours(0,0,0,0);
       const MOIS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
       labels = Array.from({ length: 12 }, (_, i) => {
-        const m = new Date(now);
-        m.setMonth(m.getMonth() - (11 - i));
+        const m = new Date(now); m.setMonth(m.getMonth() - (11 - i));
         return { label: MOIS[m.getMonth()], month: m.getMonth(), year: m.getFullYear() };
       });
     }
 
+    // ── Charger les posts ──
     const { data: posts } = await supabase
-      .from("posts")
-      .select("id, created_at")
-      .eq("author_id", userId)
-      .gte("created_at", startDate.toISOString());
+      .from("posts").select("id, created_at, content, image_url")
+      .eq("author_id", userId).gte("created_at", startDate.toISOString());
 
-    // Compter les réactions reçues
-    if (posts && posts.length > 0) {
-      const ids = posts.map(p => p.id);
-      const { count } = await supabase
-        .from("post_reactions")
-        .select("id", { count: "exact", head: true })
-        .in("post_id", ids);
-      setTotalReactions(count || 0);
-    } else {
-      setTotalReactions(0);
-    }
-
-    // Grouper par période
-    const result = labels.map(l => {
-      let count = 0;
+    // ── Graphique activité ──
+    const chartResult = labels.map(l => {
+      let cnt = 0;
       (posts || []).forEach(p => {
         const d = new Date(p.created_at);
         if (period === "semaine") {
           const ld = l.date;
-          if (d.getFullYear() === ld.getFullYear() && d.getMonth() === ld.getMonth() && d.getDate() === ld.getDate()) count++;
+          if (d.getFullYear()===ld.getFullYear() && d.getMonth()===ld.getMonth() && d.getDate()===ld.getDate()) cnt++;
         } else if (period === "mois") {
-          if (d >= l.start && d <= l.end) count++;
+          if (d >= l.start && d <= l.end) cnt++;
         } else {
-          if (d.getMonth() === l.month && d.getFullYear() === l.year) count++;
+          if (d.getMonth()===l.month && d.getFullYear()===l.year) cnt++;
         }
       });
-      return { label: l.label, value: count };
+      return { label: l.label, value: cnt };
     });
+    setChartData(chartResult);
 
-    setChartData(result);
+    // ── Réactions ──
+    if (posts && posts.length > 0) {
+      const ids = posts.map(p => p.id);
+
+      // Toutes les réactions
+      const { data: reactions } = await supabase
+        .from("post_reactions").select("post_id, user_id, type")
+        .in("post_id", ids);
+
+      const allReactions = reactions || [];
+      setTotalReactions(allReactions.length);
+
+      // Par type
+      const byType = {};
+      allReactions.forEach(r => { byType[r.type] = (byType[r.type] || 0) + 1; });
+      setReactionsByType(byType);
+
+      // Utilisateurs uniques
+      const uniq = new Set(allReactions.map(r => r.user_id));
+      setUniqueUsers(uniq.size);
+
+      // Top 3 posts par réactions
+      const countsByPost = {};
+      allReactions.forEach(r => { countsByPost[r.post_id] = (countsByPost[r.post_id] || 0) + 1; });
+      const sorted = [...posts]
+        .map(p => ({ ...p, reactionCount: countsByPost[p.id] || 0 }))
+        .sort((a, b) => b.reactionCount - a.reactionCount)
+        .slice(0, 3);
+      setTopPosts(sorted);
+    } else {
+      setTotalReactions(0); setReactionsByType({}); setUniqueUsers(0); setTopPosts([]);
+    }
+
     setLoading(false);
   };
 
   const maxValue = Math.max(...chartData.map(d => d.value), 1);
+  const maxReaction = Math.max(...REACTION_TYPES.map(r => reactionsByType[r.type] || 0), 1);
+  const intentionCount = reactionsByType["veux"] || 0;
 
   return <>
-    {/* Sélecteur période + titre */}
+    {/* Sélecteur période */}
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0 6px" }}>
       <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5 }}>
-        Activité — posts
+        Tableau de bord
       </div>
       <div style={{ display: "flex", gap: 4 }}>
-        {[{ id: "semaine", label: "7 jours" }, { id: "mois", label: "Mois" }, { id: "annee", label: "Année" }].map(p => (
+        {[{ id: "semaine", label: "7 j" }, { id: "mois", label: "Mois" }, { id: "annee", label: "Année" }].map(p => (
           <button key={p.id} onClick={() => setPeriod(p.id)} style={{
             fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 10,
             border: "none", cursor: "pointer", fontFamily: dm,
@@ -292,86 +312,138 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
       </div>
     </div>
 
-    {/* Graphique */}
-    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, padding: "14px 12px 10px", marginBottom: 10 }}>
-      {loading ? (
-        <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "center", color: C.ink2, fontSize: 11 }}>⏳</div>
-      ) : (
-        <>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 64, position: "relative" }}>
-            {chartData.map((d, i) => {
-              const hPct = maxValue > 0 ? Math.max((d.value / maxValue) * 100, d.value > 0 ? 6 : 2) : 2;
-              const isLast = i === chartData.length - 1;
-              const isActive = activeBar === i;
-              return (
-                <div key={i} onClick={() => setActiveBar(isActive ? null : i)}
-                  style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", height: "100%", justifyContent: "flex-end", position: "relative" }}>
-                  {isActive && (
-                    <div style={{
-                      position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)",
-                      background: C.pro, color: "#fff", fontSize: 10, fontWeight: 700,
-                      padding: "3px 7px", borderRadius: 7, whiteSpace: "nowrap", zIndex: 10,
-                    }}>
-                      {d.value} post{d.value > 1 ? "s" : ""}
-                    </div>
-                  )}
-                  <div style={{
-                    width: "100%", borderRadius: "4px 4px 0 0",
-                    height: `${hPct}%`,
-                    background: isActive ? C.accent : (isLast ? C.pro : C.proBg),
-                    transition: "background 0.15s, height 0.3s",
-                  }} />
-                </div>
-              );
-            })}
+    {loading ? (
+      <div style={{ textAlign: "center", padding: "32px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+    ) : <>
+
+      {/* ── KPI INTENTION D'ACHAT (highlight) ── */}
+      {intentionCount > 0 && (
+        <div style={{ background: "linear-gradient(135deg,#0F766E,#34D399)", borderRadius: 16, padding: "14px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ fontSize: 30 }}>🛒</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{intentionCount}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>intention{intentionCount > 1 ? "s" : ""} d'achat "Je le veux"</div>
           </div>
-          <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
-            {chartData.map((d, i) => (
-              <div key={i} style={{ flex: 1, fontSize: 8, textAlign: "center", color: i === chartData.length - 1 ? C.pro : C.ink2, fontWeight: i === chartData.length - 1 ? 700 : 400 }}>{d.label}</div>
-            ))}
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", textAlign: "right", maxWidth: 80, lineHeight: 1.4 }}>
+            Signal fort 🎯
           </div>
-          <div style={{ fontSize: 10, color: C.ink2, textAlign: "right", marginTop: 4 }}>
-            Appuie sur une barre pour voir le détail
-          </div>
-        </>
+        </div>
       )}
-    </div>
 
-    {/* Cartes stats */}
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-      {[
-        { v: postCount != null ? String(postCount) : "—", l: "Posts publiés", icon: "📸" },
-        { v: String(totalReactions), l: "Réactions reçues", icon: "❤️" },
-      ].map((r, i) => (
-        <div key={i} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "10px 12px" }}>
-          <div style={{ fontSize: 16, marginBottom: 2 }}>{r.icon}</div>
-          <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: C.ink }}>{r.v}</div>
-          <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{r.l}</div>
-        </div>
-      ))}
-    </div>
-
-    {/* Posts voisins à enrichir */}
-    <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 6px", display: "flex", alignItems: "center", gap: 4 }}>
-      Posts voisins à enrichir
-      <span style={{ background: C.accent, color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 8 }}>2 nouveaux</span>
-    </div>
-    <div style={{ background: "#FFF8F6", border: "1px solid rgba(255,87,51,0.12)", borderRadius: 14, padding: "10px 12px", marginBottom: 10, fontSize: 11, color: C.ink2, lineHeight: 1.5 }}>
-      💡 Quand un voisin publie un post qui mentionne {merchantName || "votre enseigne"}, vous pouvez y ajouter un <b>Pro Layer</b> avec les infos produit.
-    </div>
-    {[
-      { emoji: "👗", name: "Camille R. · il y a 2h", desc: "\"Cette robe lin est incroyable pour l'été...\"" },
-      { emoji: "👒", name: "Sophie M. · il y a 5h", desc: "\"Le chapeau paille que j'ai trouvé ici...\"" },
-    ].map((e, i) => (
-      <div key={i} onClick={() => onEnrich(e)} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, display: "flex", gap: 10, padding: 10, marginBottom: 8, cursor: "pointer", alignItems: "center" }}>
-        <div style={{ width: 44, height: 44, borderRadius: 10, background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{e.emoji}</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{e.name}</div>
-          <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.3 }}>{e.desc}</div>
-        </div>
-        <span style={{ fontSize: 9, fontWeight: 700, background: C.accent, color: "#fff", padding: "2px 6px", borderRadius: 8, flexShrink: 0 }}>Enrichir</span>
+      {/* ── 4 CARTES MÉTRIQUES ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+        {[
+          { v: postCount != null ? String(postCount) : "—", l: "Posts publiés",      icon: "📸", color: C.ink },
+          { v: String(totalReactions),                       l: "Réactions reçues",   icon: "⚡", color: C.accent },
+          { v: String(uniqueUsers),                          l: "Voisins engagés",    icon: "👥", color: "#7C3AED" },
+          { v: String(intentionCount),                       l: "\"Je le veux\"",     icon: "🛒", color: C.pro },
+        ].map((r, i) => (
+          <div key={i} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "10px 12px" }}>
+            <div style={{ fontSize: 16, marginBottom: 3 }}>{r.icon}</div>
+            <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: r.color }}>{r.v}</div>
+            <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{r.l}</div>
+          </div>
+        ))}
       </div>
-    ))}
+
+      {/* ── GRAPHIQUE ACTIVITÉ POSTS ── */}
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "6px 0 6px" }}>
+        Activité — posts publiés
+      </div>
+      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "12px 12px 8px", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 56 }}>
+          {chartData.map((d, i) => {
+            const hPct = Math.max((d.value / maxValue) * 100, d.value > 0 ? 8 : 2);
+            const isLast = i === chartData.length - 1;
+            const isActive = activeBar === i;
+            return (
+              <div key={i} onClick={() => setActiveBar(isActive ? null : i)}
+                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", height: "100%", justifyContent: "flex-end", position: "relative" }}>
+                {isActive && (
+                  <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)", background: C.pro, color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6, whiteSpace: "nowrap", zIndex: 10 }}>
+                    {d.value} post{d.value > 1 ? "s" : ""}
+                  </div>
+                )}
+                <div style={{ width: "100%", borderRadius: "3px 3px 0 0", height: `${hPct}%`, background: isActive ? C.accent : (isLast ? C.pro : C.proBg), transition: "background 0.15s" }} />
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+          {chartData.map((d, i) => (
+            <div key={i} style={{ flex: 1, fontSize: 7, textAlign: "center", color: i === chartData.length - 1 ? C.pro : C.ink2, fontWeight: i === chartData.length - 1 ? 700 : 400 }}>{d.label}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── RÉACTIONS PAR TYPE ── */}
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "6px 0 6px" }}>
+        Détail des réactions
+      </div>
+      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "12px 14px", marginBottom: 10 }}>
+        {totalReactions === 0 ? (
+          <div style={{ fontSize: 12, color: C.ink2, textAlign: "center", padding: "8px 0" }}>Aucune réaction sur cette période</div>
+        ) : REACTION_TYPES.map(r => {
+          const count = reactionsByType[r.type] || 0;
+          const pct = maxReaction > 0 ? (count / maxReaction) * 100 : 0;
+          return (
+            <div key={r.type} style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 15 }}>{r.emoji}</span>
+                  <span style={{ fontSize: 12, fontWeight: r.highlight ? 700 : 500, color: r.highlight ? r.color : C.ink }}>
+                    {r.label}
+                    {r.highlight && <span style={{ fontSize: 9, fontWeight: 600, background: r.bg, color: r.color, padding: "1px 5px", borderRadius: 6, marginLeft: 5 }}>intention d'achat</span>}
+                  </span>
+                </div>
+                <span style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: count > 0 ? r.color : C.ink2 }}>{count}</span>
+              </div>
+              <div style={{ height: 6, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: r.color, transition: "width 0.5s ease" }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── TOP POSTS ── */}
+      {topPosts.length > 0 && <>
+        <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "6px 0 6px" }}>
+          🏆 Meilleurs posts
+        </div>
+        {topPosts.map((p, i) => (
+          <div key={p.id} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, display: "flex", gap: 10, padding: 10, marginBottom: 8, alignItems: "center" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: [C.accent2, C.ink2, C.pill][i], flexShrink: 0 }} />
+            {p.image_url ? (
+              <img src={p.image_url} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>📝</div>
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: C.ink, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {p.content?.substring(0, 50) || "Post sans texte"}
+              </div>
+              <div style={{ fontSize: 10, color: C.ink2, marginTop: 2 }}>
+                {new Date(p.created_at).toLocaleDateString("fr-FR")}
+              </div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontFamily: syne, fontSize: 16, fontWeight: 700, color: p.reactionCount > 0 ? C.accent : C.ink2 }}>{p.reactionCount}</div>
+              <div style={{ fontSize: 9, color: C.ink2 }}>réaction{p.reactionCount > 1 ? "s" : ""}</div>
+            </div>
+          </div>
+        ))}
+      </>}
+
+      {/* ── PRO LAYER TIP ── */}
+      <div style={{ background: "#FFF8F6", border: "1px solid rgba(255,87,51,0.15)", borderRadius: 14, padding: "10px 14px", marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, marginBottom: 3 }}>💡 Pro Layer</div>
+        <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.5 }}>
+          Quand un voisin mentionne {merchantName || "votre enseigne"} dans un post, enrichissez-le avec les infos produit depuis l'onglet <b>Créer</b>.
+        </div>
+      </div>
+
+    </>}
   </>;
 }
 
@@ -672,14 +744,27 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
     { id: "plan", label: "Mon plan" },
   ];
 
-  // Charger le vrai nombre de posts
+  const [headerStats, setHeaderStats] = useState({ reactions: null, voisins: null });
+
+  // Charger le vrai nombre de posts + stats header
   useEffect(() => {
     if (!user?.id) return;
+    // Posts count
     supabase
       .from("posts")
       .select("id", { count: "exact", head: true })
       .eq("author_id", user.id)
       .then(({ count }) => setPostCount(count ?? 0));
+    // Réactions totales + voisins uniques (toutes périodes)
+    supabase.from("posts").select("id").eq("author_id", user.id).then(async ({ data: posts }) => {
+      if (!posts || posts.length === 0) return;
+      const ids = posts.map(p => p.id);
+      const { data: reactions } = await supabase
+        .from("post_reactions").select("user_id").in("post_id", ids);
+      const allR = reactions || [];
+      const uniq = new Set(allR.map(r => r.user_id));
+      setHeaderStats({ reactions: allR.length, voisins: uniq.size });
+    });
   }, [user?.id]);
 
   // Sync localProfile si le parent repasse un nouveau profile
@@ -700,7 +785,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
       {screen === "main" && <>
-        <MagHeader profile={localProfile} postCount={postCount} onEdit={() => setScreen("edit")} />
+        <MagHeader profile={localProfile} postCount={postCount} headerStats={headerStats} onEdit={() => setScreen("edit")} />
         <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, fontSize: 10, fontWeight: 600, fontFamily: dm, padding: "10px 2px 8px", border: "none", background: "transparent", cursor: "pointer", color: activeTab === t.id ? C.accent : C.ink2, borderBottom: `2px solid ${activeTab === t.id ? C.accent : "transparent"}` }}>
