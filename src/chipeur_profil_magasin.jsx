@@ -50,26 +50,170 @@ function MagHeader({ profile, postCount }) {
 }
 
 // ─── ONGLET DASHBOARD ───
-function TabDashboard({ onEnrich, postCount, merchantName }) {
-  const bars = [55, 40, 70, 60, 80, 65, 100];
-  const days = ["Lu", "Ma", "Me", "Je", "Ve", "Sa"];
+function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
+  const [period, setPeriod] = useState("semaine");
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [activeBar, setActiveBar] = useState(null);
+  const [totalReactions, setTotalReactions] = useState(0);
+
+  useEffect(() => {
+    if (!userId) return;
+    loadChartData();
+  }, [period, userId]);
+
+  const loadChartData = async () => {
+    setLoading(true);
+    setActiveBar(null);
+    const now = new Date();
+    let startDate, labels;
+
+    if (period === "semaine") {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      const JOURS = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
+      labels = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (6 - i));
+        return { label: i === 6 ? "Auj." : JOURS[d.getDay()], date: new Date(d) };
+      });
+    } else if (period === "mois") {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 27);
+      startDate.setHours(0, 0, 0, 0);
+      labels = Array.from({ length: 4 }, (_, i) => {
+        const end = new Date(now);
+        end.setDate(end.getDate() - (3 - i) * 7);
+        const start = new Date(end);
+        start.setDate(start.getDate() - 6);
+        return { label: `S${i + 1}`, start, end };
+      });
+    } else {
+      startDate = new Date(now);
+      startDate.setMonth(startDate.getMonth() - 11);
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+      const MOIS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+      labels = Array.from({ length: 12 }, (_, i) => {
+        const m = new Date(now);
+        m.setMonth(m.getMonth() - (11 - i));
+        return { label: MOIS[m.getMonth()], month: m.getMonth(), year: m.getFullYear() };
+      });
+    }
+
+    const { data: posts } = await supabase
+      .from("posts")
+      .select("id, created_at")
+      .eq("author_id", userId)
+      .gte("created_at", startDate.toISOString());
+
+    // Compter les réactions reçues
+    if (posts && posts.length > 0) {
+      const ids = posts.map(p => p.id);
+      const { count } = await supabase
+        .from("post_reactions")
+        .select("id", { count: "exact", head: true })
+        .in("post_id", ids);
+      setTotalReactions(count || 0);
+    } else {
+      setTotalReactions(0);
+    }
+
+    // Grouper par période
+    const result = labels.map(l => {
+      let count = 0;
+      (posts || []).forEach(p => {
+        const d = new Date(p.created_at);
+        if (period === "semaine") {
+          const ld = l.date;
+          if (d.getFullYear() === ld.getFullYear() && d.getMonth() === ld.getMonth() && d.getDate() === ld.getDate()) count++;
+        } else if (period === "mois") {
+          if (d >= l.start && d <= l.end) count++;
+        } else {
+          if (d.getMonth() === l.month && d.getFullYear() === l.year) count++;
+        }
+      });
+      return { label: l.label, value: count };
+    });
+
+    setChartData(result);
+    setLoading(false);
+  };
+
+  const maxValue = Math.max(...chartData.map(d => d.value), 1);
 
   return <>
-    <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 6px" }}>Vues — 7 derniers jours</div>
-    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, padding: 12, marginBottom: 10 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 50 }}>
-        {bars.map((h, i) => <div key={i} style={{ flex: 1, borderRadius: "4px 4px 0 0", height: `${h}%`, background: i === 6 ? C.pro : C.proBg }} />)}
+    {/* Sélecteur période + titre */}
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0 6px" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        Activité — posts
       </div>
-      <div style={{ display: "flex", gap: 5, marginTop: 3 }}>
-        {[...days, "Auj."].map((d, i) => <div key={i} style={{ flex: 1, fontSize: 8, color: i === 6 ? C.pro : C.ink2, textAlign: "center", fontWeight: i === 6 ? 600 : 400 }}>{d}</div>)}
+      <div style={{ display: "flex", gap: 4 }}>
+        {[{ id: "semaine", label: "7 jours" }, { id: "mois", label: "Mois" }, { id: "annee", label: "Année" }].map(p => (
+          <button key={p.id} onClick={() => setPeriod(p.id)} style={{
+            fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 10,
+            border: "none", cursor: "pointer", fontFamily: dm,
+            background: period === p.id ? C.pro : C.pill,
+            color: period === p.id ? "#fff" : C.ink2,
+          }}>{p.label}</button>
+        ))}
       </div>
     </div>
+
+    {/* Graphique */}
+    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, padding: "14px 12px 10px", marginBottom: 10 }}>
+      {loading ? (
+        <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "center", color: C.ink2, fontSize: 11 }}>⏳</div>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 64, position: "relative" }}>
+            {chartData.map((d, i) => {
+              const hPct = maxValue > 0 ? Math.max((d.value / maxValue) * 100, d.value > 0 ? 6 : 2) : 2;
+              const isLast = i === chartData.length - 1;
+              const isActive = activeBar === i;
+              return (
+                <div key={i} onClick={() => setActiveBar(isActive ? null : i)}
+                  style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", height: "100%", justifyContent: "flex-end", position: "relative" }}>
+                  {isActive && (
+                    <div style={{
+                      position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)",
+                      background: C.pro, color: "#fff", fontSize: 10, fontWeight: 700,
+                      padding: "3px 7px", borderRadius: 7, whiteSpace: "nowrap", zIndex: 10,
+                    }}>
+                      {d.value} post{d.value > 1 ? "s" : ""}
+                    </div>
+                  )}
+                  <div style={{
+                    width: "100%", borderRadius: "4px 4px 0 0",
+                    height: `${hPct}%`,
+                    background: isActive ? C.accent : (isLast ? C.pro : C.proBg),
+                    transition: "background 0.15s, height 0.3s",
+                  }} />
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+            {chartData.map((d, i) => (
+              <div key={i} style={{ flex: 1, fontSize: 8, textAlign: "center", color: i === chartData.length - 1 ? C.pro : C.ink2, fontWeight: i === chartData.length - 1 ? 700 : 400 }}>{d.label}</div>
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: C.ink2, textAlign: "right", marginTop: 4 }}>
+            Appuie sur une barre pour voir le détail
+          </div>
+        </>
+      )}
+    </div>
+
+    {/* Cartes stats */}
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
       {[
-        { v: "—", l: "Vues aujourd'hui", d: "" },
-        { v: postCount != null ? String(postCount) : "—", l: "Posts publiés", d: "" },
+        { v: postCount != null ? String(postCount) : "—", l: "Posts publiés", icon: "📸" },
+        { v: String(totalReactions), l: "Réactions reçues", icon: "❤️" },
       ].map((r, i) => (
         <div key={i} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "10px 12px" }}>
+          <div style={{ fontSize: 16, marginBottom: 2 }}>{r.icon}</div>
           <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: C.ink }}>{r.v}</div>
           <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{r.l}</div>
         </div>
@@ -424,7 +568,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile }) {
           ))}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
-          {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={profile?.pseudo} />}
+          {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={profile?.pseudo} userId={user?.id} />}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
           {activeTab === "creer" && <TabCreer merchantName={profile?.pseudo} />}
           {activeTab === "plan" && <TabPlan profile={profile} />}
