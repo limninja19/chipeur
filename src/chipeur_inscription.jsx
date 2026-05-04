@@ -237,9 +237,13 @@ function ScreenChoixCompte({ onChoose }) {
 }
 
 // ─── SCREEN 3 : INSCRIPTION MAGASIN ───
-function ScreenMagasin({ onBack, onValidate }) {
+function ScreenMagasin({ onBack, onValidate, loading }) {
   const [selectedPlan, setSelectedPlan] = useState("mixte");
   const [focused, setFocused] = useState(null);
+  const [nomMagasin, setNomMagasin] = useState("");
+  const [categorie, setCategorie] = useState("");
+  const [adresse, setAdresse] = useState("");
+  const [description, setDescription] = useState("");
 
   const inputStyle = (name) => ({
     width: "100%",
@@ -323,20 +327,27 @@ function ScreenMagasin({ onBack, onValidate }) {
 
         <input
           placeholder="Nom de l'enseigne"
+          value={nomMagasin}
+          onChange={e => setNomMagasin(e.target.value)}
           onFocus={() => setFocused("nom")}
           onBlur={() => setFocused(null)}
           style={inputStyle("nom")}
         />
         <div style={{ position: "relative", marginBottom: 10 }}>
-          <select style={{
-            ...inputStyle("cat"),
-            appearance: "none",
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 14px center",
-            marginBottom: 0,
-          }}>
-            <option value="" disabled selected>Catégorie…</option>
+          <select
+            value={categorie}
+            onChange={e => setCategorie(e.target.value)}
+            onFocus={() => setFocused("cat")}
+            onBlur={() => setFocused(null)}
+            style={{
+              ...inputStyle("cat"),
+              appearance: "none",
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 14px center",
+              marginBottom: 0,
+            }}>
+            <option value="" disabled>Catégorie…</option>
             <option>Mode</option>
             <option>Beauté</option>
             <option>Restauration</option>
@@ -346,6 +357,8 @@ function ScreenMagasin({ onBack, onValidate }) {
         </div>
         <input
           placeholder="Adresse"
+          value={adresse}
+          onChange={e => setAdresse(e.target.value)}
           onFocus={() => setFocused("adr")}
           onBlur={() => setFocused(null)}
           style={inputStyle("adr")}
@@ -353,6 +366,8 @@ function ScreenMagasin({ onBack, onValidate }) {
         <textarea
           placeholder="Présentation courte (max 200 car.)"
           rows={2}
+          value={description}
+          onChange={e => setDescription(e.target.value)}
           onFocus={() => setFocused("desc")}
           onBlur={() => setFocused(null)}
           style={{ ...inputStyle("desc"), resize: "none", marginBottom: 20 }}
@@ -419,11 +434,18 @@ function ScreenMagasin({ onBack, onValidate }) {
           ))}
         </div>
 
-        <button onClick={onValidate} style={{
-          width: "100%", background: COLORS.accent, color: "#fff", border: "none",
-          borderRadius: 16, padding: 14, fontSize: 14, fontWeight: 600,
-          fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 16,
-        }}>Choisir ce plan et continuer →</button>
+        <button
+          onClick={() => onValidate({ nom: nomMagasin, cat: categorie, adr: adresse, desc: description, plan: selectedPlan })}
+          disabled={loading || !nomMagasin.trim()}
+          style={{
+            width: "100%", background: loading || !nomMagasin.trim() ? "#ccc" : COLORS.accent,
+            color: "#fff", border: "none",
+            borderRadius: 16, padding: 14, fontSize: 14, fontWeight: 600,
+            fontFamily: "'DM Sans', sans-serif",
+            cursor: loading || !nomMagasin.trim() ? "not-allowed" : "pointer", marginTop: 16,
+          }}>
+          {loading ? "⏳ Création du compte…" : "Choisir ce plan et continuer →"}
+        </button>
       </div>
     </div>
   );
@@ -475,20 +497,60 @@ export default function ChipeurInscription({ setPage, onAuth }) {
   const [accountType, setAccountType] = useState(null);
   const [creds, setCreds] = useState({ prenom: "", email: "", mdp: "" });
   const [signupError, setSignupError] = useState("");
+  const [loadingSignup, setLoadingSignup] = useState(false);
 
   const handleChoose = async (type) => {
     setAccountType(type);
     if (type === "voisin") {
+      setLoadingSignup(true);
       const { error } = await supabase.auth.signUp({
         email: creds.email,
         password: creds.mdp,
         options: { data: { pseudo: creds.prenom } },
       });
+      setLoadingSignup(false);
       if (error) { setSignupError(error.message); return; }
       setScreen("success");
     } else {
       setScreen("magasin");
     }
+  };
+
+  const handleMagasinValidate = async ({ nom, cat, adr, desc, plan }) => {
+    setSignupError("");
+    setLoadingSignup(true);
+
+    // 1. Créer le compte Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: creds.email,
+      password: creds.mdp,
+      options: {
+        data: {
+          pseudo: nom,
+          role: "magasin",
+        },
+      },
+    });
+
+    if (error) {
+      setSignupError(error.message);
+      setLoadingSignup(false);
+      return;
+    }
+
+    // 2. Mettre à jour le profil avec les infos du magasin
+    if (data?.user) {
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        pseudo: nom,
+        role: "magasin",
+        bio: [cat, adr, desc].filter(Boolean).join(" · "),
+        quartier: adr || "",
+      });
+    }
+
+    setLoadingSignup(false);
+    setScreen("success");
   };
 
   return (
@@ -513,7 +575,8 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         {screen === "magasin" && (
           <ScreenMagasin
             onBack={() => setScreen("choix")}
-            onValidate={() => setScreen("success")}
+            onValidate={handleMagasinValidate}
+            loading={loadingSignup}
           />
         )}
 
