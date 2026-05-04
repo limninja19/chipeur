@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { SettingsDrawer } from "./chipeur_settings";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -269,7 +270,7 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
 }
 
 // ─── PARTIE SCROLLABLE : bannière + avatar + stats + réductions ───
-function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount, univers }) {
+function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, univers }) {
   return (
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
@@ -294,7 +295,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount, univ
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, paddingBottom: 4 }}>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={onEditProfile} style={{ background: C.card, color: C.ink, border: `1px solid ${C.border}`, borderRadius: 12, padding: "7px 14px", fontSize: 12, fontWeight: 600, fontFamily: dm, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>✏️ Modifier</button>
-              <button onClick={onLogout} style={{ background: C.card, color: C.ink2, border: `1px solid ${C.border}`, borderRadius: 12, width: 34, height: 34, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }} title="Se déconnecter">🚪</button>
+              <button onClick={onSettings} style={{ background: C.card, color: C.ink2, border: `1px solid ${C.border}`, borderRadius: 12, width: 34, height: 34, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }} title="Paramètres">⚙️</button>
             </div>
             {/* Voir mes voisins */}
             <button onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 5, background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "5px 10px", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
@@ -524,6 +525,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
   const [screen, setScreen] = useState("profil");
   const [activeTab, setActiveTab] = useState("Posts");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [miniDefiIdx, setMiniDefiIdx] = useState(null);
   const [univers, setUnivers] = useState(miniDefisInit);
   const [posts, setPosts] = useState([]);
@@ -572,7 +574,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         <>
           {/* Zone scroll : bannière + avatar + stats + réductions + onglets sticky + contenu */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onLogout={handleLogout} postCount={postCount} univers={univers} />
+            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
@@ -612,6 +614,14 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
       )}
 
       <BottomNav active="profil" onNavigate={setPage} onFab={() => setPage("nouveau")} />
+
+      <SettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        setPage={setPage}
+        user={user}
+        profile={profile}
+      />
     </div>
   );
 }

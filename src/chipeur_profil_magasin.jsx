@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { SettingsDrawer } from "./chipeur_settings";
 
 const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)" };
 const syne = "'Syne', sans-serif";
@@ -9,7 +10,7 @@ function Label({ children }) { return <div style={{ fontSize: 11, fontWeight: 60
 function Input(props) { return <input {...props} style={{ width: "100%", padding: "9px 12px", borderRadius: 12, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 12, color: C.ink, background: C.bg, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />; }
 
 // ─── HEADER DU PROFIL MAGASIN ───
-function MagHeader({ profile, postCount, headerStats, onEdit }) {
+function MagHeader({ profile, postCount, headerStats, onEdit, onSettings }) {
   const name = profile?.pseudo || "Mon enseigne";
   const isArtisan = profile?.role === "artisan";
   const avatar = profile?.avatar_url;
@@ -30,15 +31,22 @@ function MagHeader({ profile, postCount, headerStats, onEdit }) {
             {isArtisan ? "🎨 Artisan local" : "★ Commerçant"}
           </span>
         </div>
-        {/* Bouton modifier */}
-        <button onClick={onEdit} style={{
-          background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
-          borderRadius: 10, padding: "6px 12px", color: "#fff", fontSize: 11,
-          fontWeight: 600, fontFamily: dm, cursor: "pointer", flexShrink: 0,
-          display: "flex", alignItems: "center", gap: 5,
-        }}>
-          <span>✏️</span> Modifier
-        </button>
+        {/* Boutons header */}
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button onClick={onEdit} style={{
+            background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
+            borderRadius: 10, padding: "6px 12px", color: "#fff", fontSize: 11,
+            fontWeight: 600, fontFamily: dm, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 5,
+          }}>
+            <span>✏️</span> Modifier
+          </button>
+          <button onClick={onSettings} style={{
+            background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
+            borderRadius: 10, width: 34, height: 34, color: "#fff", fontSize: 16,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          }} title="Paramètres">⚙️</button>
+        </div>
       </div>
       {/* Stats */}
       <div style={{ display: "flex", marginTop: 12 }}>
@@ -712,8 +720,8 @@ function BottomNav({ onNavigate }) {
     { id: "fil", icon: "🏠", label: "Fil" },
     { id: "sorties", icon: "📅", label: "Sorties" },
     { id: "fab", isFab: true },
-    { id: "commerces", icon: "🏪", label: "Commerces" },
-    { id: "profil", icon: "👤", label: "Profil" },
+    { id: "voisins", icon: "👥", label: "Voisins" },
+    { id: "profil", icon: "👤", label: "Mon profil" },
   ];
   return (
     <div style={{ height: 80, background: C.card, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-around", flexShrink: 0 }}>
@@ -736,6 +744,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
   const [postCount, setPostCount] = useState(null);
   const [voisinPost, setVoisinPost] = useState(null);
   const [localProfile, setLocalProfile] = useState(profile);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const tabs = [
     { id: "dashboard", label: "Dashboard" },
@@ -785,7 +794,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
       {screen === "main" && <>
-        <MagHeader profile={localProfile} postCount={postCount} headerStats={headerStats} onEdit={() => setScreen("edit")} />
+        <MagHeader profile={localProfile} postCount={postCount} headerStats={headerStats} onEdit={() => setScreen("edit")} onSettings={() => setSettingsOpen(true)} />
         <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, fontSize: 10, fontWeight: 600, fontFamily: dm, padding: "10px 2px 8px", border: "none", background: "transparent", cursor: "pointer", color: activeTab === t.id ? C.accent : C.ink2, borderBottom: `2px solid ${activeTab === t.id ? C.accent : "transparent"}` }}>
@@ -818,6 +827,14 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
           onSaved={handleSaved}
         />
       )}
+
+      <SettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        setPage={setPage}
+        user={user}
+        profile={localProfile}
+      />
     </div>
   );
 }

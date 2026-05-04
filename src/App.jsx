@@ -74,7 +74,7 @@ export default function App() {
     // (au cas où le trigger n'a pas encore copié le rôle dans profiles)
     const roleProfil = profile?.role;
     const roleMeta = user?.user_metadata?.role;
-    const isMarchand = ["magasin", "artisan"].includes(roleProfil) || ["magasin", "artisan"].includes(roleMeta);
+    const isMarchand = ["magasin", "artisan", "commercant"].includes(roleProfil) || ["magasin", "artisan", "commercant"].includes(roleMeta);
     if (isMarchand) return <ProfilMagasin {...sharedProps} />;
     return <ProfilVoisin {...sharedProps} />;
   }
