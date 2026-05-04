@@ -55,7 +55,12 @@ export default function App() {
   if (page === "sorties") return <Sorties {...sharedProps} />;
   if (page === "nouveau") return <NouveauPost {...sharedProps} />;
   if (page === "commerces") return <Commerces {...sharedProps} />;
-  if (page === "profil") return <ProfilVoisin {...sharedProps} />;
+  if (page === "profil") {
+    if (profile?.role === "magasin" || profile?.role === "artisan") {
+      return <ProfilMagasin {...sharedProps} />;
+    }
+    return <ProfilVoisin {...sharedProps} />;
+  }
   if (page === "reductions") return <MesReductions {...sharedProps} />;
   if (page === "profilMagasin") return <ProfilMagasin {...sharedProps} />;
   if (page === "voisins") return <PageVoisins {...sharedProps} />;
