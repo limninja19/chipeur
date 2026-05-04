@@ -245,35 +245,108 @@ function BandeauDefis({ setPage }) {
 }
 
 // ─── REACTIONS ───
-function Reactions({ defaultActive }) {
-  const [active, setActive] = useState(defaultActive || null);
-  const emojis = ["🔥", "😍", "👀"];
-  return (
-    <div style={{ display: "flex", gap: 4, flex: 1 }}>
-      {emojis.map(e => (
-        <button key={e} onClick={() => setActive(e === active ? null : e)} style={{
-          fontSize: 13, padding: "5px 9px", borderRadius: 12,
-          border: `1px solid ${e === active ? C.accent : C.border}`,
-          background: e === active ? "#FFF0EB" : "transparent",
-          cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-        }}>{e}</button>
-      ))}
-    </div>
-  );
-}
+const REACTIONS = [
+  { type: "aime",      emoji: "❤️", label: "J'aime" },
+  { type: "kiffe",     emoji: "🔥", label: "Je kiffe" },
+  { type: "veux",      emoji: "🛒", label: "Je le veux" },
+  { type: "style",     emoji: "✨", label: "Style" },
+  { type: "recommande",emoji: "👍", label: "Je recommande" },
+];
 
-// ─── INTEREST BUTTON ───
-function InterestBtn({ defaultActive }) {
-  const [active, setActive] = useState(defaultActive || false);
+function Reactions({ postId, userId, authorId }) {
+  const [counts, setCounts] = useState({});
+  const [userReaction, setUserReaction] = useState(null);
+
+  useEffect(() => {
+    if (!postId) return;
+    supabase
+      .from("post_reactions")
+      .select("type")
+      .eq("post_id", postId)
+      .then(({ data }) => {
+        if (!data) return;
+        const c = {};
+        data.forEach(r => { c[r.type] = (c[r.type] || 0) + 1; });
+        setCounts(c);
+      });
+    if (!userId) return;
+    supabase
+      .from("post_reactions")
+      .select("type")
+      .eq("post_id", postId)
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setUserReaction(data.type); });
+  }, [postId, userId]);
+
+  const handleReact = async (type) => {
+    if (!userId || !postId) return;
+    const wasActive = userReaction === type;
+
+    // Optimistic update
+    setCounts(prev => {
+      const next = { ...prev };
+      if (wasActive) {
+        next[type] = Math.max(0, (next[type] || 1) - 1);
+      } else {
+        if (userReaction) next[userReaction] = Math.max(0, (next[userReaction] || 1) - 1);
+        next[type] = (next[type] || 0) + 1;
+      }
+      return next;
+    });
+    setUserReaction(wasActive ? null : type);
+
+    if (wasActive) {
+      await supabase.from("post_reactions").delete()
+        .eq("post_id", postId).eq("user_id", userId);
+    } else {
+      if (userReaction) {
+        await supabase.from("post_reactions").delete()
+          .eq("post_id", postId).eq("user_id", userId);
+      }
+      await supabase.from("post_reactions")
+        .insert({ post_id: postId, user_id: userId, type });
+      // Award +2 XP to post author
+      if (authorId && authorId !== userId) {
+        const { data: ap } = await supabase
+          .from("profiles").select("bonus_xp").eq("id", authorId).single();
+        if (ap !== null) {
+          await supabase.from("profiles")
+            .update({ bonus_xp: (ap?.bonus_xp || 0) + 2 }).eq("id", authorId);
+        }
+      }
+    }
+  };
+
   return (
-    <button onClick={() => setActive(!active)} style={{
-      padding: "6px 14px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-      fontFamily: "'DM Sans', sans-serif",
-      border: `1.5px solid ${active ? C.accent : C.border}`,
-      background: active ? "#FFF0EB" : "transparent",
-      color: active ? C.accent : C.ink,
-      cursor: "pointer",
-    }}>{active ? "✓ Intéressée" : "Intéressée ?"}</button>
+    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+      {REACTIONS.map(r => {
+        const count = counts[r.type] || 0;
+        const active = userReaction === r.type;
+        return (
+          <button
+            key={r.type}
+            onClick={() => handleReact(r.type)}
+            title={r.label}
+            style={{
+              fontSize: 12, padding: "5px 8px", borderRadius: 12,
+              border: `1px solid ${active ? C.accent : C.border}`,
+              background: active ? "#FFF0EB" : "transparent",
+              cursor: userId ? "pointer" : "default",
+              fontFamily: "'DM Sans', sans-serif",
+              display: "flex", alignItems: "center", gap: 3,
+              color: active ? C.accent : C.ink,
+              transition: "all 0.15s",
+            }}
+          >
+            <span>{r.emoji}</span>
+            {count > 0 && (
+              <span style={{ fontSize: 10, fontWeight: 700 }}>{count}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -348,9 +421,8 @@ function PostVoisin({ setPage }) {
           </div>
         </div>
         {/* Actions */}
-        <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
-          <Reactions defaultActive="🔥" />
-          <InterestBtn />
+        <div style={{ padding: "8px 12px 10px" }}>
+          <Reactions postId={null} userId={null} authorId={null} />
         </div>
       </div>
     </>
@@ -359,7 +431,7 @@ function PostVoisin({ setPage }) {
 
 
 // ─── POST CARD RÉEL (Supabase) ───
-function PostCard({ post, setPage }) {
+function PostCard({ post, setPage, userId }) {
   const [lightbox, setLightbox] = useState(false);
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
@@ -400,9 +472,8 @@ function PostCard({ post, setPage }) {
           )}
         </div>
         {/* Actions */}
-        <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
-          <Reactions defaultActive="🔥" />
-          <InterestBtn />
+        <div style={{ padding: "8px 12px 10px" }}>
+          <Reactions postId={post.id} userId={userId} authorId={post.author_id || post.profiles?.id} />
         </div>
       </div>
     </>
@@ -449,9 +520,8 @@ function PostVitrine() {
         }}>Je commande →</button>
       </div>
       {/* Actions */}
-      <div style={{ display: "flex", gap: 6, padding: "8px 12px 10px", alignItems: "center" }}>
-        <Reactions />
-        <InterestBtn defaultActive={true} />
+      <div style={{ padding: "8px 12px 10px" }}>
+        <Reactions postId={null} userId={null} authorId={null} />
       </div>
     </div>
   );
@@ -535,7 +605,7 @@ function BottomNav({ active, onNavigate, onFab }) {
   );
 }
 
-export default function Fil({ setPage, profile }) {
+export default function Fil({ setPage, profile, user }) {
   const [activeTab, setActiveTab] = useState("Tout");
   const [fabOpen, setFabOpen] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -547,7 +617,7 @@ export default function Fil({ setPage, profile }) {
     setLoading(true);
     let q = supabase
       .from("posts")
-      .select("*, profiles(pseudo, avatar_url)")
+      .select("*, profiles(id, pseudo, avatar_url)")
       .order("created_at", { ascending: false });
     if (filtreVille && profile?.quartier) {
       q = q.eq("location", profile.quartier);
@@ -588,7 +658,7 @@ export default function Fil({ setPage, profile }) {
           </div>
         ) : (
           posts.map((post, i) => (
-            <PostCard key={post.id} post={post} setPage={setPage} />
+            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} />
           ))
         )}
       </div>
