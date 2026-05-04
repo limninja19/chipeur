@@ -9,7 +9,7 @@ function Label({ children }) { return <div style={{ fontSize: 11, fontWeight: 60
 function Input(props) { return <input {...props} style={{ width: "100%", padding: "9px 12px", borderRadius: 12, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 12, color: C.ink, background: C.bg, outline: "none", marginBottom: 10, boxSizing: "border-box" }} />; }
 
 // ─── HEADER DU PROFIL MAGASIN ───
-function MagHeader({ profile, postCount }) {
+function MagHeader({ profile, postCount, onEdit }) {
   const name = profile?.pseudo || "Mon enseigne";
   const isArtisan = profile?.role === "artisan";
   const avatar = profile?.avatar_url;
@@ -18,18 +18,27 @@ function MagHeader({ profile, postCount }) {
     <div style={{ background: C.pro, padding: "16px 16px 12px", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* Avatar */}
-        <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0, overflow: "hidden" }}>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0, overflow: "hidden" }}>
           {avatar
             ? <img src={avatar} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             : (isArtisan ? "🎨" : "🏪")
           }
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontFamily: syne, fontSize: 17, fontWeight: 700, color: "#fff" }}>{name}</div>
           <span style={{ display: "inline-block", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 8, background: isArtisan ? "#FFF3E0" : C.proBg, color: isArtisan ? "#E65100" : "#34C759", marginTop: 3 }}>
             {isArtisan ? "🎨 Artisan local" : "★ Commerçant"}
           </span>
         </div>
+        {/* Bouton modifier */}
+        <button onClick={onEdit} style={{
+          background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
+          borderRadius: 10, padding: "6px 12px", color: "#fff", fontSize: 11,
+          fontWeight: 600, fontFamily: dm, cursor: "pointer", flexShrink: 0,
+          display: "flex", alignItems: "center", gap: 5,
+        }}>
+          <span>✏️</span> Modifier
+        </button>
       </div>
       {/* Stats */}
       <div style={{ display: "flex", marginTop: 12 }}>
@@ -44,6 +53,128 @@ function MagHeader({ profile, postCount }) {
             <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>{s.l}</div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── ÉCRAN MODIFIER LE PROFIL ───
+function EditProfilScreen({ onBack, profile, userId, onSaved }) {
+  const [pseudo, setPseudo]     = useState(profile?.pseudo || "");
+  const [bio, setBio]           = useState(profile?.bio || "");
+  const [quartier, setQuartier] = useState(profile?.quartier || "");
+  const [phone, setPhone]       = useState(profile?.phone || "");
+  const [website, setWebsite]   = useState(profile?.website || "");
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState("");
+
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setUploading(true);
+    setError("");
+    const ext = file.name.split(".").pop();
+    const path = `avatars/${userId}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("images")
+      .upload(path, file, { upsert: true });
+    if (upErr) { setError("Erreur upload : " + upErr.message); setUploading(false); return; }
+    const { data } = supabase.storage.from("images").getPublicUrl(path);
+    setAvatarUrl(data.publicUrl);
+    setUploading(false);
+  };
+
+  const handleSave = async () => {
+    if (!userId) return;
+    setSaving(true);
+    setError("");
+    const updates = { pseudo, bio, quartier, phone, website, avatar_url: avatarUrl };
+    const { error: err } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId);
+    if (err) { setError("Erreur : " + err.message); setSaving(false); return; }
+    setSaving(false);
+    onSaved(updates);
+    onBack();
+  };
+
+  const isArtisan = profile?.role === "artisan";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 14px 10px", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: C.ink, lineHeight: 1 }}>←</button>
+        <span style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: C.ink, flex: 1 }}>Modifier le profil</span>
+        <button onClick={handleSave} disabled={saving} style={{
+          background: saving ? "#ccc" : C.pro, color: "#fff", border: "none",
+          borderRadius: 10, padding: "8px 16px", fontSize: 12, fontWeight: 700,
+          fontFamily: dm, cursor: saving ? "not-allowed" : "pointer",
+        }}>{saving ? "⏳" : "Enregistrer"}</button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+        {error && <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "#C0392B", marginBottom: 12 }}>{error}</div>}
+
+        {/* Photo de profil */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ position: "relative", marginBottom: 10 }}>
+            <div style={{ width: 90, height: 90, borderRadius: 22, background: C.pro, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, overflow: "hidden", border: "3px solid " + C.proBg }}>
+              {uploading
+                ? <span style={{ fontSize: 11, color: "#fff" }}>⏳</span>
+                : avatarUrl
+                  ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <span>{isArtisan ? "🎨" : "🏪"}</span>
+              }
+            </div>
+            {/* Bouton appareil photo */}
+            <label style={{
+              position: "absolute", bottom: -4, right: -4,
+              width: 28, height: 28, borderRadius: "50%",
+              background: C.accent, border: "2px solid " + C.card,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", fontSize: 13,
+            }}>
+              📷
+              <input type="file" accept="image/*" onChange={handlePhoto} style={{ display: "none" }} />
+            </label>
+          </div>
+          <div style={{ fontSize: 11, color: C.ink2 }}>Appuie sur 📷 pour changer la photo</div>
+        </div>
+
+        {/* Infos de base */}
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 14, marginBottom: 12 }}>
+          <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 12 }}>Informations de base</div>
+          <Label>Nom de l'enseigne</Label>
+          <Input value={pseudo} onChange={e => setPseudo(e.target.value)} placeholder="Ex : Atelier Mona" />
+          <Label>Description / Présentation</Label>
+          <textarea
+            value={bio} onChange={e => setBio(e.target.value)}
+            placeholder="Décris ton enseigne, tes produits, ton univers…"
+            style={{ width: "100%", padding: "9px 12px", borderRadius: 12, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 12, color: C.ink, background: C.bg, outline: "none", marginBottom: 10, boxSizing: "border-box", minHeight: 80, resize: "vertical", lineHeight: 1.5 }}
+          />
+          <Label>Adresse / Quartier</Label>
+          <Input value={quartier} onChange={e => setQuartier(e.target.value)} placeholder="Ex : 12 rue des Arts, Saint-Dié" />
+        </div>
+
+        {/* Contact */}
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 14, marginBottom: 12 }}>
+          <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 12 }}>Contact & liens</div>
+          <Label>Téléphone</Label>
+          <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="03 29 XX XX XX" type="tel" />
+          <Label>Site web</Label>
+          <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://monenseigne.fr" type="url" />
+        </div>
+
+        <button onClick={handleSave} disabled={saving} style={{
+          width: "100%", padding: 14, borderRadius: 14,
+          background: saving ? "#ccc" : C.pro,
+          color: "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600,
+          border: "none", cursor: saving ? "not-allowed" : "pointer",
+        }}>{saving ? "⏳ Enregistrement…" : "✓ Enregistrer les modifications"}</button>
       </div>
     </div>
   );
@@ -527,11 +658,12 @@ function BottomNav({ onNavigate }) {
 }
 
 // ─── COMPOSANT PRINCIPAL ───
-export default function ChipeurProfilMagasin({ setPage, user, profile }) {
+export default function ChipeurProfilMagasin({ setPage, user, profile, updateProfile }) {
   const [screen, setScreen] = useState("main");
   const [activeTab, setActiveTab] = useState("dashboard");
   const [postCount, setPostCount] = useState(null);
   const [voisinPost, setVoisinPost] = useState(null);
+  const [localProfile, setLocalProfile] = useState(profile);
 
   const tabs = [
     { id: "dashboard", label: "Dashboard" },
@@ -550,16 +682,25 @@ export default function ChipeurProfilMagasin({ setPage, user, profile }) {
       .then(({ count }) => setPostCount(count ?? 0));
   }, [user?.id]);
 
+  // Sync localProfile si le parent repasse un nouveau profile
+  useEffect(() => { setLocalProfile(profile); }, [profile]);
+
   const handleEnrich = (post) => {
     setVoisinPost(post);
     setScreen("enrich");
+  };
+
+  const handleSaved = (updates) => {
+    const merged = { ...localProfile, ...updates };
+    setLocalProfile(merged);
+    if (updateProfile) updateProfile(updates);
   };
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
       {screen === "main" && <>
-        <MagHeader profile={profile} postCount={postCount} />
+        <MagHeader profile={localProfile} postCount={postCount} onEdit={() => setScreen("edit")} />
         <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, fontSize: 10, fontWeight: 600, fontFamily: dm, padding: "10px 2px 8px", border: "none", background: "transparent", cursor: "pointer", color: activeTab === t.id ? C.accent : C.ink2, borderBottom: `2px solid ${activeTab === t.id ? C.accent : "transparent"}` }}>
@@ -568,10 +709,10 @@ export default function ChipeurProfilMagasin({ setPage, user, profile }) {
           ))}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
-          {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={profile?.pseudo} userId={user?.id} />}
+          {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} />}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
-          {activeTab === "creer" && <TabCreer merchantName={profile?.pseudo} />}
-          {activeTab === "plan" && <TabPlan profile={profile} />}
+          {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} />}
+          {activeTab === "plan" && <TabPlan profile={localProfile} />}
         </div>
         <BottomNav onNavigate={setPage} />
       </>}
@@ -579,8 +720,17 @@ export default function ChipeurProfilMagasin({ setPage, user, profile }) {
       {screen === "enrich" && (
         <EnrichScreen
           onBack={() => setScreen("main")}
-          merchantName={profile?.pseudo}
+          merchantName={localProfile?.pseudo}
           voisinPost={voisinPost}
+        />
+      )}
+
+      {screen === "edit" && (
+        <EditProfilScreen
+          onBack={() => setScreen("main")}
+          profile={localProfile}
+          userId={user?.id}
+          onSaved={handleSaved}
         />
       )}
     </div>
