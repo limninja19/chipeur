@@ -246,19 +246,20 @@ function BandeauDefis({ setPage }) {
 
 // ─── REACTIONS ───
 const REACTIONS = [
-  { type: "aime",      emoji: "❤️", label: "J'aime" },
-  { type: "kiffe",     emoji: "🔥", label: "Je kiffe" },
-  { type: "veux",      emoji: "🛒", label: "Je le veux" },
-  { type: "style",     emoji: "✨", label: "Style" },
-  { type: "recommande",emoji: "👍", label: "Je recommande" },
+  { type: "aime",       emoji: "❤️", label: "J'aime" },
+  { type: "kiffe",      emoji: "🔥", label: "Je kiffe" },
+  { type: "veux",       emoji: "🛒", label: "Je le veux" },
+  { type: "style",      emoji: "✨", label: "Mon style" },
+  { type: "recommande", emoji: "👍", label: "Je recommande" },
 ];
 
 function Reactions({ postId, userId, authorId }) {
   const [counts, setCounts] = useState({});
-  const [userReaction, setUserReaction] = useState(null);
+  const [userReactions, setUserReactions] = useState(new Set());
 
   useEffect(() => {
     if (!postId) return;
+    // Charger les comptages
     supabase
       .from("post_reactions")
       .select("type")
@@ -269,44 +270,41 @@ function Reactions({ postId, userId, authorId }) {
         data.forEach(r => { c[r.type] = (c[r.type] || 0) + 1; });
         setCounts(c);
       });
+    // Charger les réactions de l'utilisateur (peut en avoir plusieurs)
     if (!userId) return;
     supabase
       .from("post_reactions")
       .select("type")
       .eq("post_id", postId)
       .eq("user_id", userId)
-      .maybeSingle()
-      .then(({ data }) => { if (data) setUserReaction(data.type); });
+      .then(({ data }) => {
+        if (data) setUserReactions(new Set(data.map(r => r.type)));
+      });
   }, [postId, userId]);
 
   const handleReact = async (type) => {
     if (!userId || !postId) return;
-    const wasActive = userReaction === type;
+    const wasActive = userReactions.has(type);
 
-    // Optimistic update
+    // Mise à jour optimiste
     setCounts(prev => {
       const next = { ...prev };
-      if (wasActive) {
-        next[type] = Math.max(0, (next[type] || 1) - 1);
-      } else {
-        if (userReaction) next[userReaction] = Math.max(0, (next[userReaction] || 1) - 1);
-        next[type] = (next[type] || 0) + 1;
-      }
+      next[type] = wasActive ? Math.max(0, (next[type] || 1) - 1) : (next[type] || 0) + 1;
       return next;
     });
-    setUserReaction(wasActive ? null : type);
+    setUserReactions(prev => {
+      const next = new Set(prev);
+      wasActive ? next.delete(type) : next.add(type);
+      return next;
+    });
 
     if (wasActive) {
       await supabase.from("post_reactions").delete()
-        .eq("post_id", postId).eq("user_id", userId);
+        .eq("post_id", postId).eq("user_id", userId).eq("type", type);
     } else {
-      if (userReaction) {
-        await supabase.from("post_reactions").delete()
-          .eq("post_id", postId).eq("user_id", userId);
-      }
       await supabase.from("post_reactions")
         .insert({ post_id: postId, user_id: userId, type });
-      // Award +2 XP to post author
+      // +2 XP à l'auteur du post
       if (authorId && authorId !== userId) {
         const { data: ap } = await supabase
           .from("profiles").select("bonus_xp").eq("id", authorId).single();
@@ -319,29 +317,30 @@ function Reactions({ postId, userId, authorId }) {
   };
 
   return (
-    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
       {REACTIONS.map(r => {
         const count = counts[r.type] || 0;
-        const active = userReaction === r.type;
+        const active = userReactions.has(r.type);
         return (
           <button
             key={r.type}
             onClick={() => handleReact(r.type)}
-            title={r.label}
             style={{
-              fontSize: 12, padding: "5px 8px", borderRadius: 12,
-              border: `1px solid ${active ? C.accent : C.border}`,
+              padding: "6px 8px", borderRadius: 12,
+              border: `1.5px solid ${active ? C.accent : C.border}`,
               background: active ? "#FFF0EB" : "transparent",
               cursor: userId ? "pointer" : "default",
               fontFamily: "'DM Sans', sans-serif",
-              display: "flex", alignItems: "center", gap: 3,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
               color: active ? C.accent : C.ink,
               transition: "all 0.15s",
+              minWidth: 44,
             }}
           >
-            <span>{r.emoji}</span>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>{r.emoji}</span>
+            <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.2, color: active ? C.accent : C.ink2 }}>{r.label}</span>
             {count > 0 && (
-              <span style={{ fontSize: 10, fontWeight: 700 }}>{count}</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: active ? C.accent : C.ink2 }}>{count}</span>
             )}
           </button>
         );

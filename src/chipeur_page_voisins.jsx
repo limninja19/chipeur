@@ -359,8 +359,9 @@ export default function ChipeurPageVoisins({ setPage, user }) {
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, univers")
+      .select("id, pseudo, bio, quartier, avatar_url, univers, role, bonus_xp")
       .not("pseudo", "is", null)
+      .or("role.is.null,role.eq.voisin")
       .order("created_at", { ascending: true })
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
