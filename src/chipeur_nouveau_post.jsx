@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import heic2any from "heic2any";
 
@@ -129,21 +129,55 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
 }
 
 // ─── MAG LINK ───
-function MagLink({ defaultLinked }) {
-  const [linked, setLinked] = useState(defaultLinked || false);
+function MagLink() {
+  const [merchants, setMerchants] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    supabase.from("profiles")
+      .select("id, pseudo, avatar_url")
+      .eq("role", "commercant")
+      .order("pseudo")
+      .then(({ data }) => setMerchants(data || []));
+  }, []);
+
+  const selected = merchants.find(m => m.id === selectedId);
+
   return (
-    <div onClick={() => setLinked(!linked)} style={{
-      display: "flex", alignItems: "center", gap: 10,
-      background: linked ? C.proBg : C.card,
-      borderRadius: 14, border: `1.5px solid ${linked ? C.proBg : C.border}`,
-      padding: "10px 12px", cursor: "pointer", marginBottom: 14,
-    }}>
-      <span style={{ fontSize: 20 }}>🏪</span>
-      <span style={{
-        fontSize: 12, fontWeight: linked ? 600 : 500,
-        color: linked ? C.pro : C.ink2, flex: 1,
-      }}>{linked ? "Atelier Mona" : "Associer un commerce du quartier"}</span>
-      <span style={{ fontSize: 14, color: C.ink2 }}>{linked ? "✕" : "→"}</span>
+    <div style={{ marginBottom: 14 }}>
+      <div onClick={() => selectedId ? setSelectedId(null) : setOpen(!open)} style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: selectedId ? C.proBg : C.card,
+        borderRadius: 14, border: `1.5px solid ${selectedId ? C.pro : C.border}`,
+        padding: "10px 12px", cursor: "pointer",
+      }}>
+        <span style={{ fontSize: 20 }}>🏪</span>
+        <span style={{
+          fontSize: 12, fontWeight: selectedId ? 600 : 500,
+          color: selectedId ? C.pro : C.ink2, flex: 1,
+        }}>{selected ? selected.pseudo : "Associer un commerce du quartier"}</span>
+        <span style={{ fontSize: 14, color: C.ink2 }}>{selectedId ? "✕" : "→"}</span>
+      </div>
+      {open && !selectedId && (
+        <div style={{ marginTop: 6, background: C.card, borderRadius: 12, border: `1.5px solid ${C.border}`, overflow: "hidden" }}>
+          {merchants.length === 0 ? (
+            <div style={{ padding: "12px 14px", fontSize: 12, color: C.ink2 }}>Aucun commerce trouvé pour l'instant</div>
+          ) : merchants.map((m, i) => (
+            <div key={m.id} onClick={() => { setSelectedId(m.id); setOpen(false); }} style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+              cursor: "pointer", borderBottom: i < merchants.length - 1 ? `1px solid ${C.border}` : "none",
+            }}>
+              {m.avatar_url ? (
+                <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏪</div>
+              )}
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{m.pseudo}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -194,7 +228,7 @@ function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagTog
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
-        <MagLink defaultLinked={true} />
+        <MagLink />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Tags</label>

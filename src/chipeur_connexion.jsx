@@ -21,6 +21,19 @@ function Logo() {
   );
 }
 
+function frenchError(msg) {
+  if (!msg) return msg;
+  if (msg.includes("Invalid login credentials")) return "Email ou mot de passe incorrect.";
+  if (msg.includes("Email not confirmed")) return "Confirme ton email avant de te connecter.";
+  if (msg.includes("User already registered")) return "Un compte existe déjà avec cet email.";
+  if (msg.includes("Password should be at least")) return "Le mot de passe doit faire au moins 6 caractères.";
+  if (msg.includes("Unable to validate email") || msg.includes("invalid email")) return "Adresse email invalide.";
+  if (msg.includes("Email rate limit exceeded") || msg.includes("rate limit")) return "Trop de tentatives, réessaie dans quelques minutes.";
+  if (msg.includes("signup is disabled")) return "Les inscriptions sont momentanément désactivées.";
+  if (msg.includes("network") || msg.includes("fetch")) return "Erreur réseau. Vérifie ta connexion.";
+  return msg;
+}
+
 export default function Connexion({ setPage, onAuth }) {
   const [mode, setMode] = useState("login"); // "login" | "signup" | "reset"
   const [email, setEmail] = useState("");
@@ -50,7 +63,7 @@ export default function Connexion({ setPage, onAuth }) {
     setError(""); setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) { setError(error.message); return; }
+    if (error) { setError(frenchError(error.message)); return; }
     onAuth();
   }
 
@@ -63,7 +76,7 @@ export default function Connexion({ setPage, onAuth }) {
       options: { data: { pseudo } },
     });
     setLoading(false);
-    if (error) { setError(error.message); return; }
+    if (error) { setError(frenchError(error.message)); return; }
     setSuccess("Vérifie ta boîte mail pour confirmer ton compte !");
   }
 
@@ -74,7 +87,7 @@ export default function Connexion({ setPage, onAuth }) {
       redirectTo: window.location.origin,
     });
     setLoading(false);
-    if (error) { setError(error.message); return; }
+    if (error) { setError(frenchError(error.message)); return; }
     setSuccess("Lien de réinitialisation envoyé sur " + email);
   }
 
@@ -84,7 +97,7 @@ export default function Connexion({ setPage, onAuth }) {
       provider: "google",
       options: { redirectTo: window.location.origin },
     });
-    if (error) { setError(error.message); setLoading(false); }
+    if (error) { setError(frenchError(error.message)); setLoading(false); }
   }
 
   return (

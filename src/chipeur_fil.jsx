@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 
 const C = {
@@ -511,6 +511,25 @@ export default function Fil({ setPage, profile, user }) {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [filtreVille, setFiltreVille] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const scrollRef = useRef(null);
+  const touchStartY = useRef(null);
+
+  const handleTouchStart = (e) => {
+    if (scrollRef.current?.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+  const handleTouchEnd = (e) => {
+    if (touchStartY.current === null) return;
+    const diff = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartY.current = null;
+    if (diff > 70) {
+      setRefreshing(true);
+      loadPosts();
+      setTimeout(() => setRefreshing(false), 1200);
+    }
+  };
 
   const loadPosts = () => {
     setLoading(true);
@@ -540,7 +559,17 @@ export default function Fil({ setPage, profile, user }) {
       <AppHeader setPage={setPage} profile={profile} />
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
       <VilleToggle filtreVille={filtreVille} setFiltreVille={setFiltreVille} quartier={profile?.quartier} />
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
+      <div
+        ref={scrollRef}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}
+      >
+        {refreshing && (
+          <div style={{ textAlign: "center", padding: "10px 0 4px", fontSize: 12, color: C.accent, fontWeight: 600 }}>
+            ↻ Actualisation…
+          </div>
+        )}
         <BandeauDefis setPage={setPage} />
 {fetchError && (
           <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 12, padding: "12px 14px", margin: "8px 0", fontSize: 12, color: "#C0392B" }}>

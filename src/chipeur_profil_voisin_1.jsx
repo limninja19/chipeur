@@ -319,7 +319,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount, univ
         {/* XP bar réaliste */}
         {(() => {
           const universXp = (univers || []).reduce((sum, it) => sum + (it.xp || 0), 0);
-          const xp = postCount * 10 + universXp;
+          const xp = postCount * 10 + universXp + (profile?.bonus_xp || 0);
           const levels = [
             { name: "Débutant·e", min: 0, max: 50 },
             { name: "Explorateur·trice", min: 50, max: 150 },
@@ -347,7 +347,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onLogout, postCount, univ
       <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "10px 0" }}>
         {(() => {
           const universXp = (univers || []).reduce((sum, it) => sum + (it.xp || 0), 0);
-          const totalXp = postCount * 10 + universXp;
+          const totalXp = postCount * 10 + universXp + (profile?.bonus_xp || 0);
           return [
             { n: String(postCount), l: "publications" },
             { n: "0", l: "abonnés" },

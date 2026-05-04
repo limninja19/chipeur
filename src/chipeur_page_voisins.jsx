@@ -367,7 +367,7 @@ export default function ChipeurPageVoisins({ setPage, user }) {
         const withCounts = await Promise.all(data.map(async (p, i) => {
           const { count } = await supabase.from("posts").select("*", { count: "exact", head: true }).eq("author_id", p.id);
           const universXp = (p.univers || []).reduce((sum, it) => sum + (it?.xp || 0), 0);
-          const xp = (count || 0) * 10 + universXp;
+          const xp = (count || 0) * 10 + universXp + (p.bonus_xp || 0);
           const lvl = getLevel(xp);
           return {
             ...p,
