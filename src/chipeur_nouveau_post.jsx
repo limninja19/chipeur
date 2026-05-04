@@ -267,11 +267,11 @@ function FormSortie({ fields, onChange }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Date</label>
-          <input type="text" value={fields.date} onChange={e => onChange("date", e.target.value)} placeholder="ex : 26/04/2026" style={inputStyle} />
+          <input type="date" value={fields.date} onChange={e => onChange("date", e.target.value)} style={inputStyle} />
         </div>
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Heure</label>
-          <input type="text" value={fields.time} onChange={e => onChange("time", e.target.value)} placeholder="ex : 9h – 18h" style={inputStyle} />
+          <input type="time" value={fields.time} onChange={e => onChange("time", e.target.value)} style={inputStyle} />
         </div>
       </div>
       <div style={{ marginBottom: 14 }}>

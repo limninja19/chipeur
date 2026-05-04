@@ -371,55 +371,6 @@ function Lightbox({ src, alt, onClose }) {
   );
 }
 
-// ─── POST CARD VOISIN ───
-function PostVoisin({ setPage }) {
-  const [lightbox, setLightbox] = useState(false);
-  const imgSrc = "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800&h=1000&fit=crop&crop=center";
-
-  return (
-    <>
-      {lightbox && <Lightbox src={imgSrc} alt="Robe lin Camille R." onClose={() => setLightbox(false)} />}
-      <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
-        {/* Header */}
-        <div onClick={() => setPage("profil")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px", cursor: "pointer" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>😊</div>
-          <div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>Camille R.</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>Quartier des Arts · 2h</div>
-          </div>
-        </div>
-        {/* Image cliquable */}
-        <div
-          onClick={() => setLightbox(true)}
-          style={{ width: "100%", paddingTop: "100%", background: C.pill, position: "relative", cursor: "zoom-in" }}
-        >
-          <img
-            src={imgSrc}
-            alt="Camille R. - robe lin vide-grenier"
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
-          />
-          <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(26,23,20,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>👁 24 vues</div>
-          <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.45)", color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>🔍 Agrandir</div>
-        </div>
-        {/* Body */}
-        <div style={{ padding: "8px 12px" }}>
-          <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>Trouvé cette robe lin incroyable au vide-grenier ce matin !</div>
-          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-            {["Lin", "Vintage", "Vide-grenier"].map(t => (
-              <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>
-            ))}
-          </div>
-        </div>
-        {/* Actions */}
-        <div style={{ padding: "8px 12px 10px" }}>
-          <Reactions postId={null} userId={null} authorId={null} />
-        </div>
-      </div>
-    </>
-  );
-}
-
-
 // ─── POST CARD RÉEL (Supabase) ───
 function PostCard({ post, setPage, userId }) {
   const [lightbox, setLightbox] = useState(false);
@@ -435,10 +386,15 @@ function PostCard({ post, setPage, userId }) {
     <>
       {lightbox && post.image_url && <Lightbox src={post.image_url} alt={post.content} onClose={() => setLightbox(false)} />}
       <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
-        {/* Header */}
-        <div onClick={() => setPage("profil")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px", cursor: "pointer" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-            {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} /> : "😊"}
+        {/* Header — clic sur l'auteur */}
+        <div
+          onClick={() => setPage(post.author_id === userId ? "profil" : "voisins")}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px", cursor: "pointer" }}
+        >
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
+            {post.profiles?.avatar_url
+              ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+              : "😊"}
           </div>
           <div>
             <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>{post.profiles?.pseudo || "Voisin·e"}</div>
@@ -467,53 +423,6 @@ function PostCard({ post, setPage, userId }) {
         </div>
       </div>
     </>
-  );
-}
-
-// ─── POST CARD VITRINE ───
-function PostVitrine() {
-  return (
-    <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px" }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>👗</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>Atelier Mona</div>
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <span style={{ background: C.proBg, color: C.pro, fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 6 }}>★ Vitrine</span>
-          </div>
-        </div>
-        <div style={{ fontSize: 10, color: C.ink2 }}>1h</div>
-      </div>
-      {/* Image */}
-      <div style={{ width: "100%", paddingTop: "75%", background: C.pill, position: "relative" }}>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44 }}>👒</div>
-        <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(26,23,20,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>👁 87 vues</div>
-      </div>
-      {/* Body */}
-      <div style={{ padding: "8px 12px 0" }}>
-        <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.5 }}>Nouvelle collection chapeaux paille — été 2026</div>
-      </div>
-      {/* Pro Layer */}
-      <div style={{
-        background: C.proBg, margin: "8px 12px", borderRadius: 12, padding: "8px 10px",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-      }}>
-        <div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: C.pro }}>45€</div>
-          <div style={{ fontSize: 10, color: C.pro, opacity: 0.8 }}>S · M · L</div>
-        </div>
-        <button style={{
-          background: C.pro, color: "#fff", border: "none", borderRadius: 10,
-          padding: "7px 12px", fontSize: 11, fontWeight: 600,
-          fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
-        }}>Je commande →</button>
-      </div>
-      {/* Actions */}
-      <div style={{ padding: "8px 12px 10px" }}>
-        <Reactions postId={null} userId={null} authorId={null} />
-      </div>
-    </div>
   );
 }
 

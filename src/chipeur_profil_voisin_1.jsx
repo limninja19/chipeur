@@ -491,100 +491,32 @@ function TabUnivers({ items, onOpen }) {
 }
 
 function TabDefis() {
-  const defis = [
-    { icon: "👟", title: "Défi Sneakers", sub: "Post publié il y a 12 min", stat: "🔥 18 · 👁 84 vues", xp: "+15 XP", grad: "linear-gradient(135deg,#FF5733,#F7A72D)" },
-    { icon: "🧥", title: "Vintage Revival", sub: "Post publié hier", stat: "💛 9 · 👁 41 vues", xp: "+15 XP", grad: "linear-gradient(135deg,#5B2D8E,#9B59B6)" },
-    { icon: "🌿", title: "Look Éco-Responsable", sub: "Terminé · Non participé", stat: "—", xp: "0 XP", ended: true },
-  ];
   return (
-    <>
-      {defis.map((d, i) => (
-        <div key={i} style={{ background: C.card, borderRadius: 16, marginBottom: 8, overflow: "hidden", border: `1px solid ${C.border}`, opacity: d.ended ? 0.5 : 1 }}>
-          <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, background: d.ended ? C.pill : d.grad }}>
-            <div style={{ fontSize: 22 }}>{d.icon}</div>
-            <div>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: d.ended ? C.ink : "#fff" }}>{d.title}</div>
-              <div style={{ fontSize: 10, color: d.ended ? C.ink2 : "rgba(255,255,255,0.8)", marginTop: 1 }}>{d.sub}</div>
-            </div>
-          </div>
-          <div style={{ padding: "8px 14px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 11, color: C.ink2 }}>{d.stat}</span>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 8, color: d.ended ? C.ink2 : C.accent, background: d.ended ? C.pill : "#FFF0EB" }}>{d.xp}</span>
-          </div>
-        </div>
-      ))}
-    </>
+    <div style={{ textAlign: "center", padding: "40px 20px" }}>
+      <div style={{ fontSize: 48, marginBottom: 14 }}>🏆</div>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 8 }}>Défis — Bientôt disponible</div>
+      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 16 }}>
+        Les défis communautaires arrivent prochainement.<br />Tu pourras gagner des XP et des récompenses en relevant des challenges avec tes voisins.
+      </div>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF8E8", color: "#B45309", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>
+        ⚡ En cours de développement
+      </div>
+    </div>
   );
 }
 
 function TabRewards() {
-  const lb = [
-    { r: "1", n: "Ambre K.", lv: "Légende Locale", xp: "1 240 XP", bg: "#FEF3E0", av: "👩", rc: "#E8A020" },
-    { r: "2", n: "Sofia D.", lv: "Légende Locale", xp: "890 XP", bg: "#F7EEF7", av: "🧑", rc: "#8A9AAA" },
-    { r: "3", n: "Lucas M. (toi)", lv: "Pépite du Quartier", xp: "720 XP", bg: "#E8F4FD", av: "🧑‍🦱", rc: "#A0714A", me: true },
-    { r: "4", n: "Théo R.", lv: "Explorateur·trice", xp: "540 XP", bg: "#EBF5F0", av: "🧑" },
-  ];
-  const tr = [
-    { icon: "✨", nm: "1ère Pépite", dt: "Obtenu fév. 2026", w: true },
-    { icon: "🏆", nm: "Top 3 du mois", dt: "Obtenu mars 2026", w: true },
-    { icon: "🔥", nm: "Série de 7 jours", dt: "Obtenu mars 2026", w: true },
-    { icon: "👑", nm: "Légende Locale", dt: "280 XP manquants", w: false },
-  ];
   return (
-    <>
-      <div style={{ background: "linear-gradient(135deg,#1A1714,#3D3530)", borderRadius: 18, padding: 16, marginBottom: 14, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", right: -8, top: -8, fontSize: 64, opacity: 0.12 }}>🏆</div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Classement · Avril 2026</span>
-          <span style={{ fontSize: 10, background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.7)", padding: "2px 8px", borderRadius: 8 }}>28 voisins actifs</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 44, color: C.gold, lineHeight: 1 }}>#3</div>
-          <div>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: "#fff" }}>720 XP ce mois</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>Encore 80 XP pour passer #2</div>
-          </div>
-        </div>
-        <div style={{ height: 6, background: "rgba(255,255,255,0.15)", borderRadius: 3, overflow: "hidden", marginTop: 10 }}>
-          <div style={{ height: "100%", width: "72%", borderRadius: 3, background: "linear-gradient(90deg,#FF5733,#F7A72D)" }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>
-          <span>0</span><span>Top 3 → bon d'achat</span><span>1000 XP</span>
-        </div>
+    <div style={{ textAlign: "center", padding: "40px 20px" }}>
+      <div style={{ fontSize: 48, marginBottom: 14 }}>🎖️</div>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 8 }}>Récompenses — Bientôt disponible</div>
+      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 16 }}>
+        Le classement, les trophées et les bons d'achat arrivent prochainement.<br />Continue à publier et à interagir pour accumuler des XP dès maintenant !
       </div>
-      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>Top voisins du mois</div>
-      {lb.map((l, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: l.me ? "#FFF8F6" : C.card, borderRadius: 14, padding: "10px 12px", marginBottom: 6, border: `1px solid ${l.me ? "rgba(255,87,51,0.3)" : C.border}` }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: l.rc || C.ink2, width: 22, textAlign: "center" }}>{l.r}</div>
-          <div style={{ width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: l.bg }}>{l.av}</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{l.n}</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>{l.lv}</div>
-          </div>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.accent }}>{l.xp}</div>
-        </div>
-      ))}
-      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink, marginTop: 14, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>Mes bons d'achat</div>
-      <div style={{ background: "linear-gradient(135deg,#0A3D2E,#1D9E75)", borderRadius: 16, padding: 14, marginBottom: 8, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 28, color: "#fff" }}>10€</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Secondhand Co.</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Récompense Top 3 · Mars 2026</div>
-          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>Expire le 31 mai 2026</div>
-        </div>
-        <button style={{ background: "rgba(255,255,255,0.2)", color: "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: dm }}>CODE</button>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF8E8", color: "#B45309", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>
+        ⚡ En cours de développement
       </div>
-      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink, marginTop: 14, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>Mes trophées</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {tr.map((t, i) => (
-          <div key={i} style={{ background: t.w ? "#FFFBF0" : C.card, borderRadius: 14, padding: 12, border: `1px solid ${t.w ? "rgba(247,167,45,0.4)" : C.border}`, textAlign: "center", opacity: t.w ? 1 : 0.5 }}>
-            <div style={{ fontSize: 28, marginBottom: 6 }}>{t.icon}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{t.nm}</div>
-            <div style={{ fontSize: 9, color: C.ink2, marginTop: 3 }}>{t.dt}</div>
-          </div>
-        ))}
-      </div>
-    </>
+    </div>
   );
 }
 
