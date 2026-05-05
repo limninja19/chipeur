@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { THEMES, miniDefisAll } from "./chipeur_univers_data";
 
 const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)", gold: "#F7A72D" };
 const syne = "'Syne', sans-serif";
@@ -185,13 +186,9 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
       .then(({ data }) => { setVPosts(data || []); setPostsLoading(false); });
   }, [v?.id]);
 
-  // Univers réel depuis v.univers (JSONB Supabase)
-  const univers = UNIVERS_DEFS.map((def, i) => {
-    const saved = v.univers?.[i];
-    return { ...def, a: saved?.a || null, photoUrl: saved?.photoUrl || null, done: saved?.done || false };
-  });
-
-  const universDone = univers.filter(u => u.done);
+  // Univers réel depuis v.univers (JSONB Supabase) — format objet keyed par ID
+  const savedMap = (v.univers && !Array.isArray(v.univers)) ? v.univers : {};
+  const universDoneCount = Object.values(savedMap).filter(it => it?.done).length;
 
   // Trophées calculés depuis les vraies données
   const trophees = [];
@@ -199,8 +196,8 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
   if (v.xp >= 150) trophees.push("✨ Pépite du Quartier");
   if (v.xp >= 50) trophees.push("🗺️ Explorateur·trice");
   if (v.postCount >= 1) trophees.push("📸 1er post publié");
-  if (universDone.length >= 3) trophees.push("🌟 Univers en route");
-  if (universDone.length === 6) trophees.push("🏆 Univers complet");
+  if (universDoneCount >= 3) trophees.push("🌟 Univers en route");
+  if (universDoneCount >= 12) trophees.push("🏆 Univers complet");
   if (trophees.length === 0) trophees.push("🌱 Tout juste arrivé·e");
 
   // Rang dans le classement
@@ -237,7 +234,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
             { n: String(v.postCount || 0), l: "posts" },
             { n: String(v.xp || 0), l: "XP total", color: C.accent },
             { n: rang ? `#${rang}` : "#—", l: "classement", color: C.gold },
-            { n: String(universDone.length) + "/6", l: "univers" },
+            { n: String(universDoneCount) + "/24", l: "univers" },
           ].map((s, i) => (
             <div key={i} style={{ display: "contents" }}>
               {i > 0 && <div style={{ width: 1, background: C.border, margin: "3px 0" }} />}
@@ -267,38 +264,44 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 16px" }}>
 
         {/* ─ UNIVERS ─ */}
-        {tab === "univers" && (
-          univers.some(u => u.done) ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {univers.map((u, i) => u.done ? (
-                <div key={i} style={{ background: C.card, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
-                  {u.photoUrl && (
-                    <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
-                      <img src={u.photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    </div>
-                  )}
-                  <div style={{ padding: 10 }}>
-                    <div style={{ fontSize: 18, marginBottom: 3 }}>{u.emoji}</div>
-                    <div style={{ fontSize: 9, color: C.ink2, marginBottom: 3 }}>{u.q}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{u.a || "—"}</div>
-                  </div>
-                </div>
-              ) : (
-                <div key={i} style={{ background: C.pill, borderRadius: 14, padding: 10, border: `1px solid ${C.border}`, opacity: 0.4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", aspectRatio: "1" }}>
-                  <div style={{ fontSize: 22, marginBottom: 4 }}>{u.emoji}</div>
-                  <div style={{ fontSize: 9, color: C.ink2, textAlign: "center" }}>{u.q}</div>
-                  <div style={{ fontSize: 9, color: C.ink2, marginTop: 4 }}>Non rempli</div>
-                </div>
-              ))}
-            </div>
-          ) : (
+        {tab === "univers" && (() => {
+          // Convertir le format objet {id: {done,a,photoUrl}} en tableau enrichi
+          const savedMap = (v.univers && !Array.isArray(v.univers)) ? v.univers : {};
+          const items = miniDefisAll.map(d => ({ ...d, ...(savedMap[d.id] || {}) }));
+          const hasDone = items.some(it => it.done);
+          if (!hasDone) return (
             <div style={{ textAlign: "center", padding: "40px 16px" }}>
               <div style={{ fontSize: 36, marginBottom: 10 }}>🌱</div>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Univers pas encore rempli</div>
               <div style={{ fontSize: 12, color: C.ink2 }}>{v.pseudo || "Ce voisin"} n'a pas encore partagé son univers.</div>
             </div>
-          )
-        )}
+          );
+          return THEMES.map(t => {
+            const themeItems = items.filter(it => it.theme === t.id && it.done);
+            if (themeItems.length === 0) return null;
+            return (
+              <div key={t.id} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>{t.label}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {themeItems.map(it => (
+                    <div key={it.id} style={{ background: C.card, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                      {it.photoUrl && (
+                        <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
+                          <img src={it.photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        </div>
+                      )}
+                      <div style={{ padding: 10 }}>
+                        <div style={{ fontSize: 18, marginBottom: 3 }}>{it.emoji}</div>
+                        <div style={{ fontSize: 9, color: C.ink2, marginBottom: 3 }}>{it.q}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{it.a || "—"}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          });
+        })()}
 
         {/* ─ POSTS ─ */}
         {tab === "posts" && (
@@ -380,7 +383,8 @@ export default function ChipeurPageVoisins({ setPage, user, setConversationWith 
         // Pour chaque profil, compter ses posts
         const withCounts = await Promise.all(data.map(async (p, i) => {
           const { count } = await supabase.from("posts").select("*", { count: "exact", head: true }).eq("author_id", p.id);
-          const universXp = (p.univers || []).reduce((sum, it) => sum + (it?.xp || 0), 0);
+          const universMap = (p.univers && !Array.isArray(p.univers)) ? p.univers : {};
+          const universXp = Object.values(universMap).reduce((sum, it) => sum + (it?.xp || 0), 0);
           const xp = (count || 0) * 10 + universXp + (p.bonus_xp || 0);
           const lvl = getLevel(xp);
           return {
@@ -412,6 +416,13 @@ export default function ChipeurPageVoisins({ setPage, user, setConversationWith 
         .eq("follower_id", user.id).eq("following_id", id);
     } else {
       await supabase.from("follows").insert({ follower_id: user.id, following_id: id });
+      // Notif pour le voisin suivi
+      supabase.from("notifications").insert({
+        user_id: id,
+        from_user_id: user.id,
+        type: "follow",
+        read: false,
+      }).then(() => {});
     }
   };
   const openVoisin = (id) => { setSelectedId(id); setScreen("profile"); };

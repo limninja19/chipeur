@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 import { getLevel, getNextLevel, getLevelProgress } from "./chipeur_xp";
+import { THEMES, miniDefisAll } from "./chipeur_univers_data";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
 async function compressImage(file, maxPx = 1200, quality = 0.82) {
@@ -34,14 +35,6 @@ const C = {
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
-const miniDefisInit = [
-  { emoji: "🐾", q: "Mon animal de compagnie", sugs: ["Un chien", "Un chat", "Pas d'animal", "Plusieurs !"] },
-  { emoji: "📍", q: "Mon endroit préféré", sugs: ["Le marché", "Un café du coin", "La forêt", "Mon canapé"] },
-  { emoji: "🏪", q: "Mon magasin préféré du quartier", sugs: ["Une boutique mode", "Un commerce local", "Le marché", "Autre"] },
-  { emoji: "🍽️", q: "Mon resto préféré", sugs: ["Un resto local", "Un kebab", "Je cuisine !", "Livraison only"] },
-  { emoji: "🎵", q: "Ma playlist du moment", sugs: ["R&B / Soul", "Indie / Rock", "Hip-hop", "Classique"] },
-  { emoji: "✨", q: "Ma pépite mode du mois", sugs: ["Une veste vintage", "Des sneakers", "Un accessoire", "Une collab locale"] },
-];
 
 
 function BottomNav({ active, onNavigate, onFab }) {
@@ -483,18 +476,54 @@ const DEFI_COLORS = [
 const DONE_COLOR = { bg: "#EBF5F0", border: "rgba(10,61,46,0.4)", accent: "#0A3D2E" };
 
 function TabUnivers({ items, onOpen }) {
+  const [activeTheme, setActiveTheme] = useState(THEMES[0].id);
+  const themeItems = items.filter(it => it.theme === activeTheme);
+
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      {/* Titre + XP */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>Mon univers</div>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, background: "#FFF0EB", padding: "3px 10px", borderRadius: 8 }}>+5 à +10 XP</div>
       </div>
+
+      {/* Sous-onglets thèmes */}
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 14, paddingBottom: 2, scrollbarWidth: "none" }}>
+        {THEMES.map(t => {
+          const done = items.filter(it => it.theme === t.id && it.done).length;
+          const total = t.defis.length;
+          const active = activeTheme === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActiveTheme(t.id)}
+              style={{
+                flexShrink: 0, padding: "7px 12px", borderRadius: 20,
+                border: "none", cursor: "pointer", fontFamily: dm,
+                fontSize: 11, fontWeight: active ? 700 : 500,
+                background: active ? C.ink : C.pill,
+                color: active ? "#fff" : C.ink2,
+                display: "flex", alignItems: "center", gap: 5,
+                transition: "all 0.15s",
+              }}
+            >
+              {t.label}
+              <span style={{
+                background: active ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)",
+                borderRadius: 8, padding: "1px 5px", fontSize: 9, fontWeight: 700,
+                color: active ? "#fff" : C.ink2,
+              }}>{done}/{total}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Grille défis du thème actif */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {items.map((it, i) => {
+        {themeItems.map((it, i) => {
           const col = it.done ? DONE_COLOR : DEFI_COLORS[i % DEFI_COLORS.length];
           return (
-            <div key={i} onClick={() => onOpen(i)} style={{ background: col.bg, borderRadius: 16, overflow: "hidden", cursor: "pointer", border: `1.5px solid ${col.border}`, padding: 0 }}>
-              {/* Photo si présente */}
+            <div key={it.id} onClick={() => onOpen(it.id)} style={{ background: col.bg, borderRadius: 16, overflow: "hidden", cursor: "pointer", border: `1.5px solid ${col.border}`, padding: 0 }}>
               {it.photoUrl ? (
                 <>
                   <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
@@ -624,16 +653,18 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
   const [activeTab, setActiveTab] = useState("Posts");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [miniDefiIdx, setMiniDefiIdx] = useState(null);
-  const [univers, setUnivers] = useState(miniDefisInit);
+  const [miniDefiId, setMiniDefiId] = useState(null);
+  const [univers, setUnivers] = useState(miniDefisAll);
   const [posts, setPosts] = useState([]);
 
-  // Charger l'univers sauvegardé depuis le profil
+  // Charger l'univers sauvegardé depuis le profil (format objet keyed par ID)
   useEffect(() => {
-    if (!profile?.univers?.length) return;
-    setUnivers(miniDefisInit.map((defi, i) => {
-      const saved = profile.univers[i];
-      return saved ? { ...defi, done: saved.done || false, a: saved.a || "", photoUrl: saved.photoUrl || null, xp: saved.xp || 0 } : defi;
+    if (!profile) return;
+    const savedMap = (profile?.univers && !Array.isArray(profile.univers))
+      ? profile.univers : {};
+    setUnivers(miniDefisAll.map(d => {
+      const s = savedMap[d.id];
+      return s ? { ...d, done: s.done || false, a: s.a || "", photoUrl: s.photoUrl || null, xp: s.xp || 0 } : d;
     }));
   }, [profile]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -676,7 +707,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
-              {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={i => { setMiniDefiIdx(i); setScreen("minidefi"); }} />}
+              {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis setPage={setPage} />}
               {activeTab === "Récompenses" && <TabRewards />}
             </div>
@@ -686,20 +717,25 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
 
       {screen === "edit" && <EditProfileScreen onBack={() => setScreen("profil")} profile={profile} updateProfile={updateProfile} user={user} />}
 
-      {screen === "minidefi" && miniDefiIdx !== null && (
+      {screen === "minidefi" && miniDefiId !== null && (
         <MiniDefiScreen
-          defi={univers[miniDefiIdx]}
+          defi={univers.find(d => d.id === miniDefiId)}
           user={user}
           onBack={() => { setScreen("profil"); setActiveTab("Mon univers"); }}
-          onSave={async (val, photoUrl, xp) => {
-            const updated = univers.map((it, i) => i === miniDefiIdx
-              ? { ...it, done: true, a: val || it.a, photoUrl: photoUrl || it.photoUrl, xp: (it.xp || 0) + (xp || 0) }
+          onSave={async (val, photoUrl, xpGained) => {
+            const updated = univers.map(it => it.id === miniDefiId
+              ? { ...it, done: true, a: val || it.a, photoUrl: photoUrl || it.photoUrl, xp: (it.xp || 0) + (xpGained || 0) }
               : it);
             setUnivers(updated);
-            // Sauvegarder dans Supabase
-            const toSave = updated.map(it => ({ done: it.done || false, a: it.a || "", photoUrl: it.photoUrl || null, xp: it.xp || 0 }));
+            // Sauvegarder en objet keyed par ID (plus stable que par index)
+            const toSave = {};
+            updated.forEach(it => {
+              if (it.done || it.a || it.photoUrl) {
+                toSave[it.id] = { done: it.done || false, a: it.a || "", photoUrl: it.photoUrl || null, xp: it.xp || 0 };
+              }
+            });
             await updateProfile({ univers: toSave });
-            setScreen("profil"); setActiveTab("Mon univers"); setMiniDefiIdx(null);
+            setScreen("profil"); setActiveTab("Mon univers"); setMiniDefiId(null);
           }}
         />
       )}

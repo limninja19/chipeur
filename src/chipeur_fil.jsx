@@ -356,7 +356,7 @@ function Reactions({ postId, userId, authorId }) {
         console.error("❌ INSERT reaction:", error);
       } else {
         console.log("✅ Réaction sauvegardée:", type, "postId:", postId, "userId:", userId);
-        // +2 XP à l'auteur du post
+        // +2 XP à l'auteur du post + notification
         if (authorId && authorId !== userId) {
           const { data: ap } = await supabase
             .from("profiles").select("bonus_xp").eq("id", authorId).single();
@@ -364,6 +364,11 @@ function Reactions({ postId, userId, authorId }) {
             await supabase.from("profiles")
               .update({ bonus_xp: (ap?.bonus_xp || 0) + 2 }).eq("id", authorId);
           }
+          // Notif pour l'auteur du post (une seule par type pour ce post)
+          supabase.from("notifications").upsert(
+            { user_id: authorId, from_user_id: userId, type, reference_id: postId, read: false },
+            { onConflict: "user_id,from_user_id,type,reference_id", ignoreDuplicates: true }
+          ).then(() => {});
         }
       }
     }
