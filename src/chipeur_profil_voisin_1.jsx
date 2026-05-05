@@ -25,7 +25,7 @@ function BottomNav({ active, onNavigate, onFab }) {
     { id: "fil", icon: "🏠", label: "Fil" },
     { id: "sorties", icon: "📅", label: "Sorties" },
     { id: "fab", isFab: true },
-    { id: "commerces", icon: "🏪", label: "Commerces" },
+    { id: "voisins", icon: "👥", label: "Voisins" },
     { id: "profil", icon: "👤", label: "Profil" },
   ];
   return (
