@@ -2,6 +2,29 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 
+// ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
+async function compressImage(file, maxPx = 1200, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxPx || height > maxPx) {
+        if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+        else { width = Math.round(width * maxPx / height); height = maxPx; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => resolve(blob), "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
   accent: "#FF5733", pro: "#0A3D2E", proBg: "#EBF5F0",
@@ -203,10 +226,12 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
     setSaving(true);
     let avatar_url = profile?.avatar_url || null;
     if (avatarFile && user?.id) {
-      const ext = avatarFile.name.split(".").pop() || "jpg";
-      const path = `avatars/${user.id}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("images").upload(path, avatarFile, { upsert: true, contentType: avatarFile.type || "image/jpeg" });
-      if (!upErr) {
+      // Compresse + convertit en JPEG (gère HEIC iPhone et photos > 1Mo)
+      const compressed = await compressImage(avatarFile);
+      const path = `avatars/${user.id}.jpg`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) console.error("❌ Upload avatar:", upErr);
+      else {
         const { data } = supabase.storage.from("images").getPublicUrl(path);
         avatar_url = data.publicUrl;
       }

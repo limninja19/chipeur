@@ -2,6 +2,29 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 
+// ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
+async function compressImage(file, maxPx = 1200, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxPx || height > maxPx) {
+        if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+        else { width = Math.round(width * maxPx / height); height = maxPx; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => resolve(blob), "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)" };
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
@@ -109,11 +132,12 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
     if (!file || !userId) return;
     setUploading(true);
     setError("");
-    const ext = file.name.split(".").pop();
-    const path = `avatars/${userId}.${ext}`;
+    // Compresse + convertit en JPEG (gère HEIC iPhone et photos > 1Mo)
+    const compressed = await compressImage(file);
+    const path = `avatars/${userId}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("images")
-      .upload(path, file, { upsert: true });
+      .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
     if (upErr) { setError("Erreur upload : " + upErr.message); setUploading(false); return; }
     const { data } = supabase.storage.from("images").getPublicUrl(path);
     setAvatarUrl(data.publicUrl);
@@ -580,12 +604,47 @@ function TabPosts({ userId }) {
 }
 
 // ─── ONGLET CRÉER ───
-function TabCreer({ merchantName, setPage }) {
+function TabCreer({ merchantName, setPage, user }) {
   const [mode, setMode] = useState("remise");
   const [typeRemise, setTypeRemise] = useState("pct");
-  const [ciblage, setCiblage] = useState("interesse");
+  const [ciblage, setCiblage] = useState("all");
   const [published, setPublished] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [erreur, setErreur] = useState("");
+  // Champs remise
+  const [titre, setTitre] = useState("");
+  const [valeur, setValeur] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [conditions, setConditions] = useState("");
   const name = merchantName || "Mon enseigne";
+
+  // Génère un code promo simple : 4 lettres du nom + valeur
+  function genCode() {
+    const prefix = (merchantName || "CHIP").replace(/\s+/g, "").toUpperCase().slice(0, 4);
+    return `${prefix}${valeur || "XX"}`;
+  }
+
+  async function handlePublierRemise() {
+    if (!titre.trim()) { setErreur("Le titre est obligatoire."); return; }
+    if (!valeur)        { setErreur("La valeur est obligatoire."); return; }
+    setSaving(true); setErreur("");
+    const expiresAt = expiry ? new Date(expiry + "T23:59:00").toISOString() : null;
+    const { error } = await supabase.from("remises").insert({
+      user_id:     user?.id,
+      title:       titre.trim(),
+      type_remise: typeRemise,
+      valeur:      parseInt(valeur) || 0,
+      expires_at:  expiresAt,
+      ciblage,
+      conditions:  conditions.trim() || null,
+      code:        genCode(),
+      ended:       false,
+    });
+    setSaving(false);
+    if (error) { setErreur(error.message); return; }
+    setPublished(true);
+    setTitre(""); setValeur(""); setExpiry(""); setConditions("");
+  }
 
   return <>
     <div style={{ display: "flex", background: C.pill, borderRadius: 14, padding: 3, marginBottom: 12 }}>
@@ -602,7 +661,7 @@ function TabCreer({ merchantName, setPage }) {
       </div>
     ) : mode === "remise" ? <>
       <Label>Titre de l'offre</Label>
-      <Input placeholder="Ex : Collection lin -15%" />
+      <Input placeholder="Ex : Collection lin -15%" value={titre} onChange={e => setTitre(e.target.value)} />
       <Label>Type de remise</Label>
       <div style={{ display: "flex", background: C.pill, borderRadius: 12, padding: 3, marginBottom: 10 }}>
         {[{ id: "pct", l: "Pourcentage (%)" }, { id: "eur", l: "Montant (€)" }].map(t => (
@@ -610,8 +669,8 @@ function TabCreer({ merchantName, setPage }) {
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <div><Label>Valeur</Label><Input placeholder="15" /></div>
-        <div><Label>Expire le</Label><Input placeholder="jj/mm/aaaa" /></div>
+        <div><Label>Valeur</Label><Input placeholder="15" type="number" value={valeur} onChange={e => setValeur(e.target.value)} /></div>
+        <div><Label>Expire le</Label><Input placeholder="jj/mm/aaaa" type="date" value={expiry} onChange={e => setExpiry(e.target.value)} /></div>
       </div>
       <Label>Ciblage</Label>
       {[
@@ -624,18 +683,23 @@ function TabCreer({ merchantName, setPage }) {
         </div>
       ))}
       <Label>Conditions (optionnel)</Label>
-      <Input placeholder="ex : Min. 30€, 1 utilisation par personne" />
+      <Input placeholder="ex : Min. 30€, 1 utilisation par personne" value={conditions} onChange={e => setConditions(e.target.value)} />
       <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, marginTop: 4 }}>Aperçu de la card voisin</div>
       <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: 10, display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <div style={{ width: 36, height: 36, borderRadius: 10, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🏪</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, color: "#1565C0", background: "#E8F4FD", display: "inline-block", padding: "2px 6px", borderRadius: 6, marginBottom: 3 }}>Ciblée pour toi</div>
-          <div style={{ fontSize: 12, fontWeight: 600 }}>{name}</div>
-          <div style={{ fontSize: 10, color: C.ink2 }}>Votre offre apparaîtra ici</div>
+          <div style={{ fontSize: 9, fontWeight: 600, color: "#1565C0", background: "#E8F4FD", display: "inline-block", padding: "2px 6px", borderRadius: 6, marginBottom: 3 }}>Offre du quartier</div>
+          <div style={{ fontSize: 12, fontWeight: 600 }}>{titre || name}</div>
+          <div style={{ fontSize: 10, color: C.ink2 }}>{conditions || "Voir conditions"}</div>
         </div>
-        <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: C.accent }}>-15%</div>
+        <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: C.accent }}>
+          {valeur ? `-${valeur}${typeRemise === "pct" ? "%" : "€"}` : "-?"}
+        </div>
       </div>
-      <button onClick={() => setPublished(true)} style={{ width: "100%", padding: 12, borderRadius: 14, background: C.accent, color: "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>Publier la remise</button>
+      {erreur && <div style={{ fontSize: 12, color: C.accent, marginBottom: 8 }}>⚠️ {erreur}</div>}
+      <button onClick={handlePublierRemise} disabled={saving} style={{ width: "100%", padding: 12, borderRadius: 14, background: saving ? C.pill : C.accent, color: saving ? C.ink2 : "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600, border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
+        {saving ? "⏳ Publication…" : "Publier la remise"}
+      </button>
     </> : <>
       <div
         onClick={() => setPage && setPage("defis")}
@@ -885,7 +949,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
           {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} />}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
-          {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} setPage={setPage} />}
+          {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} setPage={setPage} user={user} />}
           {activeTab === "plan" && <TabPlan profile={localProfile} />}
         </div>
         <BottomNav onNavigate={setPage} />
