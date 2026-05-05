@@ -210,10 +210,13 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
   const [name, setName] = useState(profile?.pseudo || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [loc, setLoc] = useState(profile?.quartier || "Saint-Dié-des-Vosges");
-  const [avatarPreview, setAvatarPreview] = useState(profile?.avatar_url || null);
+  const [avatarPreview, setAvatarPreview] = useState(
+    profile?.avatar_url?.startsWith("http") ? profile.avatar_url : null
+  );
   const [avatarFile, setAvatarFile] = useState(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const inp = { width: "100%", padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.card, outline: "none", boxSizing: "border-box" };
 
   const handleAvatarFile = (e) => {
@@ -225,17 +228,24 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
 
   const handleSave = async () => {
     setSaving(true);
-    let avatar_url = profile?.avatar_url || null;
+    setUploadError("");
+    let avatar_url = profile?.avatar_url?.startsWith("http") ? profile.avatar_url : null;
     if (avatarFile && user?.id) {
       // Compresse + convertit en JPEG (gère HEIC iPhone et photos > 1Mo)
       const compressed = await compressImage(avatarFile);
       const path = `avatars/${user.id}.jpg`;
-      const { error: upErr } = await supabase.storage.from("images").upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
-      if (upErr) console.error("❌ Upload avatar:", upErr);
-      else {
-        const { data } = supabase.storage.from("images").getPublicUrl(path);
-        avatar_url = data.publicUrl;
+      const { error: upErr } = await supabase.storage
+        .from("images")
+        .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+      if (upErr) {
+        console.error("❌ Upload avatar:", upErr);
+        setUploadError("❌ Upload échoué : " + upErr.message);
+        setSaving(false);
+        return;
       }
+      // Ajoute un timestamp pour forcer le rechargement du cache
+      const { data } = supabase.storage.from("images").getPublicUrl(path);
+      avatar_url = data.publicUrl + "?t=" + Date.now();
     }
     await updateProfile({ pseudo: name, bio, quartier: loc, avatar_url });
     setSaved(true);
@@ -259,12 +269,19 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
           <label htmlFor="avatar-input" style={{ cursor: "pointer", position: "relative" }}>
             <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#E8F4FD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, border: `3px solid ${C.gold}`, overflow: "hidden" }}>
               {avatarPreview
-                ? <img src={avatarPreview} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <img
+                    src={avatarPreview}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={() => setAvatarPreview(null)}
+                  />
                 : "🧑‍🦱"}
             </div>
             <div style={{ position: "absolute", bottom: -2, right: -2, width: 28, height: 28, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#fff", border: `2px solid ${C.card}` }}>📷</div>
           </label>
           <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginTop: 10 }}>Appuie pour changer la photo</div>
+          {uploadError && (
+            <div style={{ fontSize: 11, color: C.accent, marginTop: 6, textAlign: "center", maxWidth: 240 }}>{uploadError}</div>
+          )}
         </div>
 
         {/* Pseudo */}
