@@ -599,9 +599,9 @@ export default function ChipeurInscription({ setPage, onAuth }) {
       await supabase.from("profiles").upsert({
         id: data.user.id,
         pseudo: nom,
-        role: "magasin",
-        bio: [cat, adr, desc].filter(Boolean).join(" · "),
+        bio: desc || "",
         quartier: adr || "",
+        categorie: cat || "Autre",
       });
     }
 

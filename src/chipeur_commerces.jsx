@@ -44,26 +44,59 @@ const STATIC_COMMERCES = [
   },
 ];
 
+// ─── CATÉGORIES : mapping DB → affichage ───
+const CATEGORIES = [
+  { key: "Tous",                      emoji: "🛍️", match: [] },
+  { key: "Mode & Prêt-à-porter",      emoji: "👗", match: ["Mode"] },
+  { key: "Beauté & Bien-être",        emoji: "💄", match: ["Beauté", "Bien-être"] },
+  { key: "Artisan",                   emoji: "🎨", match: ["Artisan"] },
+  { key: "Restauration & Traiteur",   emoji: "🍽️", match: ["Restauration", "Traiteur", "Resto"] },
+  { key: "Épicerie & Alimentation",   emoji: "🧀", match: ["Épicerie", "Alimentation"] },
+  { key: "Sport & Loisirs",           emoji: "🏃", match: ["Sport", "Loisirs"] },
+  { key: "Décoration & Maison",       emoji: "🏠", match: ["Décoration", "Maison"] },
+  { key: "Services de proximité",     emoji: "🔧", match: ["Services"] },
+];
+
+function catEmoji(cat) {
+  const found = CATEGORIES.find(c => c.key === cat);
+  return found ? found.emoji : "🏪";
+}
+
+function catLabel(cat) {
+  if (!cat) return "Commerce";
+  // Raccourcir pour l'affichage dans les cards
+  return cat
+    .replace(" & Prêt-à-porter", "")
+    .replace(" & Bien-être", "")
+    .replace(" & Traiteur", "")
+    .replace(" & Alimentation", "")
+    .replace(" & Loisirs", "")
+    .replace(" & Maison", "")
+    .replace(" de proximité", "");
+}
+
 // ─── CONVERTIR UN PROFIL SUPABASE EN COMMERCE ───
 function profileToCommerce(p, postCount) {
-  const isArtisan = p.role === "artisan";
+  const cat = p.categorie || "Commerce";
+  const emoji = catEmoji(cat);
+  const label = catLabel(cat);
   return {
     id: p.id,
-    category: isArtisan ? "Artisan" : "Commerce",
+    category: cat,
+    categorie: cat,
     name: p.pseudo || "Commerce",
-    cat: `${isArtisan ? "Artisan" : "Commerce"} · ${p.quartier || "Saint-Dié"}`,
-    shortCat: `${isArtisan ? "Artisan local 🎨" : "Commerce local 🏪"} · ${p.quartier || "Saint-Dié"}`,
+    cat: `${label} · ${p.quartier || "Saint-Dié"}`,
+    shortCat: `${emoji} ${label} · ${p.quartier || "Saint-Dié"}`,
     desc: p.bio || "",
     shortDesc: p.bio ? p.bio.substring(0, 80) + (p.bio.length > 80 ? "…" : "") : "",
     cover: p.avatar_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=300&fit=crop",
     gallery: [],
     vues: "—", int: "—",
     posts: postCount != null ? String(postCount) : "—",
-    plan: isArtisan ? "Artisan 🎨" : "Découverte",
-    planBg: isArtisan ? "#FFF3E0" : C.pill,
-    planColor: isArtisan ? "#E65100" : C.ink2,
-    tag: isArtisan ? "#Artisan" : "#Commerce",
-    role: p.role,
+    plan: "Découverte",
+    planBg: C.pill,
+    planColor: C.ink2,
+    tag: `#${label}`,
     phone: null, adresse: p.quartier || null,
     website: null, instagram: null, facebook: null,
     hours: [], products: [],
@@ -517,20 +550,18 @@ export default function ChipeurCommerces({ setPage }) {
   const [realMerchants, setRealMerchants] = useState([]);
   const [loadingMerchants, setLoadingMerchants] = useState(true);
 
-  const cats = ["Tous", "Mode 👗", "Beauté 💄", "Resto 🍜", "Sport 🏃", "Artisans 🎨"];
-
-  // Charger les vrais commerçants depuis Supabase
+  // Charger les vrais commerçants depuis Supabase (categorie non nulle = marchand)
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("*")
-      .in("role", ["magasin", "artisan"])
+      .select("id, pseudo, bio, quartier, avatar_url, categorie")
+      .not("categorie", "is", null)
+      .not("pseudo", "is", null)
       .then(async ({ data: profiles }) => {
         if (!profiles || profiles.length === 0) {
           setLoadingMerchants(false);
           return;
         }
-        // Pour chaque profil, compter les posts
         const withCounts = await Promise.all(
           profiles.map(async p => {
             const { count } = await supabase
@@ -549,14 +580,11 @@ export default function ChipeurCommerces({ setPage }) {
   const allCommerces = [...realMerchants, ...STATIC_COMMERCES];
 
   // Filtrer par catégorie
+  const activeCatDef = CATEGORIES.find(c => c.key === activeCat) || CATEGORIES[0];
   const filtered = allCommerces.filter(c => {
     if (activeCat === "Tous") return true;
-    if (activeCat === "Artisans 🎨") return c.category === "Artisan" || c.role === "artisan";
-    if (activeCat === "Mode 👗") return c.category === "Mode";
-    if (activeCat === "Beauté 💄") return c.category === "Beauté";
-    if (activeCat === "Resto 🍜") return c.category === "Resto";
-    if (activeCat === "Sport 🏃") return c.category === "Sport";
-    return true;
+    const haystack = (c.categorie || c.category || "").toLowerCase();
+    return activeCatDef.match.some(m => haystack.includes(m.toLowerCase()));
   });
 
   const featured = filtered.find(c => c.featured);
@@ -579,8 +607,21 @@ export default function ChipeurCommerces({ setPage }) {
             </div>
             {/* Catégories */}
             <div style={{ display: "flex", gap: 6, padding: "0 16px 12px", overflowX: "auto", scrollbarWidth: "none" }}>
-              {cats.map(c => (
-                <button key={c} onClick={() => setActiveCat(c)} style={{ padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, fontFamily: dm, background: activeCat === c ? C.ink : C.pill, color: activeCat === c ? "#fff" : C.ink2, transition: "all 0.15s" }}>{c}</button>
+              {CATEGORIES.map(c => (
+                <button
+                  key={c.key}
+                  onClick={() => setActiveCat(c.key)}
+                  style={{
+                    padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                    border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                    fontFamily: dm,
+                    background: activeCat === c.key ? C.ink : C.pill,
+                    color: activeCat === c.key ? "#fff" : C.ink2,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {c.emoji} {c.key === "Tous" ? "Tous" : catLabel(c.key)}
+                </button>
               ))}
             </div>
           </div>
