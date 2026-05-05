@@ -53,7 +53,7 @@ function AppHeader({ setPage, profile }) {
               position: "relative", zIndex: 3 - i,
             }}>{v.emoji}</div>
           ))}
-          <div style={{ marginLeft: 5, fontSize: 10, fontWeight: 600, color: C.ink2 }}>+24</div>
+
         </div>
         <span style={{ cursor: "pointer", fontSize: 20 }}>🔔</span>
         <span style={{ cursor: "pointer", fontSize: 20 }}>💬</span>
