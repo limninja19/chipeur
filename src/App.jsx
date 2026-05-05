@@ -33,6 +33,7 @@ function SplashScreen() {
 
 export default function App() {
   const [page, setPage] = useState("fil");
+  const [conversationWith, setConversationWith] = useState(null);
   const [user, setUser] = useState(undefined);
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id);
 
@@ -73,7 +74,7 @@ export default function App() {
   if (user === null) return <Connexion setPage={setPage} onAuth={() => setPage("fil")} />;
 
   // Props communes passées à toutes les pages
-  const sharedProps = { setPage, user, profile, updateProfile };
+  const sharedProps = { setPage, user, profile, updateProfile, conversationWith, setConversationWith };
 
   if (page === "defis") return <Defis {...sharedProps} />;
   if (page === "sorties") return <Sorties {...sharedProps} />;

@@ -412,8 +412,14 @@ function ConversationsList({ userId, user, profile, onSelectConv, setPage }) {
 }
 
 // ─── EXPORT PRINCIPAL ─────────────────────────────────────────────
-export default function Messages({ setPage, user, profile }) {
-  const [selectedConv, setSelectedConv] = useState(null);
+export default function Messages({ setPage, user, profile, conversationWith, setConversationWith }) {
+  // Si on arrive depuis un profil voisin, ouvrir directement cette conversation
+  const [selectedConv, setSelectedConv] = useState(conversationWith || null);
+
+  // Nettoyer conversationWith après usage
+  useEffect(() => {
+    if (conversationWith) setConversationWith?.(null);
+  }, []);
 
   if (selectedConv) {
     return (

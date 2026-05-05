@@ -172,7 +172,7 @@ const UNIVERS_DEFS = [
   { emoji: "✨", q: "Pépite mode du mois" },
 ];
 
-function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking }) {
+function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMessage }) {
   const [tab, setTab] = useState("univers");
   const [vPosts, setVPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -255,7 +255,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking }) {
           ) : (
             <button onClick={onToggleFollow} style={{ flex: 1, border: "none", borderRadius: 14, padding: 10, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm, background: followed ? C.pill : C.accent, color: followed ? C.ink2 : "#fff", transition: "all 0.2s" }}>{followed ? "Suivi ✓" : "+ Suivre"}</button>
           )}
-          <button style={{ width: 44, height: 44, background: C.pill, borderRadius: 14, border: "none", fontSize: 18, cursor: "pointer" }}>💬</button>
+          <button onClick={() => onMessage && onMessage(v)} style={{ width: 44, height: 44, background: C.pill, borderRadius: 14, border: "none", fontSize: 18, cursor: "pointer" }}>💬</button>
         </div>
         {/* Onglets */}
         <div style={{ display: "flex", borderTop: `1px solid ${C.border}` }}>
@@ -345,7 +345,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking }) {
 
 const BG_COLORS = ["#FEF3E0","#F7EEF7","#E8F4FD","#EBF5F0","#FFF3E0","#F0E8FF"];
 
-export default function ChipeurPageVoisins({ setPage, user }) {
+export default function ChipeurPageVoisins({ setPage, user, setConversationWith }) {
   const [screen, setScreen] = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -473,6 +473,10 @@ export default function ChipeurPageVoisins({ setPage, user }) {
             onToggleFollow={() => toggleFollow(selectedVoisin.id)}
             onBack={() => setScreen("list")}
             voisinsRanking={voisins}
+            onMessage={(v) => {
+              setConversationWith({ id: v.id, pseudo: v.pseudo, avatar_url: v.avatar_url, quartier: v.quartier });
+              setPage("messages");
+            }}
           />
         )}
 
