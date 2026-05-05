@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
+import { useUnreadNotifs } from "./chipeur_notifications";
+import { useUnreadMessages } from "./chipeur_messages";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -9,12 +11,16 @@ const C = {
 
 
 // ─── APP HEADER ───
-function AppHeader({ setPage, profile }) {
+function AppHeader({ setPage, profile, user }) {
+  const unreadNotifs = useUnreadNotifs(user?.id);
+  const unreadMessages = useUnreadMessages(user?.id);
+
   const voisins = [
     { emoji: "👩", bg: "#FEF3E0" },
     { emoji: "👩‍🦰", bg: "#F7EEF7" },
     { emoji: "🧑", bg: "#E8F4FD" },
   ];
+
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 16px 6px", flexShrink: 0 }}>
       {/* Logo */}
@@ -40,6 +46,7 @@ function AppHeader({ setPage, profile }) {
           {profile?.pseudo && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.ink2, marginTop: 1 }}>Bonjour {profile.pseudo} 👋</div>}
         </div>
       </div>
+
       {/* Droite : avatars voisins + icônes */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {/* Avatars voisins actifs — cliquable → page voisins */}
@@ -53,10 +60,43 @@ function AppHeader({ setPage, profile }) {
               position: "relative", zIndex: 3 - i,
             }}>{v.emoji}</div>
           ))}
-
         </div>
-        <span style={{ cursor: "pointer", fontSize: 20 }}>🔔</span>
-        <span style={{ cursor: "pointer", fontSize: 20 }}>💬</span>
+
+        {/* Cloche notifications avec badge */}
+        <div
+          onClick={() => setPage("notifications")}
+          style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
+        >
+          🔔
+          {unreadNotifs > 0 && (
+            <div style={{
+              position: "absolute", top: -4, right: -6,
+              background: C.accent, color: "#fff",
+              borderRadius: "50%", width: 16, height: 16,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
+              border: "1.5px solid #fff",
+            }}>{unreadNotifs > 9 ? "9+" : unreadNotifs}</div>
+          )}
+        </div>
+
+        {/* Bulle messages avec badge */}
+        <div
+          onClick={() => setPage("messages")}
+          style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
+        >
+          💬
+          {unreadMessages > 0 && (
+            <div style={{
+              position: "absolute", top: -4, right: -6,
+              background: C.accent, color: "#fff",
+              borderRadius: "50%", width: 16, height: 16,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
+              border: "1.5px solid #fff",
+            }}>{unreadMessages > 9 ? "9+" : unreadMessages}</div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -578,7 +618,7 @@ export default function Fil({ setPage, profile, user }) {
       fontFamily: "'DM Sans', sans-serif", color: C.ink,
       display: "flex", flexDirection: "column",
     }}>
-      <AppHeader setPage={setPage} profile={profile} />
+      <AppHeader setPage={setPage} profile={profile} user={user} />
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
       <VilleToggle filtreVille={filtreVille} setFiltreVille={setFiltreVille} quartier={profile?.quartier} />
       <div

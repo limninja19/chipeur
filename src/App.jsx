@@ -15,6 +15,8 @@ import PageVoisins from "./chipeur_page_voisins";
 import Connexion from "./chipeur_connexion";
 import { ReglementScreen } from "./chipeur_settings";
 import { checkDailyLogin } from "./chipeur_xp";
+import Notifications from "./chipeur_notifications";
+import Messages from "./chipeur_messages";
 
 function SplashScreen() {
   return (
@@ -90,6 +92,8 @@ export default function App() {
   if (page === "reglement") return <ReglementScreen {...sharedProps} />;
   if (page === "profilMagasin") return <ProfilMagasin {...sharedProps} />;
   if (page === "voisins") return <PageVoisins {...sharedProps} />;
+  if (page === "notifications") return <Notifications {...sharedProps} />;
+  if (page === "messages") return <Messages {...sharedProps} />;
 
   return <Fil {...sharedProps} />;
 }
