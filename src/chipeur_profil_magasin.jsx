@@ -580,7 +580,7 @@ function TabPosts({ userId }) {
 }
 
 // ─── ONGLET CRÉER ───
-function TabCreer({ merchantName }) {
+function TabCreer({ merchantName, setPage }) {
   const [mode, setMode] = useState("remise");
   const [typeRemise, setTypeRemise] = useState("pct");
   const [ciblage, setCiblage] = useState("interesse");
@@ -637,21 +637,27 @@ function TabCreer({ merchantName }) {
       </div>
       <button onClick={() => setPublished(true)} style={{ width: "100%", padding: 12, borderRadius: 14, background: C.accent, color: "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>Publier la remise</button>
     </> : <>
-      <Label>Titre du défi</Label>
-      <Input placeholder={`Ex : Montre ta tenue ${name} !`} />
-      <Label>Description</Label>
-      <Input placeholder="Décris le défi pour les voisins" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <div><Label>Icône</Label><Input placeholder="🏪" /></div>
-        <div><Label>Objectif</Label><Input placeholder="50" /></div>
+      <div
+        onClick={() => setPage && setPage("defis")}
+        style={{ background: "linear-gradient(135deg,#7B2FF7,#E840FB)", borderRadius: 18, padding: 20, marginBottom: 12, cursor: "pointer", textAlign: "center" }}
+      >
+        <div style={{ fontSize: 40, marginBottom: 10 }}>🏆</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", marginBottom: 6 }}>Créer un défi</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.5, marginBottom: 14 }}>
+          Choisis un emoji, une récompense, un mode de sélection du gagnant et lance ton défi dans le quartier !
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 12, padding: "10px 16px", display: "inline-flex", alignItems: "center", gap: 8, color: "#fff", fontSize: 13, fontWeight: 700 }}>
+          ✨ Ouvrir le créateur de défi →
+        </div>
       </div>
-      <Label>Date de fin</Label>
-      <Input placeholder="jj/mm/aaaa" />
-      <div style={{ background: "#FFF8F6", borderRadius: 12, padding: 10, marginBottom: 10, border: "1px solid rgba(232,73,10,0.15)" }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: C.accent, marginBottom: 3 }}>★ Défi sponsorisé</div>
-        <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.4 }}>Ton défi apparaîtra dans la page Défis avec le badge "Sponsorisé par {name}"</div>
+      <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: 12 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Ce que tu peux configurer</div>
+        {["🎨 Emoji & titre du défi", "🎁 Récompense (bon cadeau, remise…)", "👥 Limite de participants", "🗳️ Vote des voisins OU 🎯 Ton choix"].map((f, i, arr) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none", fontSize: 12, color: C.ink }}>
+            <span>{f}</span>
+          </div>
+        ))}
       </div>
-      <button onClick={() => setPublished(true)} style={{ width: "100%", padding: 12, borderRadius: 14, background: C.pro, color: "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer" }}>Lancer le défi</button>
     </>}
   </>;
 }
@@ -879,7 +885,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
           {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} />}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
-          {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} />}
+          {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} setPage={setPage} />}
           {activeTab === "plan" && <TabPlan profile={localProfile} />}
         </div>
         <BottomNav onNavigate={setPage} />
