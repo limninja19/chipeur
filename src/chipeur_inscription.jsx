@@ -93,8 +93,114 @@ function Field({ label, type = "text", placeholder, value, onChange }) {
   );
 }
 
+// ─── SCREEN 0 : VÉRIFICATION D'ÂGE ───
+function ScreenAge({ onNext }) {
+  const [age, setAge] = useState(null); // null | "moins15" | "15-17" | "18plus"
+  const [acceptParental, setAcceptParental] = useState(false);
+
+  const AGE_OPTIONS = [
+    { id: "moins15", label: "J'ai moins de 15 ans",     emoji: "🧒" },
+    { id: "15-17",   label: "J'ai entre 15 et 17 ans",  emoji: "🧑" },
+    { id: "18plus",  label: "J'ai 18 ans ou plus",      emoji: "🙋" },
+  ];
+
+  const canProceed =
+    age === "18plus" ||
+    (age === "15-17" && acceptParental);
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "36px 24px 32px", display: "flex", flexDirection: "column" }}>
+      <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 26, color: COLORS.ink, textAlign: "center", marginBottom: 6 }}>
+        chi<span style={{ color: COLORS.accent }}>p</span>eur
+      </div>
+      <div style={{ fontSize: 13, color: COLORS.ink2, textAlign: "center", marginBottom: 32, fontFamily: "'DM Sans', sans-serif" }}>
+        Rejoins le fil mode de ton quartier
+      </div>
+
+      <div style={{ background: COLORS.card, borderRadius: 20, border: `1px solid ${COLORS.border}`, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 17, color: COLORS.ink, marginBottom: 6 }}>Avant tout…</div>
+        <div style={{ fontSize: 13, color: COLORS.ink2, lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif" }}>
+          Pour respecter la loi et protéger les mineurs, nous avons besoin de connaître ta tranche d'âge.
+        </div>
+      </div>
+
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: COLORS.ink2, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+        Tu as…
+      </div>
+
+      {AGE_OPTIONS.map(opt => (
+        <div
+          key={opt.id}
+          onClick={() => { setAge(opt.id); setAcceptParental(false); }}
+          style={{
+            display: "flex", alignItems: "center", gap: 14,
+            background: age === opt.id ? "#FFF8F6" : COLORS.card,
+            border: `2px solid ${age === opt.id ? COLORS.accent : COLORS.border}`,
+            borderRadius: 16, padding: "14px 16px", marginBottom: 10, cursor: "pointer",
+            transition: "all 0.15s",
+          }}
+        >
+          <div style={{ fontSize: 26 }}>{opt.emoji}</div>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 14, color: COLORS.ink, flex: 1 }}>{opt.label}</div>
+          <div style={{
+            width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+            border: `2px solid ${age === opt.id ? COLORS.accent : COLORS.border}`,
+            background: age === opt.id ? COLORS.accent : "transparent",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {age === opt.id && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />}
+          </div>
+        </div>
+      ))}
+
+      {/* Moins de 15 ans — message de blocage */}
+      {age === "moins15" && (
+        <div style={{ background: "#FFF0EE", border: `1.5px solid rgba(232,73,10,0.3)`, borderRadius: 16, padding: 16, marginTop: 4 }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: COLORS.accent, marginBottom: 8 }}>
+            🔒 Inscription non disponible
+          </div>
+          <div style={{ fontSize: 13, color: COLORS.ink2, lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif", marginBottom: 10 }}>
+            Chipeur est réservé aux personnes de 15 ans et plus. Si tu as moins de 15 ans, un de tes parents doit s'inscrire à ta place et autoriser ton utilisation.
+          </div>
+          <a href="mailto:contact@chipeur.fr?subject=Inscription mineur" style={{ fontSize: 12, color: COLORS.accent, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+            📧 Contacter Chipeur pour une demande parentale
+          </a>
+        </div>
+      )}
+
+      {/* 15-17 ans — consentement parental */}
+      {age === "15-17" && (
+        <div style={{ background: "#FFFBEA", border: `1.5px solid rgba(247,167,45,0.4)`, borderRadius: 16, padding: 14, marginTop: 4 }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: "#B45309", marginBottom: 8 }}>
+            ⚠️ Autorisation parentale requise
+          </div>
+          <div style={{ fontSize: 12, color: COLORS.ink2, lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif", marginBottom: 10 }}>
+            Entre 15 et 17 ans, tu peux utiliser Chipeur mais tu dois avoir l'autorisation de tes parents pour créer un compte et publier des photos.
+          </div>
+          <CheckboxLegal checked={acceptParental} onChange={setAcceptParental}>
+            <span style={{ fontWeight: 700 }}>Mes parents m'autorisent</span> à utiliser Chipeur et à publier des photos sur la plateforme. J'ai leur accord pour créer ce compte.
+          </CheckboxLegal>
+        </div>
+      )}
+
+      <button
+        onClick={() => canProceed && onNext(age)}
+        disabled={!canProceed}
+        style={{
+          width: "100%", background: canProceed ? COLORS.accent : "#ccc", color: "#fff",
+          border: "none", borderRadius: 16, padding: 15, fontSize: 15, fontWeight: 600,
+          fontFamily: "'DM Sans', sans-serif", cursor: canProceed ? "pointer" : "not-allowed",
+          marginTop: 16, transition: "background 0.2s",
+        }}
+      >
+        Continuer →
+      </button>
+    </div>
+  );
+}
+
 // ─── SCREEN 1 : INSCRIPTION ───
-function ScreenInscription({ onNext }) {
+function ScreenInscription({ onNext, ageRange }) {
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
@@ -124,6 +230,11 @@ function ScreenInscription({ onNext }) {
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
       <Field label="MOT DE PASSE" type="password" placeholder="6 caractères minimum" value={mdp} onChange={setMdp} />
 
+      {ageRange === "15-17" && (
+        <div style={{ background: "#FFFBEA", border: "1.5px solid rgba(247,167,45,0.4)", borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 11, color: "#B45309", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+          🧑 Compte mineur (15-17 ans) — L'autorisation parentale a bien été prise en compte.
+        </div>
+      )}
       <div style={{ marginBottom: 8 }}>
         <CheckboxLegal checked={acceptCGU} onChange={setAcceptCGU}>
           J'ai lu et j'accepte les{" "}
@@ -591,7 +702,8 @@ function ScreenSuccess({ accountType, onRestart, onFinish }) {
 
 // ─── APP SHELL ───
 export default function ChipeurInscription({ setPage, onAuth }) {
-  const [screen, setScreen] = useState("inscription");
+  const [screen, setScreen] = useState("age");
+  const [ageRange, setAgeRange] = useState(null);
   const [accountType, setAccountType] = useState(null);
   const [creds, setCreds] = useState({ prenom: "", email: "", mdp: "" });
   const [signupError, setSignupError] = useState("");
@@ -601,11 +713,18 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     setAccountType(type);
     if (type === "voisin") {
       setLoadingSignup(true);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: creds.email,
         password: creds.mdp,
-        options: { data: { pseudo: creds.prenom } },
+        options: { data: { pseudo: creds.prenom, age_range: ageRange } },
       });
+      if (!error && data?.user) {
+        await supabase.from("profiles").upsert({
+          id: data.user.id,
+          pseudo: creds.prenom,
+          age_range: ageRange,
+        });
+      }
       setLoadingSignup(false);
       if (error) { setSignupError(error.message); return; }
       setScreen("success");
@@ -645,6 +764,7 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         quartier: adr || "",
         categorie: cat || "Autre",
         metier: metier || cat || "Commerce",
+        age_range: ageRange,
       });
     }
 
@@ -663,8 +783,12 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         {signupError && (
           <div style={{ padding: "10px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 13, textAlign: "center" }}>⚠️ {signupError}</div>
         )}
+        {screen === "age" && (
+          <ScreenAge onNext={(age) => { setAgeRange(age); setScreen("inscription"); }} />
+        )}
+
         {screen === "inscription" && (
-          <ScreenInscription onNext={(d) => { setCreds(d); setScreen("choix"); }} />
+          <ScreenInscription ageRange={ageRange} onNext={(d) => { setCreds(d); setScreen("choix"); }} />
         )}
 
         {screen === "choix" && (
