@@ -66,17 +66,43 @@ function MagHeader({ profile, postCount, headerStats, onEdit, onSettings }) {
   );
 }
 
+// Jours prédéfinis pour les horaires
+const JOURS_DEFAUT = [
+  { j: "Lundi", h: "" },
+  { j: "Mardi", h: "" },
+  { j: "Mercredi", h: "" },
+  { j: "Jeudi", h: "" },
+  { j: "Vendredi", h: "" },
+  { j: "Samedi", h: "" },
+  { j: "Dimanche", h: "" },
+];
+
 // ─── ÉCRAN MODIFIER LE PROFIL ───
 function EditProfilScreen({ onBack, profile, userId, onSaved }) {
-  const [pseudo, setPseudo]     = useState(profile?.pseudo || "");
-  const [bio, setBio]           = useState(profile?.bio || "");
-  const [quartier, setQuartier] = useState(profile?.quartier || "");
-  const [phone, setPhone]       = useState(profile?.phone || "");
-  const [website, setWebsite]   = useState(profile?.website || "");
+  const [pseudo, setPseudo]       = useState(profile?.pseudo || "");
+  const [metier, setMetier]       = useState(profile?.metier || "");
+  const [bio, setBio]             = useState(profile?.bio || "");
+  const [quartier, setQuartier]   = useState(profile?.quartier || "");
+  const [phone, setPhone]         = useState(profile?.phone || "");
+  const [website, setWebsite]     = useState(profile?.website || "");
+  const [instagram, setInstagram] = useState(profile?.instagram || "");
+  const [facebook, setFacebook]   = useState(profile?.facebook || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const [error, setError]       = useState("");
+  const [saving, setSaving]       = useState(false);
+  const [error, setError]         = useState("");
+
+  // Horaires : initialiser depuis le profil ou avec les 7 jours vides
+  const initHoraires = () => {
+    const saved = profile?.horaires;
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+    return JOURS_DEFAUT.map(d => ({ ...d }));
+  };
+  const [horaires, setHoraires] = useState(initHoraires);
+
+  const updateHoraire = (idx, val) => {
+    setHoraires(prev => prev.map((h, i) => i === idx ? { ...h, h: val } : h));
+  };
 
   const handlePhoto = async (e) => {
     const file = e.target.files?.[0];
@@ -98,7 +124,13 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
     if (!userId) return;
     setSaving(true);
     setError("");
-    const updates = { pseudo, bio, quartier, phone, website, avatar_url: avatarUrl };
+    const horairesFiltres = horaires.filter(h => h.h.trim() !== "");
+    const updates = {
+      pseudo, metier, bio, quartier,
+      phone, website, instagram, facebook,
+      avatar_url: avatarUrl,
+      horaires: horairesFiltres,
+    };
     const { error: err } = await supabase
       .from("profiles")
       .update(updates)
@@ -158,13 +190,15 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
           <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 12 }}>Informations de base</div>
           <Label>Nom de l'enseigne</Label>
           <Input value={pseudo} onChange={e => setPseudo(e.target.value)} placeholder="Ex : Atelier Mona" />
+          <Label>Métier précis</Label>
+          <Input value={metier} onChange={e => setMetier(e.target.value)} placeholder="Ex : Photographe, Boulangerie, Imprimerie…" />
           <Label>Description / Présentation</Label>
           <textarea
             value={bio} onChange={e => setBio(e.target.value)}
             placeholder="Décris ton enseigne, tes produits, ton univers…"
             style={{ width: "100%", padding: "9px 12px", borderRadius: 12, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 12, color: C.ink, background: C.bg, outline: "none", marginBottom: 10, boxSizing: "border-box", minHeight: 80, resize: "vertical", lineHeight: 1.5 }}
           />
-          <Label>Adresse / Quartier</Label>
+          <Label>Adresse</Label>
           <Input value={quartier} onChange={e => setQuartier(e.target.value)} placeholder="Ex : 12 rue des Arts, Saint-Dié" />
         </div>
 
@@ -175,6 +209,46 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
           <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="03 29 XX XX XX" type="tel" />
           <Label>Site web</Label>
           <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://monenseigne.fr" type="url" />
+        </div>
+
+        {/* Réseaux sociaux */}
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 14, marginBottom: 12 }}>
+          <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 12 }}>Réseaux sociaux</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>📸</div>
+            <Input
+              value={instagram}
+              onChange={e => setInstagram(e.target.value)}
+              placeholder="@toncompte"
+              style={{ margin: 0 }}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>👥</div>
+            <Input
+              value={facebook}
+              onChange={e => setFacebook(e.target.value)}
+              placeholder="Nom de ta page Facebook"
+              style={{ margin: 0 }}
+            />
+          </div>
+        </div>
+
+        {/* Horaires */}
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 14, marginBottom: 12 }}>
+          <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Horaires d'ouverture</div>
+          <div style={{ fontSize: 11, color: C.ink2, marginBottom: 12 }}>Laisse vide les jours de fermeture.</div>
+          {horaires.map((h, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <div style={{ width: 80, fontSize: 11, fontWeight: 600, color: C.ink2, flexShrink: 0 }}>{h.j}</div>
+              <Input
+                value={h.h}
+                onChange={e => updateHoraire(i, e.target.value)}
+                placeholder="ex : 9h – 19h  ou  Fermé"
+                style={{ margin: 0, flex: 1 }}
+              />
+            </div>
+          ))}
         </div>
 
         <button onClick={handleSave} disabled={saving} style={{

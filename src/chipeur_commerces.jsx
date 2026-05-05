@@ -78,15 +78,16 @@ function catLabel(cat) {
 // ─── CONVERTIR UN PROFIL SUPABASE EN COMMERCE ───
 function profileToCommerce(p, postCount) {
   const cat = p.categorie || "Commerce";
+  const metier = p.metier || catLabel(cat);
   const emoji = catEmoji(cat);
-  const label = catLabel(cat);
   return {
     id: p.id,
     category: cat,
     categorie: cat,
+    metier,
     name: p.pseudo || "Commerce",
-    cat: `${label} · ${p.quartier || "Saint-Dié"}`,
-    shortCat: `${emoji} ${label} · ${p.quartier || "Saint-Dié"}`,
+    cat: `${metier} · ${p.quartier || "Saint-Dié"}`,
+    shortCat: `${emoji} ${metier} · ${p.quartier || "Saint-Dié"}`,
     desc: p.bio || "",
     shortDesc: p.bio ? p.bio.substring(0, 80) + (p.bio.length > 80 ? "…" : "") : "",
     cover: p.avatar_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=300&fit=crop",
@@ -97,9 +98,13 @@ function profileToCommerce(p, postCount) {
     planBg: C.pill,
     planColor: C.ink2,
     tag: `#${label}`,
-    phone: null, adresse: p.quartier || null,
-    website: null, instagram: null, facebook: null,
-    hours: [], products: [],
+    phone: p.phone || null,
+    adresse: p.quartier || null,
+    website: p.website || null,
+    instagram: p.instagram || null,
+    facebook: p.facebook || null,
+    hours: Array.isArray(p.horaires) ? p.horaires.filter(h => h.h) : [],
+    products: [],
   };
 }
 
@@ -554,7 +559,7 @@ export default function ChipeurCommerces({ setPage }) {
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, categorie")
+      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires")
       .not("categorie", "is", null)
       .not("pseudo", "is", null)
       .then(async ({ data: profiles }) => {

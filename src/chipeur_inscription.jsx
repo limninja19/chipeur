@@ -258,9 +258,22 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
   const [focused, setFocused] = useState(null);
   const [nomMagasin, setNomMagasin] = useState("");
   const [categorie, setCategorie] = useState("");
+  const [metier, setMetier] = useState("");
   const [adresse, setAdresse] = useState("");
   const [description, setDescription] = useState("");
   const [acceptCGUM, setAcceptCGUM] = useState(false);
+
+  const METIER_SUGGESTIONS = {
+    "Mode & Prêt-à-porter":    ["Boutique de mode", "Prêt-à-porter femme", "Prêt-à-porter homme", "Accessoires", "Lingerie", "Chaussures"],
+    "Beauté & Bien-être":      ["Institut de beauté", "Coiffeur", "Barbier", "Esthéticienne", "Nail art", "Spa & massages", "Tatoueur"],
+    "Artisan":                 ["Photographe", "Graphiste", "Céramiste", "Bijoutier", "Menuisier", "Couturier", "Illustrateur", "Potier"],
+    "Restauration & Traiteur": ["Restaurant", "Boulangerie", "Pâtisserie", "Traiteur", "Pizzeria", "Kebab", "Salon de thé", "Food truck"],
+    "Épicerie & Alimentation": ["Épicerie fine", "Fromagerie", "Boucherie", "Primeur", "Cave à vins", "Bio & vrac"],
+    "Sport & Loisirs":         ["Salle de sport", "Coach sportif", "Yoga & pilates", "Arts martiaux", "Vélo", "Randonnée"],
+    "Décoration & Maison":     ["Décoration intérieure", "Mobilier", "Luminaires", "Plantes & fleurs", "Bricolage", "Antiquités"],
+    "Services de proximité":   ["Imprimerie", "Pressing", "Cordonnerie", "Serrurier", "Électricien", "Plombier", "Garde d'enfants"],
+    "Autre":                   [],
+  };
 
   const inputStyle = (name) => ({
     width: "100%",
@@ -386,6 +399,35 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
             <option>Autre</option>
           </select>
         </div>
+        {/* Métier précis */}
+        <input
+          placeholder={categorie ? "Ton métier précis (ex : Photographe, Boulangerie…)" : "Sélectionne d'abord une catégorie"}
+          value={metier}
+          disabled={!categorie}
+          onChange={e => setMetier(e.target.value)}
+          onFocus={() => setFocused("metier")}
+          onBlur={() => setFocused(null)}
+          style={{ ...inputStyle("metier"), opacity: categorie ? 1 : 0.5 }}
+        />
+        {/* Suggestions de métier selon catégorie */}
+        {categorie && (METIER_SUGGESTIONS[categorie] || []).length > 0 && !metier && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10, marginTop: -4 }}>
+            {(METIER_SUGGESTIONS[categorie] || []).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setMetier(s)}
+                style={{
+                  padding: "5px 12px", borderRadius: 20, fontSize: 11,
+                  border: `1.5px solid ${COLORS.border}`, background: COLORS.card,
+                  color: COLORS.ink2, cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >{s}</button>
+            ))}
+          </div>
+        )}
+
         <input
           placeholder="Adresse"
           value={adresse}
@@ -490,7 +532,7 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
         </div>
 
         <button
-          onClick={() => onValidate({ nom: nomMagasin, cat: categorie, adr: adresse, desc: description, plan: selectedPlan })}
+          onClick={() => onValidate({ nom: nomMagasin, cat: categorie, metier: metier.trim() || categorie, adr: adresse, desc: description, plan: selectedPlan })}
           disabled={loading || !nomMagasin.trim() || !acceptCGUM}
           style={{
             width: "100%", background: loading || !nomMagasin.trim() || !acceptCGUM ? "#ccc" : COLORS.accent,
@@ -572,7 +614,7 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     }
   };
 
-  const handleMagasinValidate = async ({ nom, cat, adr, desc, plan }) => {
+  const handleMagasinValidate = async ({ nom, cat, metier, adr, desc, plan }) => {
     setSignupError("");
     setLoadingSignup(true);
 
@@ -602,6 +644,7 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         bio: desc || "",
         quartier: adr || "",
         categorie: cat || "Autre",
+        metier: metier || cat || "Commerce",
       });
     }
 
