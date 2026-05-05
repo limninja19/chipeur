@@ -37,6 +37,33 @@ function isUUID(val) {
   return typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 }
 
+// ─── PALETTES COULEURS DÉFIS ────────────────────────────────────
+const GRAD_PALETTES = [
+  { grad: "linear-gradient(135deg,#FF5733,#F7A72D)", fill: "#FF5733" },
+  { grad: "linear-gradient(135deg,#7C3AED,#A855F7)", fill: "#7C3AED" },
+  { grad: "linear-gradient(135deg,#0F766E,#14B8A6)", fill: "#0F766E" },
+  { grad: "linear-gradient(135deg,#1D4ED8,#3B82F6)", fill: "#1D4ED8" },
+  { grad: "linear-gradient(135deg,#B45309,#F59E0B)", fill: "#B45309" },
+  { grad: "linear-gradient(135deg,#0A3D2E,#16A34A)", fill: "#0A3D2E" },
+];
+
+// ─── EMOJIS PAR CATÉGORIE ───────────────────────────────────────
+const EMOJI_OPTIONS = [
+  { cat: "Mode & Style",    emojis: ["👗","👠","👜","🧢","✂️","💄","🪡","🎀"] },
+  { cat: "Food & Boisson",  emojis: ["🥖","🍕","🥗","🍷","🧁","☕","🍽️","🫕"] },
+  { cat: "Artisan & Créa",  emojis: ["🎨","📸","🪵","🏺","✏️","🧵","🖼️","🎭"] },
+  { cat: "Sport & Bien-être",emojis: ["🏃","⚽","🧘","🚴","🏊","🎯","🥊","🌿"] },
+  { cat: "Local & Éco",     emojis: ["🏠","♻️","🌱","🤝","🛍️","🏡","🌟","💛"] },
+];
+
+// ─── SUGGESTIONS RÉCOMPENSES ────────────────────────────────────
+const REWARD_SUGGESTIONS = [
+  "Bon cadeau 20€", "Bon cadeau 50€", "Bon cadeau 100€",
+  "Remise de 15%", "Remise de 20%", "Remise de 30%",
+  "Produit offert", "Séance offerte", "Consultation gratuite",
+  "Surprise du commerçant", "Livraison offerte", "Lot de produits",
+];
+
 // ─── BOTTOM NAV ─────────────────────────────────────────────────
 function BottomNav({ setPage, active }) {
   const items = [
@@ -128,15 +155,26 @@ function DefiCard({ d, onOpen, onParticipe }) {
           <StatBox n={pct + "%"} l="complété" />
         </div>
       </div>
+      {/* Récompense */}
+      {d.reward && (
+        <div style={{
+          padding: "6px 14px 0",
+          display: "flex", alignItems: "center", gap: 6,
+        }}>
+          <span style={{ fontSize: 13 }}>🎁</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: C.pro }}>À gagner :</span>
+          <span style={{ fontSize: 11, color: C.ink, fontWeight: 600 }}>{d.reward}</span>
+        </div>
+      )}
       <div style={{
-        padding: "10px 14px 12px",
+        padding: d.reward ? "8px 14px 12px" : "10px 14px 12px",
         display: "flex", alignItems: "center",
         justifyContent: "space-between", gap: 10,
       }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.ink2, marginBottom: 4 }}>
-            <span>{d.participants} posts</span>
-            <span>objectif {d.objectif}{d.ended ? " ✓" : ""}</span>
+            <span>{d.participants} participants</span>
+            <span>max {d.objectif}{d.ended ? " ✓" : ""}</span>
           </div>
           <div style={{ height: 5, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
             <div style={{ height: "100%", borderRadius: 3, width: `${pct}%`, background: d.fill }} />
@@ -148,10 +186,10 @@ function DefiCard({ d, onOpen, onParticipe }) {
             border: "none", borderRadius: 12, padding: "7px 14px",
             fontSize: 12, fontWeight: 600, cursor: "pointer",
             fontFamily: dm, whiteSpace: "nowrap",
-            color: "#fff", background: d.ended ? C.ink : d.fill,
+            color: "#fff", background: d.ended ? C.ink2 : d.fill,
           }}
         >
-          {d.ended ? "Voir les posts" : "+ Participer"}
+          {d.isFull ? "🔒 Complet" : d.ended ? "Voir les posts" : "+ Participer"}
         </button>
       </div>
     </div>
@@ -217,15 +255,52 @@ function DetailScreen({ d, user, onBack, onParticipe }) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 100px" }}>
+
+        {/* Récompense */}
+        {d.reward && (
+          <div style={{
+            background: "linear-gradient(135deg,#FFF8E8,#FFF3D0)",
+            border: "1.5px solid #F7A72D", borderRadius: 16,
+            padding: "12px 16px", marginBottom: 14,
+            display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <div style={{ fontSize: 28 }}>🎁</div>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#B45309", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>À gagner</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>{d.reward}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Mode de sélection */}
+        <div style={{
+          background: C.card, borderRadius: 16, padding: "10px 14px",
+          marginBottom: 14, border: `1px solid ${C.border}`,
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <div style={{ fontSize: 20 }}>{d.selection_mode === "vote" ? "🗳️" : "🎯"}</div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.4 }}>Sélection du gagnant</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.ink, marginTop: 1 }}>
+              {d.selection_mode === "vote"
+                ? "Vote des voisins — le post avec le plus de réactions gagne"
+                : "Choix du commerçant — il sélectionne lui-même le gagnant"}
+            </div>
+          </div>
+        </div>
+
         {/* Barre de progression */}
         <div style={{ background: C.card, borderRadius: 16, padding: 14, marginBottom: 14, border: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.ink2, marginBottom: 8 }}>
-            <span>Progression</span>
-            <strong style={{ color: C.ink }}>{d.pct || 0}%</strong>
+            <span>Participants</span>
+            <strong style={{ color: C.ink }}>{d.participants} / {d.objectif}</strong>
           </div>
           <div style={{ height: 8, background: C.pill, borderRadius: 4, overflow: "hidden" }}>
             <div style={{ height: "100%", borderRadius: 4, width: `${Math.min(d.pct || 0, 100)}%`, background: d.grad }} />
           </div>
+          {d.isFull && (
+            <div style={{ fontSize: 11, color: "#E53935", fontWeight: 700, marginTop: 6 }}>🔒 Places complètes — le commerçant va choisir son gagnant !</div>
+          )}
         </div>
 
         {/* Tags */}
@@ -558,6 +633,190 @@ function SuccessScreen({ d, onBack }) {
   );
 }
 
+// ─── CRÉER UN DÉFI ──────────────────────────────────────────────
+function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
+  const [emoji, setEmoji]           = useState("🏆");
+  const [title, setTitle]           = useState("");
+  const [description, setDesc]      = useState("");
+  const [reward, setReward]         = useState("");
+  const [endDate, setEndDate]       = useState("");
+  const [maxP, setMaxP]             = useState("30");
+  const [limitOn, setLimitOn]       = useState(true);
+  const [mode, setMode]             = useState("choix"); // "choix" | "vote"
+  const [publishing, setPublishing] = useState(false);
+  const [error, setError]           = useState("");
+
+  const inp = {
+    width: "100%", border: `1px solid ${C.border}`, borderRadius: 12,
+    padding: "10px 12px", fontSize: 13, fontFamily: dm,
+    background: C.bg, color: C.ink, boxSizing: "border-box", outline: "none",
+  };
+  const section = { marginBottom: 18 };
+  const label = { fontSize: 11, fontWeight: 700, color: C.ink2, letterSpacing: 0.4, marginBottom: 6, display: "block", textTransform: "uppercase" };
+
+  async function handlePublish() {
+    if (!title.trim()) { setError("Le titre est obligatoire."); return; }
+    if (!endDate)       { setError("La date de fin est obligatoire."); return; }
+    setPublishing(true); setError("");
+    const [y, m, jj] = endDate.split("-");
+    const { data, error: err } = await supabase.from("defis").insert({
+      title:           title.trim(),
+      description:     description.trim() || null,
+      emoji,
+      reward:          reward.trim() || null,
+      ends_at:         new Date(`${y}-${m}-${jj}T23:59:00`).toISOString(),
+      max_participants: limitOn ? parseInt(maxP) || 30 : null,
+      total_target:    limitOn ? parseInt(maxP) || 30 : 100,
+      selection_mode:  mode,
+      xp:              15,
+      ended:           false,
+      user_id:         user?.id || null,
+    }).select().single();
+    if (err) { setError(err.message); setPublishing(false); return; }
+    onSuccess(data);
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2 }}>←</button>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink }}>Créer un défi 🏆</div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 120px" }}>
+
+        {/* ── Emoji picker ── */}
+        <div style={section}>
+          <span style={label}>Icône du défi</span>
+          <div style={{ background: C.card, borderRadius: 16, padding: 14, border: `1px solid ${C.border}` }}>
+            {/* Sélection actuelle */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>{emoji}</div>
+              <div style={{ fontSize: 12, color: C.ink2 }}>Choisis l'emoji qui représente le mieux ton défi</div>
+            </div>
+            {/* Grille par catégorie */}
+            {EMOJI_OPTIONS.map(cat => (
+              <div key={cat.cat} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 6 }}>{cat.cat}</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {cat.emojis.map(e => (
+                    <button key={e} onClick={() => setEmoji(e)} style={{
+                      width: 38, height: 38, borderRadius: 10, fontSize: 20,
+                      border: emoji === e ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
+                      background: emoji === e ? "#FFF0EB" : C.bg,
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>{e}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Titre ── */}
+        <div style={section}>
+          <span style={label}>Nom du défi *</span>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Montre ton look du mois, Photo de ton plat préféré…" style={inp} />
+        </div>
+
+        {/* ── Description ── */}
+        <div style={section}>
+          <span style={label}>Description (optionnel)</span>
+          <textarea value={description} onChange={e => setDesc(e.target.value)} placeholder="Explique les règles du défi…" rows={3} style={{ ...inp, resize: "none" }} />
+        </div>
+
+        {/* ── Récompense ── */}
+        <div style={section}>
+          <span style={label}>🎁 Récompense à gagner</span>
+          <input value={reward} onChange={e => setReward(e.target.value)} placeholder="Ex: Bon cadeau 50€, Produit offert…" style={{ ...inp, marginBottom: 8 }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {REWARD_SUGGESTIONS.map(s => (
+              <button key={s} onClick={() => setReward(s)} style={{
+                padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                border: "none", cursor: "pointer", fontFamily: dm,
+                background: reward === s ? C.accent : C.pill,
+                color: reward === s ? "#fff" : C.ink2,
+              }}>{s}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Date de fin ── */}
+        <div style={section}>
+          <span style={label}>Date de fin *</span>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inp} />
+        </div>
+
+        {/* ── Limite participants ── */}
+        <div style={section}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={label}>👥 Limiter les participants</span>
+            <button onClick={() => setLimitOn(!limitOn)} style={{
+              padding: "4px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+              border: "none", cursor: "pointer", fontFamily: dm,
+              background: limitOn ? C.accent : C.pill,
+              color: limitOn ? "#fff" : C.ink2,
+            }}>{limitOn ? "Oui" : "Non"}</button>
+          </div>
+          {limitOn && (
+            <div>
+              <input
+                type="number" value={maxP} onChange={e => setMaxP(e.target.value)}
+                min="1" max="500"
+                style={{ ...inp, width: 120 }}
+              />
+              <div style={{ fontSize: 11, color: C.ink2, marginTop: 6 }}>
+                Le défi se clôture automatiquement quand ce nombre est atteint.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Mode de sélection ── */}
+        <div style={section}>
+          <span style={label}>🏆 Sélection du gagnant</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[
+              { k: "choix", icon: "🎯", title: "Ton choix", desc: "Tu sélectionnes toi-même le gagnant parmi les participants" },
+              { k: "vote",  icon: "🗳️", title: "Vote des voisins", desc: "Le post avec le plus de réactions gagne automatiquement" },
+            ].map(opt => (
+              <div
+                key={opt.k}
+                onClick={() => setMode(opt.k)}
+                style={{
+                  flex: 1, borderRadius: 16, padding: "12px 10px", cursor: "pointer",
+                  border: mode === opt.k ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
+                  background: mode === opt.k ? "#FFF0EB" : C.card, textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: 24, marginBottom: 6 }}>{opt.icon}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 4 }}>{opt.title}</div>
+                <div style={{ fontSize: 10, color: C.ink2, lineHeight: 1.4 }}>{opt.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {error && <div style={{ fontSize: 12, color: "#E53935", padding: "8px 12px", background: "#FFF0EE", borderRadius: 10, marginBottom: 12 }}>❌ {error}</div>}
+      </div>
+
+      {/* Bouton publier */}
+      <div style={{ position: "absolute", bottom: 90, left: 16, right: 16, zIndex: 10 }}>
+        <button
+          onClick={handlePublish}
+          disabled={publishing}
+          style={{
+            width: "100%", background: publishing ? "#ccc" : C.accent,
+            color: "#fff", border: "none", borderRadius: 16, padding: 16,
+            fontSize: 15, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+          }}
+        >{publishing ? "Publication…" : "Publier le défi 🏆"}</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN ───────────────────────────────────────────────────────
 export default function ChipeurDefis({ setPage, user, profile }) {
   const [screen, setScreen] = useState("list");
@@ -565,6 +824,9 @@ export default function ChipeurDefis({ setPage, user, profile }) {
   const [filter, setFilter] = useState("Tous");
   const [defis, setDefis] = useState(STATIC_DEFIS);
   const [loading, setLoading] = useState(true);
+
+  // Marchand = a une categorie dans son profil OU role marchand dans metadata
+  const isMarchand = !!(profile?.categorie || ["magasin","artisan","commercant"].includes(user?.user_metadata?.role));
 
   async function loadDefis() {
     setLoading(true);
@@ -594,22 +856,32 @@ export default function ChipeurDefis({ setPage, user, profile }) {
       });
 
       // 3. Construire les défis enrichis
-      const enriched = defisData.map(d => {
+      const enriched = defisData.map((d, idx) => {
         const participants = countMap[d.id] || 0;
-        const isEnded = d.ended || (d.ends_at && new Date(d.ends_at) < new Date());
+        const maxP = d.max_participants || d.total_target || 60;
+        const isFull = d.max_participants && participants >= d.max_participants;
+        const isEnded = d.ended || isFull || (d.ends_at && new Date(d.ends_at) < new Date());
         const timeLeft = isEnded ? null : computeTimeLeft(d.ends_at, false);
-        const pct = d.objectif > 0
-          ? Math.min(100, Math.round((participants / d.objectif) * 100))
-          : 0;
+        const pct = maxP > 0 ? Math.min(100, Math.round((participants / maxP) * 100)) : 0;
+        const palette = GRAD_PALETTES[idx % GRAD_PALETTES.length];
         return {
           ...d,
+          icon: d.emoji || d.icon || "🏆",
+          objectif: maxP,
           participants,
           pct,
           ended: isEnded,
-          timeLeft: isEnded
-            ? `Terminé · ${participants} posts`
-            : (timeLeft || "Bientôt"),
+          isFull,
+          timeLeft: isFull
+            ? `Complet ! ${participants} participants`
+            : isEnded
+              ? `Terminé · ${participants} posts`
+              : (timeLeft || "En cours"),
           tags: Array.isArray(d.tags) ? d.tags : [],
+          grad: d.grad || palette.grad,
+          fill: d.fill || palette.fill,
+          reward: d.reward || null,
+          selection_mode: d.selection_mode || "choix",
         };
       });
 
@@ -646,7 +918,17 @@ export default function ChipeurDefis({ setPage, user, profile }) {
                 onClick={() => setPage("fil")}
                 style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}
               >←</button>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Défis 🏆</div>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Défis 🏆</div>
+              {isMarchand && (
+                <button
+                  onClick={() => setScreen("creer")}
+                  style={{
+                    marginLeft: "auto", background: C.accent, color: "#fff",
+                    border: "none", borderRadius: 12, padding: "7px 14px",
+                    fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: dm,
+                  }}
+                >+ Créer</button>
+              )}
             </div>
             <div style={{ fontSize: 12, color: C.ink2, marginTop: 2, marginBottom: 14 }}>
               Rejoins les challenges du quartier
@@ -724,6 +1006,16 @@ export default function ChipeurDefis({ setPage, user, profile }) {
         <SuccessScreen
           d={selected}
           onBack={() => { setScreen("list"); setSelectedId(null); }}
+        />
+      )}
+
+      {/* ── CRÉER UN DÉFI ── */}
+      {screen === "creer" && (
+        <CreerDefiScreen
+          user={user}
+          profile={profile}
+          onBack={() => setScreen("list")}
+          onSuccess={() => { loadDefis(); setScreen("list"); }}
         />
       )}
 
