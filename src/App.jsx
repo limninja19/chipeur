@@ -14,6 +14,7 @@ import ProfilMagasin from "./chipeur_profil_magasin";
 import PageVoisins from "./chipeur_page_voisins";
 import Connexion from "./chipeur_connexion";
 import { ReglementScreen } from "./chipeur_settings";
+import { checkDailyLogin } from "./chipeur_xp";
 
 function SplashScreen() {
   return (
@@ -42,6 +43,12 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Connexion quotidienne → XP streak
+  useEffect(() => {
+    if (!user?.id || !profile) return;
+    checkDailyLogin(user.id, profile);
+  }, [user?.id, profile?.id]);
 
   // Sync : si le profil existe mais que le role est manquant,
   // on le récupère depuis les métadonnées Auth (cas commerçant avec email non confirmé à l'inscription)

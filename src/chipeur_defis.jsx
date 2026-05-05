@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { addXP } from "./chipeur_xp";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -438,6 +439,8 @@ function ParticipeScreen({ d, user, profile, onBack, onPublishSuccess }) {
       const { error: postErr } = await supabase.from("posts").insert(postData);
       if (postErr) throw new Error(postErr.message);
 
+      // XP pour participation au défi
+      if (user?.id) addXP(user.id, 15, "defi_participation");
       onPublishSuccess();
     } catch (err) {
       setError(err.message);
@@ -673,6 +676,8 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
       user_id:         user?.id || null,
     }).select().single();
     if (err) { setError(err.message); setPublishing(false); return; }
+    // XP pour création d'un défi
+    if (user?.id) addXP(user.id, 20, "defi_cree");
     onSuccess(data);
   }
 

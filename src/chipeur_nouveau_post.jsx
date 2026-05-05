@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import heic2any from "heic2any";
+import { addXP } from "./chipeur_xp";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -605,6 +606,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       setPublishError("Erreur Supabase : " + error.message);
       return;
     }
+    // XP pour publication
+    addXP(user.id, 10, "post_publie");
     setScreen("success");
   };
 

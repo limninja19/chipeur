@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
+import { addXP } from "./chipeur_xp";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
 async function compressImage(file, maxPx = 1200, quality = 0.82) {
@@ -642,6 +643,8 @@ function TabCreer({ merchantName, setPage, user }) {
     });
     setSaving(false);
     if (error) { setErreur(error.message); return; }
+    // XP pour création d'une remise
+    if (user?.id) addXP(user.id, 10, "remise_creee");
     setPublished(true);
     setTitre(""); setValeur(""); setExpiry(""); setConditions("");
   }

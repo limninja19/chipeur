@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "./supabase";
+import { addXP } from "./chipeur_xp";
 
 const COLORS = {
   bg: "#F5F2EE",
@@ -723,7 +724,10 @@ export default function ChipeurInscription({ setPage, onAuth }) {
           id: data.user.id,
           pseudo: creds.prenom,
           age_range: ageRange,
+          xp: 50,
+          level: 1,
         });
+        await addXP(data.user.id, 50, "inscription");
       }
       setLoadingSignup(false);
       if (error) { setSignupError(error.message); return; }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
+import { getLevel, getNextLevel, getLevelProgress } from "./chipeur_xp";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
 async function compressImage(file, maxPx = 1200, quality = 0.82) {
@@ -342,28 +343,26 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
           </div>
         </div>
 
-        {/* XP bar réaliste */}
+        {/* XP bar */}
         {(() => {
-          const universXp = (univers || []).reduce((sum, it) => sum + (it.xp || 0), 0);
-          const xp = postCount * 10 + universXp + (profile?.bonus_xp || 0);
-          const levels = [
-            { name: "Débutant·e", min: 0, max: 50 },
-            { name: "Explorateur·trice", min: 50, max: 150 },
-            { name: "Pépite du Quartier", min: 150, max: 300 },
-            { name: "Légende Locale", min: 300, max: 500 },
-          ];
-          const lvl = levels.find(l => xp < l.max) || levels[levels.length - 1];
-          const pct = Math.min(100, Math.round(((xp - lvl.min) / (lvl.max - lvl.min)) * 100));
-          const nextXp = lvl.max - xp;
+          const xp  = profile?.xp || 0;
+          const lvl  = getLevel(xp);
+          const next = getNextLevel(xp);
+          const pct  = getLevelProgress(xp);
           return (
             <div style={{ marginTop: 10, marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: C.accent }}>⚡ {xp} XP · {lvl.name}</span>
-                <span style={{ fontSize: 10, color: C.ink2 }}>{nextXp > 0 ? `+${nextXp} XP pour progresser` : "Niveau max 🏆"}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.accent }}>
+                  {lvl.emoji} {lvl.title} · Niv.{lvl.level}
+                </span>
+                <span style={{ fontSize: 10, color: C.ink2 }}>
+                  {next ? `${next.xpMin - xp} XP pour Niv.${next.level}` : "Niveau max 🏆"}
+                </span>
               </div>
-              <div style={{ height: 5, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: "linear-gradient(90deg,#FF5733,#F7A72D)", transition: "width 0.6s ease" }} />
+              <div style={{ height: 6, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: "linear-gradient(90deg,#FF5733,#F7A72D)", transition: "width 0.8s ease" }} />
               </div>
+              <div style={{ fontSize: 9, color: C.ink2, marginTop: 3, textAlign: "right" }}>⚡ {xp} XP total</div>
             </div>
           );
         })()}
@@ -371,16 +370,12 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
 
       {/* Stats row */}
       <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "10px 0" }}>
-        {(() => {
-          const universXp = (univers || []).reduce((sum, it) => sum + (it.xp || 0), 0);
-          const totalXp = postCount * 10 + universXp + (profile?.bonus_xp || 0);
-          return [
-            { n: String(postCount), l: "publications" },
-            { n: "0", l: "abonnés" },
-            { n: "#—", l: "classement", color: C.gold },
-            { n: String(totalXp), l: "XP total", color: C.accent },
-          ];
-        })().map((s, i) => (
+        {[
+          { n: String(postCount), l: "publications" },
+          { n: "0", l: "abonnés" },
+          { n: "#—", l: "classement", color: C.gold },
+          { n: String(profile?.xp || 0), l: "XP total", color: C.accent },
+        ].map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: s.color || C.ink }}>{s.n}</div>
             <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
