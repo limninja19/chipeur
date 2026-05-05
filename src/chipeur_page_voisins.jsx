@@ -354,6 +354,21 @@ export default function ChipeurPageVoisins({ setPage, user }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+  // Charger les follows existants depuis Supabase
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", user.id)
+      .then(({ data }) => {
+        if (!data) return;
+        const f = {};
+        data.forEach(r => { f[r.following_id] = true; });
+        setFollows(f);
+      });
+  }, [user?.id]);
+
   useEffect(() => {
     supabase
       .from("profiles")
@@ -387,7 +402,18 @@ export default function ChipeurPageVoisins({ setPage, user }) {
       });
   }, [user?.id]);
 
-  const toggleFollow = (id) => setFollows(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleFollow = async (id) => {
+    if (!user?.id) return;
+    const isFollowing = !!follows[id];
+    // Mise à jour optimiste
+    setFollows(prev => ({ ...prev, [id]: !isFollowing }));
+    if (isFollowing) {
+      await supabase.from("follows").delete()
+        .eq("follower_id", user.id).eq("following_id", id);
+    } else {
+      await supabase.from("follows").insert({ follower_id: user.id, following_id: id });
+    }
+  };
   const openVoisin = (id) => { setSelectedId(id); setScreen("profile"); };
   const filters = ["Tous", "Top XP 🏆", "Mon quartier 📍"];
   const selectedVoisin = voisins.find(v => v.id === selectedId);

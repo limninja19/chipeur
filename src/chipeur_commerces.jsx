@@ -476,8 +476,31 @@ function TabInfos({ com }) {
 }
 
 // ─── VITRINE DÉTAIL ───
-function VitrineScreen({ com, onBack }) {
+function VitrineScreen({ com, onBack, user }) {
   const [suivi, setSuivi] = useState(false);
+
+  // Charger l'état de suivi depuis Supabase
+  useEffect(() => {
+    if (!user?.id || !com.id) return;
+    supabase.from("follows")
+      .select("id")
+      .eq("follower_id", user.id)
+      .eq("following_id", com.id)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setSuivi(true); });
+  }, [user?.id, com.id]);
+
+  const handleSuivi = async () => {
+    if (!user?.id || !com.id) { setSuivi(v => !v); return; }
+    const next = !suivi;
+    setSuivi(next);
+    if (next) {
+      await supabase.from("follows").insert({ follower_id: user.id, following_id: com.id });
+    } else {
+      await supabase.from("follows").delete()
+        .eq("follower_id", user.id).eq("following_id", com.id);
+    }
+  };
   const [activeTab, setActiveTab] = useState("vitrine");
   const [realPosts, setRealPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -540,7 +563,7 @@ function VitrineScreen({ com, onBack }) {
       </div>
 
       {/* Bouton fixe */}
-      <button onClick={() => setSuivi(!suivi)} style={{ position: "absolute", bottom: 90, left: 18, right: 18, border: "none", borderRadius: 16, padding: 15, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", textAlign: "center", background: suivi ? C.ink : C.accent, color: "#fff", transition: "all 0.2s", zIndex: 10 }}>
+      <button onClick={handleSuivi} style={{ position: "absolute", bottom: 90, left: 18, right: 18, border: "none", borderRadius: 16, padding: 15, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", textAlign: "center", background: suivi ? C.ink : C.accent, color: "#fff", transition: "all 0.2s", zIndex: 10 }}>
         {suivi ? "✓ Vitrine suivie" : "+ Suivre cette vitrine"}
       </button>
     </div>
@@ -548,7 +571,7 @@ function VitrineScreen({ com, onBack }) {
 }
 
 // ─── PAGE PRINCIPALE ───
-export default function ChipeurCommerces({ setPage }) {
+export default function ChipeurCommerces({ setPage, user }) {
   const [screen, setScreen] = useState("list");
   const [selectedCom, setSelectedCom] = useState(null);
   const [activeCat, setActiveCat] = useState("Tous");
@@ -646,7 +669,7 @@ export default function ChipeurCommerces({ setPage }) {
       )}
 
       {screen === "vitrine" && selectedCom && (
-        <VitrineScreen com={selectedCom} onBack={() => setScreen("list")} />
+        <VitrineScreen com={selectedCom} onBack={() => setScreen("list")} user={user} />
       )}
 
       <BottomNav active="commerces" onNavigate={setPage} onFab={() => setPage("nouveau")} />
