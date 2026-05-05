@@ -491,17 +491,78 @@ function TabUnivers({ items, onOpen }) {
   );
 }
 
-function TabDefis() {
-  return (
+function computeTimeLeftProfil(ends_at, ended) {
+  if (ended) return "Terminé";
+  if (!ends_at) return "En cours";
+  const diff = new Date(ends_at) - new Date();
+  if (diff <= 0) return "Terminé";
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days === 1) return "Dernier jour !";
+  return `${days} jours`;
+}
+
+function TabDefis({ setPage }) {
+  const [defis, setDefis] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from("defis").select("*")
+      .eq("ended", false)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setDefis(data || []);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return (
+    <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>Chargement…</div>
+  );
+
+  if (defis.length === 0) return (
     <div style={{ textAlign: "center", padding: "40px 20px" }}>
       <div style={{ fontSize: 48, marginBottom: 14 }}>🏆</div>
-      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 8 }}>Défis — Bientôt disponible</div>
-      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 16 }}>
-        Les défis communautaires arrivent prochainement.<br />Tu pourras gagner des XP et des récompenses en relevant des challenges avec tes voisins.
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 8 }}>Aucun défi en cours</div>
+      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6 }}>
+        Les défis arrivent bientôt — reste connecté !
       </div>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF8E8", color: "#B45309", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>
-        ⚡ En cours de développement
-      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      {defis.map(d => (
+        <div
+          key={d.id}
+          onClick={() => setPage("defis")}
+          style={{
+            background: C.card, borderRadius: 18, border: `1px solid ${C.border}`,
+            padding: "12px 14px", marginBottom: 10, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 12,
+          }}
+        >
+          <div style={{ fontSize: 34, flexShrink: 0 }}>{d.emoji || "🏆"}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 4, lineHeight: 1.2 }}>{d.title}</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 11, color: C.accent, fontWeight: 700, background: "#FFF0EB", padding: "2px 8px", borderRadius: 8 }}>+{d.xp || 10} XP</span>
+              {d.ends_at && <span style={{ fontSize: 10, color: C.ink2 }}>⏱ {computeTimeLeftProfil(d.ends_at, d.ended)}</span>}
+            </div>
+          </div>
+          <div style={{ fontSize: 18, color: C.ink2 }}>→</div>
+        </div>
+      ))}
+      <button
+        onClick={() => setPage("defis")}
+        style={{
+          width: "100%", background: C.accent, color: "#fff",
+          border: "none", borderRadius: 14, padding: "10px 16px",
+          fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm,
+          marginTop: 4,
+        }}
+      >
+        Voir tous les défis 🏆
+      </button>
     </div>
   );
 }
@@ -579,7 +640,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={i => { setMiniDefiIdx(i); setScreen("minidefi"); }} />}
-              {activeTab === "Défis" && <TabDefis />}
+              {activeTab === "Défis" && <TabDefis setPage={setPage} />}
               {activeTab === "Récompenses" && <TabRewards />}
             </div>
           </div>

@@ -189,36 +189,52 @@ function DefiCard({ d, setPage }) {
   );
 }
 
+const DEFI_GRADS = [
+  { grad: "linear-gradient(135deg,#FF5733 0%,#FF8C42 100%)", btnColor: "#FF5733" },
+  { grad: "linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)", btnColor: "#7C3AED" },
+  { grad: "linear-gradient(135deg,#0F766E 0%,#14B8A6 100%)", btnColor: "#0F766E" },
+  { grad: "linear-gradient(135deg,#1D4ED8 0%,#3B82F6 100%)", btnColor: "#1D4ED8" },
+];
+
+function computeTimeLeftFil(ends_at, ended) {
+  if (ended) return "Terminé";
+  if (!ends_at) return "En cours";
+  const diff = new Date(ends_at) - new Date();
+  if (diff <= 0) return "Terminé";
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days === 1) return "Dernier jour !";
+  return `${days} jours`;
+}
+
 function BandeauDefis({ setPage }) {
-  const defis = [
-    {
-      icon: "👗",
-      title: "Montre ta pépite du mois",
-      current: 128, total: 200,
-      xp: 20,
-      timeLeft: "3 jours",
-      grad: "linear-gradient(135deg,#FF5733 0%,#FF8C42 100%)",
-      btnColor: "#FF5733",
-    },
-    {
-      icon: "🌿",
-      title: "Look seconde main du mois",
-      current: 64, total: 100,
-      xp: 15,
-      timeLeft: "6 jours",
-      grad: "linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)",
-      btnColor: "#7C3AED",
-    },
-    {
-      icon: "📸",
-      title: "Photo de quartier",
-      current: 31, total: 50,
-      xp: 10,
-      timeLeft: "9 jours",
-      grad: "linear-gradient(135deg,#0F766E 0%,#14B8A6 100%)",
-      btnColor: "#0F766E",
-    },
-  ];
+  const [defis, setDefis] = useState([]);
+
+  useEffect(() => {
+    supabase.from("defis").select("*").eq("ended", false)
+      .order("created_at", { ascending: false })
+      .then(async ({ data: defisData }) => {
+        if (!defisData || defisData.length === 0) return;
+        const { data: countsData } = await supabase
+          .from("posts").select("defi_id").not("defi_id", "is", null);
+        const counts = {};
+        (countsData || []).forEach(r => { counts[r.defi_id] = (counts[r.defi_id] || 0) + 1; });
+        const mapped = defisData.map((d, i) => {
+          const current = counts[d.id] || 0;
+          const total = d.total_target || 100;
+          const g = DEFI_GRADS[i % DEFI_GRADS.length];
+          return {
+            id: d.id, icon: d.emoji || "🏆", title: d.title,
+            current, total, xp: d.xp || 10,
+            timeLeft: computeTimeLeftFil(d.ends_at, d.ended),
+            ...g,
+          };
+        });
+        setDefis(mapped);
+      });
+  }, []);
+
+  if (defis.length === 0) return null;
+
   return (
     <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
       <div style={{
@@ -229,7 +245,7 @@ function BandeauDefis({ setPage }) {
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-        {defis.map((d, i) => <DefiCard key={i} d={d} setPage={setPage} />)}
+        {defis.map((d, i) => <DefiCard key={d.id || i} d={d} setPage={setPage} />)}
       </div>
     </div>
   );
