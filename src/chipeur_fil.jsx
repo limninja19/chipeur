@@ -290,18 +290,24 @@ function Reactions({ postId, userId, authorId }) {
     });
 
     if (wasActive) {
-      await supabase.from("post_reactions").delete()
+      const { error } = await supabase.from("post_reactions").delete()
         .eq("post_id", postId).eq("user_id", userId).eq("type", type);
+      if (error) console.error("❌ DELETE reaction:", error);
     } else {
-      await supabase.from("post_reactions")
+      const { error } = await supabase.from("post_reactions")
         .insert({ post_id: postId, user_id: userId, type });
-      // +2 XP à l'auteur du post
-      if (authorId && authorId !== userId) {
-        const { data: ap } = await supabase
-          .from("profiles").select("bonus_xp").eq("id", authorId).single();
-        if (ap !== null) {
-          await supabase.from("profiles")
-            .update({ bonus_xp: (ap?.bonus_xp || 0) + 2 }).eq("id", authorId);
+      if (error) {
+        console.error("❌ INSERT reaction:", error);
+      } else {
+        console.log("✅ Réaction sauvegardée:", type, "postId:", postId, "userId:", userId);
+        // +2 XP à l'auteur du post
+        if (authorId && authorId !== userId) {
+          const { data: ap } = await supabase
+            .from("profiles").select("bonus_xp").eq("id", authorId).single();
+          if (ap !== null) {
+            await supabase.from("profiles")
+              .update({ bonus_xp: (ap?.bonus_xp || 0) + 2 }).eq("id", authorId);
+          }
         }
       }
     }
