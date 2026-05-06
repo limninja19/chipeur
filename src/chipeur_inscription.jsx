@@ -767,6 +767,7 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         categorie: cat || "Autre",
         metier: metier || cat || "Commerce",
         age_range: ageRange,
+        role: "magasin",
       });
     }
 
