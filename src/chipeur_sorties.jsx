@@ -276,12 +276,13 @@ function PhotoUploadOverlay({ event, user, onClose, onSuccess }) {
       const { data: post, error: postErr } = await supabase
         .from("posts")
         .insert({
-          user_id: user.id,
+          author_id: user.id,
           content: caption.trim() || null,
           image_url: publicUrl,
           evenement_id: event.id,
+          post_type: "evenement",
         })
-        .select("id, content, image_url, created_at, user_id, profiles(pseudo, avatar_url)")
+        .select("id, content, image_url, created_at, author_id, profiles:author_id(pseudo, avatar_url)")
         .single();
       if (postErr) throw postErr;
       onSuccess(post);
@@ -383,7 +384,7 @@ function EventDetailScreen({ event, user, onBack }) {
     if (!event?.id) { setLoadingPhotos(false); return; }
     supabase
       .from("posts")
-      .select("id, content, image_url, created_at, user_id, profiles(pseudo, avatar_url)")
+      .select("id, content, image_url, created_at, author_id, profiles:author_id(pseudo, avatar_url)")
       .eq("evenement_id", event.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -629,7 +630,7 @@ function NouvelEvenementScreen({ user, onBack, onSuccess }) {
         lieu:        lieu.trim() || null,
         description: desc.trim() || null,
         ville:       "Saint-Dié",
-        user_id:     user?.id || null,
+        author_id:   user?.id || null,
       })
       .select()
       .single();
@@ -819,9 +820,17 @@ export default function ChipeurSorties({ setPage, user, profile }) {
     supabase
       .from("sorties")
       .select("*")
-      .order("date_text", { ascending: true })
       .then(({ data }) => {
-        setEvents(data || []);
+        // Tri chronologique côté client (date_text est DD/MM/YYYY, le tri SQL alphabétique serait faux)
+        const sorted = (data || []).sort((a, b) => {
+          const da = parseDate(a.date_text);
+          const db = parseDate(b.date_text);
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da - db;
+        });
+        setEvents(sorted);
         setLoading(false);
       });
   };
