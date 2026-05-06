@@ -466,66 +466,185 @@ function VitrinePostCard({ post, userId, comId, isOwner, onEnrich }) {
   );
 }
 
+// ─── MODAL DÉTAIL POST VITRINE ───
+function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
+  const hasEnrichment = post.product_label || post.product_price;
+  const canEnrich = isOwner && post.magasin_id === comId;
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 200,
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: C.card, borderRadius: "24px 24px 0 0", width: "100%",
+        maxHeight: "92vh", overflowY: "auto", paddingBottom: 32,
+      }}>
+        {/* Handle */}
+        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 0" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+        </div>
+
+        {/* Photo */}
+        {post.image_url && (
+          <img src={post.image_url} alt="" style={{
+            width: "100%", maxHeight: 360, objectFit: "cover", display: "block",
+          }} />
+        )}
+
+        <div style={{ padding: "14px 16px 0" }}>
+          {/* Fiche enrichissement commerçant */}
+          {hasEnrichment && (
+            <div style={{
+              background: C.proBg, borderRadius: 14, padding: "12px 14px",
+              border: "1px solid rgba(10,61,46,0.12)", marginBottom: 12,
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.pro, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                ✦ Sélection de la boutique
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, flex: 1 }}>{post.product_label}</div>
+                {post.product_price && (
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.accent, flexShrink: 0 }}>{post.product_price}</div>
+                )}
+              </div>
+              {post.product_detail && (
+                <div style={{ fontSize: 12, color: C.ink2, marginTop: 4, lineHeight: 1.5 }}>{post.product_detail}</div>
+              )}
+            </div>
+          )}
+
+          {/* Auteur + texte */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: "50%", background: C.pill,
+              overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0,
+            }}>
+              {post.profiles?.avatar_url
+                ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                : "😊"}
+            </div>
+            <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 700, color: C.ink }}>{post.profiles?.pseudo || "Voisin·e"}</div>
+          </div>
+          {post.content && (
+            <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.6, marginBottom: 10 }}>{post.content}</div>
+          )}
+          {post.tags?.length > 0 && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
+              {post.tags.map(t => <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>)}
+            </div>
+          )}
+
+          {/* Bouton enrichir pour le commerçant */}
+          {canEnrich && (
+            <button onClick={onEnrich} style={{
+              width: "100%", background: hasEnrichment ? C.proBg : C.pro,
+              color: hasEnrichment ? C.pro : "#fff",
+              border: hasEnrichment ? `1px solid rgba(10,61,46,0.2)` : "none",
+              borderRadius: 14, padding: "12px 0",
+              fontSize: 13, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+            }}>
+              {hasEnrichment ? "✏️ Modifier la fiche produit" : "✦ Enrichir ce post"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ONGLET VITRINE ───
 function TabVitrine({ com, realPosts, loadingPosts, user }) {
-  const [activeFilter, setActiveFilter] = useState("tous");
   const [posts, setPosts] = useState(realPosts);
+  const [selectedPost, setSelectedPost] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
 
   const isOwner = user?.id === com.id;
-
-  const filters = [
-    { id: "tous",    label: "✦ Tous" },
-    { id: "photo",   label: "📸 Avec photo" },
-    { id: "bonplan", label: "🎁 Bons plans" },
-    { id: "defi",    label: "🏆 Défis" },
-  ];
-
-  const filtered = posts.filter(p => {
-    if (activeFilter === "photo")   return !!p.image_url;
-    if (activeFilter === "bonplan") return p.post_type === "bonplan";
-    if (activeFilter === "defi")    return !!p.defi_id;
-    return true;
-  });
+  const photoPosts = posts.filter(p => !!p.image_url);
+  const otherPosts = posts.filter(p => !p.image_url);
 
   return (
-    <div style={{ padding: "0 16px 100px" }}>
-      {/* Filtres pills */}
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", padding: "14px 0 12px" }}>
-        {filters.map(f => (
-          <button key={f.id} onClick={() => setActiveFilter(f.id)} style={{
-            padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-            border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-            fontFamily: dm, transition: "all 0.15s",
-            background: activeFilter === f.id ? C.ink : C.pill,
-            color: activeFilter === f.id ? "#fff" : C.ink2,
-          }}>
-            {f.label}
-          </button>
-        ))}
-      </div>
-
+    <div style={{ padding: "0 0 100px" }}>
       {loadingPosts ? (
         <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
-      ) : filtered.length === 0 ? (
+      ) : posts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
           Aucun contenu pour l'instant.
         </div>
       ) : (
-        filtered.map(post => (
-          <VitrinePostCard
-            key={post.id}
-            post={post}
-            userId={user?.id}
-            comId={com.id}
-            isOwner={isOwner}
-            onEnrich={() => setEnrichingPost(post)}
-          />
-        ))
+        <>
+          {/* Grille photos */}
+          {photoPosts.length > 0 && (
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 2, marginBottom: otherPosts.length > 0 ? 12 : 0,
+            }}>
+              {photoPosts.map(post => (
+                <div
+                  key={post.id}
+                  onClick={() => setSelectedPost(post)}
+                  style={{
+                    aspectRatio: "1", overflow: "hidden", cursor: "pointer",
+                    position: "relative", background: C.pill,
+                  }}
+                >
+                  <img
+                    src={post.image_url} alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                  {/* Badge enrichissement */}
+                  {(post.product_label || post.product_price) && (
+                    <div style={{
+                      position: "absolute", bottom: 4, right: 4,
+                      background: C.pro, borderRadius: 6, padding: "2px 5px",
+                      fontSize: 9, fontWeight: 700, color: "#fff",
+                    }}>✦</div>
+                  )}
+                  {/* Badge bon plan */}
+                  {post.post_type === "bonplan" && (
+                    <div style={{
+                      position: "absolute", top: 4, left: 4,
+                      background: C.accent, borderRadius: 6, padding: "2px 5px",
+                      fontSize: 9, fontWeight: 700, color: "#fff",
+                    }}>🎁</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Posts sans photo */}
+          {otherPosts.length > 0 && (
+            <div style={{ padding: "0 16px" }}>
+              {otherPosts.map(post => (
+                <VitrinePostCard
+                  key={post.id}
+                  post={post}
+                  userId={user?.id}
+                  comId={com.id}
+                  isOwner={isOwner}
+                  onEnrich={() => setEnrichingPost(post)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
+      {/* Modal détail photo */}
+      {selectedPost && (
+        <PostDetailModal
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          isOwner={isOwner}
+          comId={com.id}
+          onEnrich={() => { setEnrichingPost(selectedPost); setSelectedPost(null); }}
+        />
+      )}
+
+      {/* Modal enrichissement */}
       {enrichingPost && (
         <EnrichModal
           post={enrichingPost}
