@@ -654,14 +654,17 @@ function VitrineScreen({ com, onBack, user }) {
   }, [user?.id, com.id]);
 
   const handleSuivi = async () => {
-    if (!user?.id || !com.id) { setSuivi(v => !v); return; }
+    if (!user?.id || !com.id) return;
+    const prev = suivi;
     const next = !suivi;
     setSuivi(next);
     if (next) {
-      await supabase.from("follows").insert({ follower_id: user.id, following_id: com.id });
+      const { error } = await supabase.from("follows").insert({ follower_id: user.id, following_id: com.id });
+      if (error) { console.error("Erreur ajout follow:", error); setSuivi(prev); }
     } else {
-      await supabase.from("follows").delete()
+      const { error } = await supabase.from("follows").delete()
         .eq("follower_id", user.id).eq("following_id", com.id);
+      if (error) { console.error("Erreur suppression follow:", error); setSuivi(prev); }
     }
   };
   const [activeTab, setActiveTab] = useState("vitrine");
