@@ -509,16 +509,44 @@ function VitrineScreen({ com, onBack, user }) {
   useEffect(() => {
     if (!com.id) return;
     setLoadingPosts(true);
-    supabase
-      .from("posts")
-      .select("*")
-      .eq("author_id", com.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setRealPosts(data || []);
-        setRealPostCount(data?.length ?? 0);
-        setLoadingPosts(false);
-      });
+
+    async function loadPosts() {
+      // 1. Posts publiés par le commerce OU tagguant ce commerce (magasin_id)
+      const { data: directPosts } = await supabase
+        .from("posts")
+        .select("*")
+        .or(`author_id.eq.${com.id},magasin_id.eq.${com.id}`)
+        .order("created_at", { ascending: false });
+
+      // 2. Posts de réponse aux défis lancés par ce commerce
+      const { data: merchantDefis } = await supabase
+        .from("defis")
+        .select("id")
+        .eq("user_id", com.id);
+
+      let defiPosts = [];
+      if (merchantDefis && merchantDefis.length > 0) {
+        const defiIds = merchantDefis.map(d => d.id);
+        const { data } = await supabase
+          .from("posts")
+          .select("*")
+          .in("defi_id", defiIds)
+          .order("created_at", { ascending: false });
+        defiPosts = data || [];
+      }
+
+      // Fusionner + dédoublonner par id + trier par date
+      const seenIds = new Set();
+      const allPosts = [...(directPosts || []), ...defiPosts]
+        .filter(p => { if (seenIds.has(p.id)) return false; seenIds.add(p.id); return true; })
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      setRealPosts(allPosts);
+      setRealPostCount(allPosts.length);
+      setLoadingPosts(false);
+    }
+
+    loadPosts();
   }, [com.id]);
 
   const displayPosts = realPostCount != null ? String(realPostCount) : com.posts;
