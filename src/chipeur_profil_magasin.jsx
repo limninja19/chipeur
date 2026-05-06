@@ -865,7 +865,7 @@ function EnrichScreen({ onBack, merchantName, voisinPost }) {
 function BottomNav({ onNavigate }) {
   const items = [
     { id: "fil", icon: "🏠", label: "Fil" },
-    { id: "sorties", icon: "📅", label: "Sorties" },
+    { id: "sorties", icon: "📅", label: "Évén." },
     { id: "fab", isFab: true },
     { id: "voisins", icon: "👥", label: "Voisins" },
     { id: "profil", icon: "👤", label: "Mon profil" },

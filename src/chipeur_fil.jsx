@@ -549,7 +549,7 @@ function FabMenu({ open, onClose, setPage }) {
 function BottomNav({ active, onNavigate, onFab }) {
   const items = [
     { id: "fil", icon: "🏠", label: "Fil" },
-    { id: "sorties", icon: "📅", label: "Sorties" },
+    { id: "sorties", icon: "📅", label: "Évén." },
     { id: "fab", isFab: true },
     { id: "commerces", icon: "🏪", label: "Commerces" },
     { id: "profil", icon: "👤", label: "Profil" },

@@ -69,7 +69,7 @@ const REWARD_SUGGESTIONS = [
 function BottomNav({ setPage, active }) {
   const items = [
     { id: "fil", icon: "🏠", label: "Fil" },
-    { id: "sorties", icon: "📅", label: "Sorties" },
+    { id: "sorties", icon: "📅", label: "Évén." },
     null,
     { id: "commerces", icon: "🏪", label: "Commerces" },
     { id: "profil", icon: "👤", label: "Profil" },

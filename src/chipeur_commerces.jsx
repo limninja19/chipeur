@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import { addXP } from "./chipeur_xp";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -112,7 +113,7 @@ function profileToCommerce(p, postCount) {
 function BottomNav({ active, onNavigate, onFab }) {
   const items = [
     { id: "fil", icon: "🏠", label: "Fil" },
-    { id: "sorties", icon: "📅", label: "Sorties" },
+    { id: "sorties", icon: "📅", label: "Évén." },
     { id: "fab", isFab: true },
     { id: "commerces", icon: "🏪", label: "Commerces" },
     { id: "profil", icon: "👤", label: "Profil" },
@@ -257,119 +258,281 @@ function PhotoModal({ item, comName, phone, onClose }) {
   );
 }
 
-// ─── ONGLET VITRINE (avec filtres) ───
-function TabVitrine({ com, realPosts, loadingPosts }) {
+// ─── REACTIONS ───
+const REACTIONS = [
+  { type: "aime",       emoji: "❤️", label: "J'aime" },
+  { type: "kiffe",      emoji: "🔥", label: "Je kiffe" },
+  { type: "veux",       emoji: "🛒", label: "Je le veux" },
+  { type: "style",      emoji: "✨", label: "Mon style" },
+  { type: "recommande", emoji: "👍", label: "Je recommande" },
+];
+
+function Reactions({ postId, userId, authorId }) {
+  const [counts, setCounts] = useState({});
+  const [userReactions, setUserReactions] = useState(new Set());
+
+  useEffect(() => {
+    if (!postId) return;
+    supabase.from("post_reactions").select("type").eq("post_id", postId)
+      .then(({ data }) => {
+        if (!data) return;
+        const c = {};
+        data.forEach(r => { c[r.type] = (c[r.type] || 0) + 1; });
+        setCounts(c);
+      });
+    if (!userId) return;
+    supabase.from("post_reactions").select("type").eq("post_id", postId).eq("user_id", userId)
+      .then(({ data }) => { if (data) setUserReactions(new Set(data.map(r => r.type))); });
+  }, [postId, userId]);
+
+  const handleReact = async (type) => {
+    if (!userId || !postId) return;
+    const wasActive = userReactions.has(type);
+    setCounts(prev => { const next = { ...prev }; next[type] = wasActive ? Math.max(0, (next[type] || 1) - 1) : (next[type] || 0) + 1; return next; });
+    setUserReactions(prev => { const next = new Set(prev); wasActive ? next.delete(type) : next.add(type); return next; });
+    if (wasActive) {
+      await supabase.from("post_reactions").delete().eq("post_id", postId).eq("user_id", userId).eq("type", type);
+    } else {
+      await supabase.from("post_reactions").insert({ post_id: postId, user_id: userId, type });
+      if (authorId && authorId !== userId) {
+        addXP(authorId, 2, "reaction_received");
+        supabase.from("notifications").upsert(
+          { user_id: authorId, from_user_id: userId, type, reference_id: postId, read: false },
+          { onConflict: "user_id,from_user_id,type,reference_id", ignoreDuplicates: true }
+        ).then(() => {});
+      }
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+      {REACTIONS.map(r => {
+        const count = counts[r.type] || 0;
+        const active = userReactions.has(r.type);
+        return (
+          <button key={r.type} onClick={() => handleReact(r.type)} style={{
+            padding: "6px 8px", borderRadius: 12,
+            border: `1.5px solid ${active ? C.accent : C.border}`,
+            background: active ? "#FFF0EB" : "transparent",
+            cursor: userId ? "pointer" : "default", fontFamily: dm,
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
+            color: active ? C.accent : C.ink, transition: "all 0.15s", minWidth: 44,
+          }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>{r.emoji}</span>
+            <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.2, color: active ? C.accent : C.ink2 }}>{r.label}</span>
+            {count > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: active ? C.accent : C.ink2 }}>{count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── MODAL ENRICHIR ───
+function EnrichModal({ post, onClose, onSaved }) {
+  const [label, setLabel] = useState(post.product_label || "");
+  const [price, setPrice] = useState(post.product_price || "");
+  const [detail, setDetail] = useState(post.product_detail || "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    await supabase.from("posts").update({
+      product_label: label.trim() || null,
+      product_price: price.trim() || null,
+      product_detail: detail.trim() || null,
+    }).eq("id", post.id);
+    setSaving(false);
+    onSaved({ ...post, product_label: label.trim(), product_price: price.trim(), product_detail: detail.trim() });
+    onClose();
+  };
+
+  const inputStyle = {
+    width: "100%", boxSizing: "border-box",
+    border: `1.5px solid ${C.border}`, borderRadius: 12,
+    padding: "11px 14px", fontSize: 14, fontFamily: dm,
+    color: C.ink, background: C.bg, outline: "none",
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 300, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "24px 20px 40px" }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 4 }}>✦ Enrichir ce post</div>
+        <div style={{ fontSize: 12, color: C.ink2, marginBottom: 20 }}>Ajoute des infos produit visibles sur ta vitrine</div>
+
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.4 }}>Nom du produit</div>
+          <input value={label} onChange={e => setLabel(e.target.value)} placeholder="ex: Soin visage complet" style={inputStyle} />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.4 }}>Prix</div>
+          <input value={price} onChange={e => setPrice(e.target.value)} placeholder="ex: 45€" style={inputStyle} />
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.4 }}>Détail</div>
+          <input value={detail} onChange={e => setDetail(e.target.value)} placeholder="ex: 60 min · Produits bio" style={inputStyle} />
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, background: C.pill, color: C.ink, border: "none", borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 600, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
+          <button onClick={handleSave} disabled={saving} style={{ flex: 2, background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}>
+            {saving ? "Enregistrement…" : "Enregistrer ✓"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CARTE POST VITRINE ───
+function VitrinePostCard({ post, userId, comId, isOwner, onEnrich }) {
+  const [lightbox, setLightbox] = useState(false);
+  const timeAgo = (ts) => {
+    const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
+    if (diff < 1) return "À l'instant";
+    if (diff < 60) return diff + "min";
+    if (diff < 1440) return Math.floor(diff / 60) + "h";
+    return Math.floor(diff / 1440) + "j";
+  };
+  const canEnrich = isOwner && post.magasin_id === comId;
+  const hasEnrichment = post.product_label || post.product_price;
+
+  return (
+    <>
+      {lightbox && post.image_url && (
+        <div onClick={() => setLightbox(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button onClick={() => setLightbox(false)} style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer" }}>✕</button>
+          <img src={post.image_url} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "90vh", objectFit: "contain", borderRadius: 12 }} />
+        </div>
+      )}
+      <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
+        {/* Header auteur */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
+            {post.profiles?.avatar_url
+              ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} alt="" />
+              : "😊"}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 700, color: C.ink }}>{post.profiles?.pseudo || "Voisin·e"}</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>{timeAgo(post.created_at)}</div>
+          </div>
+          {canEnrich && (
+            <button onClick={onEnrich} style={{
+              background: hasEnrichment ? C.proBg : C.pill,
+              color: hasEnrichment ? C.pro : C.ink2,
+              border: "none", borderRadius: 10, padding: "5px 11px",
+              fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+            }}>
+              {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
+            </button>
+          )}
+        </div>
+
+        {/* Image */}
+        {post.image_url && (
+          <div onClick={() => setLightbox(true)} style={{ width: "100%", paddingTop: "75%", position: "relative", cursor: "zoom-in" }}>
+            <img src={post.image_url} alt={post.content} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
+        )}
+
+        {/* Fiche produit enrichie */}
+        {hasEnrichment && (
+          <div style={{ margin: "10px 12px 4px", background: C.proBg, borderRadius: 12, padding: "10px 14px", border: "1px solid rgba(10,61,46,0.1)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, flex: 1 }}>{post.product_label}</div>
+              {post.product_price && <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.accent, flexShrink: 0 }}>{post.product_price}</div>}
+            </div>
+            {post.product_detail && <div style={{ fontSize: 11, color: C.ink2, marginTop: 3 }}>{post.product_detail}</div>}
+          </div>
+        )}
+
+        {/* Contenu texte */}
+        <div style={{ padding: "10px 12px 6px" }}>
+          {post.content && <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>{post.content}</div>}
+          {post.tags?.length > 0 && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {post.tags.map(t => <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>)}
+            </div>
+          )}
+        </div>
+
+        {/* Réactions */}
+        <div style={{ padding: "8px 12px 12px" }}>
+          <Reactions postId={post.id} userId={userId} authorId={post.author_id} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── ONGLET VITRINE ───
+function TabVitrine({ com, realPosts, loadingPosts, user }) {
   const [activeFilter, setActiveFilter] = useState("tous");
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [posts, setPosts] = useState(realPosts);
+  const [enrichingPost, setEnrichingPost] = useState(null);
+
+  useEffect(() => { setPosts(realPosts); }, [realPosts]);
+
+  const isOwner = user?.id === com.id;
 
   const filters = [
-    { id: "tous", label: "✦ Tous" },
-    { id: "collection", label: "📸 Collection" },
-    { id: "nouveautes", label: "✨ Nouveautés" },
-    { id: "bons_plans", label: "🎁 Bons plans" },
+    { id: "tous",    label: "✦ Tous" },
+    { id: "photo",   label: "📸 Avec photo" },
+    { id: "bonplan", label: "🎁 Bons plans" },
+    { id: "defi",    label: "🏆 Défis" },
   ];
 
-  // Construire la liste unifiée d'items
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-  let galleryItems = [];
-  if (com.id && realPosts.length > 0) {
-    // Vrais posts Supabase avec photo
-    galleryItems = realPosts
-      .filter(p => p.image_url)
-      .map(p => ({
-        src: p.image_url,
-        label: p.content || com.name,
-        price: null,
-        detail: null,
-        post: p,
-        isNew: new Date(p.created_at) > sevenDaysAgo,
-        isBonPlan: p.type === "bon plan",
-      }));
-  } else {
-    // Données statiques
-    galleryItems = (com.gallery || []).map((g, i) => ({
-      ...g,
-      post: null,
-      isNew: i < 2,
-      isBonPlan: false,
-    }));
-  }
-
-  const filtered = activeFilter === "tous" ? galleryItems
-    : activeFilter === "collection" ? galleryItems.filter(g => !g.isBonPlan)
-    : activeFilter === "nouveautes" ? galleryItems.filter(g => g.isNew)
-    : galleryItems.filter(g => g.isBonPlan);
-
-  const showBonsPlans = (activeFilter === "tous" || activeFilter === "bons_plans") && com.products?.length > 0;
+  const filtered = posts.filter(p => {
+    if (activeFilter === "photo")   return !!p.image_url;
+    if (activeFilter === "bonplan") return p.post_type === "bonplan";
+    if (activeFilter === "defi")    return !!p.defi_id;
+    return true;
+  });
 
   return (
     <div style={{ padding: "0 16px 100px" }}>
       {/* Filtres pills */}
       <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", padding: "14px 0 12px" }}>
         {filters.map(f => (
-          <button key={f.id} onClick={() => setActiveFilter(f.id)} style={{ padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, fontFamily: dm, background: activeFilter === f.id ? C.ink : C.pill, color: activeFilter === f.id ? "#fff" : C.ink2, transition: "all 0.15s" }}>
+          <button key={f.id} onClick={() => setActiveFilter(f.id)} style={{
+            padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+            border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+            fontFamily: dm, transition: "all 0.15s",
+            background: activeFilter === f.id ? C.ink : C.pill,
+            color: activeFilter === f.id ? "#fff" : C.ink2,
+          }}>
             {f.label}
           </button>
         ))}
       </div>
 
-      {/* Galerie photos */}
       {loadingPosts ? (
         <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
-      ) : filtered.length > 0 ? (
-        <>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>
-              {activeFilter === "tous" ? "Dernière collection" : activeFilter === "nouveautes" ? "Nouveautés" : activeFilter === "bons_plans" ? "Bons plans" : "Collection"}
-            </div>
-            <span style={{ fontSize: 10, color: C.ink2 }}>{filtered.length} photo{filtered.length > 1 ? "s" : ""}</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5, marginBottom: 22 }}>
-            {filtered.map((item, i) => (
-              <div key={i} onClick={() => setSelectedItem(item)} style={{ borderRadius: 12, aspectRatio: "1", overflow: "hidden", cursor: "pointer", position: "relative" }}>
-                <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                {item.isNew && (
-                  <div style={{ position: "absolute", top: 5, left: 5, background: C.accent, color: "#fff", fontSize: 8, fontWeight: 700, padding: "2px 5px", borderRadius: 6 }}>NEW</div>
-                )}
-                {item.price && (
-                  <div style={{ position: "absolute", bottom: 5, right: 5, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>{item.price}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>
-          Aucun contenu dans cette catégorie.
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
+          Aucun contenu pour l'instant.
         </div>
+      ) : (
+        filtered.map(post => (
+          <VitrinePostCard
+            key={post.id}
+            post={post}
+            userId={user?.id}
+            comId={com.id}
+            isOwner={isOwner}
+            onEnrich={() => setEnrichingPost(post)}
+          />
+        ))
       )}
 
-      {/* Bons plans du moment (dans Tous et Bons plans) */}
-      {showBonsPlans && (
-        <>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 10 }}>Bons plans du moment</div>
-          {com.products.map((p, i) => (
-            <div key={i} style={{ background: C.proBg, borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, border: "1px solid rgba(10,61,46,0.1)" }}>
-              <div>
-                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.pro }}>{p.price}</div>
-                <div style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>{p.detail}</div>
-              </div>
-              <button style={{ background: C.pro, color: "#fff", border: "none", borderRadius: 12, padding: "9px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: dm }}>
-                Je commande →
-              </button>
-            </div>
-          ))}
-        </>
+      {enrichingPost && (
+        <EnrichModal
+          post={enrichingPost}
+          onClose={() => setEnrichingPost(null)}
+          onSaved={(updated) => setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))}
+        />
       )}
-
-      {/* Modale photo */}
-      <PhotoModal
-        item={selectedItem}
-        comName={com.name}
-        phone={com.phone}
-        onClose={() => setSelectedItem(null)}
-      />
     </div>
   );
 }
@@ -514,7 +677,7 @@ function VitrineScreen({ com, onBack, user }) {
       // 1. Posts publiés par le commerce OU tagguant ce commerce (magasin_id)
       const { data: directPosts } = await supabase
         .from("posts")
-        .select("*")
+        .select("*, profiles:author_id(pseudo, avatar_url)")
         .or(`author_id.eq.${com.id},magasin_id.eq.${com.id}`)
         .order("created_at", { ascending: false });
 
@@ -529,7 +692,7 @@ function VitrineScreen({ com, onBack, user }) {
         const defiIds = merchantDefis.map(d => d.id);
         const { data } = await supabase
           .from("posts")
-          .select("*")
+          .select("*, profiles:author_id(pseudo, avatar_url)")
           .in("defi_id", defiIds)
           .order("created_at", { ascending: false });
         defiPosts = data || [];
@@ -586,7 +749,7 @@ function VitrineScreen({ com, onBack, user }) {
           ))}
         </div>
 
-        {activeTab === "vitrine" && <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} />}
+        {activeTab === "vitrine" && <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} user={user} />}
         {activeTab === "infos" && <TabInfos com={com} />}
       </div>
 
