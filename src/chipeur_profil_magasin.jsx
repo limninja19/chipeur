@@ -1075,8 +1075,8 @@ function BottomNav({ onNavigate }) {
     { id: "fil", icon: "🏠", label: "Fil" },
     { id: "sorties", icon: "📅", label: "Évén." },
     { id: "fab", isFab: true },
-    { id: "voisins", icon: "👥", label: "Voisins" },
-    { id: "profil", icon: "👤", label: "Mon profil" },
+    { id: "commerces", icon: "🏪", label: "Commerces" },
+    { id: "profil", icon: "👤", label: "Profil" },
   ];
   return (
     <div style={{ height: 80, background: C.card, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-around", flexShrink: 0 }}>
@@ -1102,7 +1102,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const tabs = [
-    { id: "dashboard", label: "Dashboard" },
+    { id: "dashboard", label: "Tableau de bord" },
     { id: "posts", label: "Mes posts" },
     { id: "creer", label: "Créer" },
     { id: "plan", label: "Mon plan" },
