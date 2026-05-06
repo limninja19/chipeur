@@ -565,17 +565,24 @@ function TabVitrine({ com, realPosts, loadingPosts, user }) {
   const isOwner = user?.id === com.id;
 
   const filters = [
-    { id: "photos",  label: "📸 Photos" },
     { id: "tous",    label: "✦ Tous" },
+    { id: "photos",  label: "📸 Photos" },
+    { id: "galerie", label: "🏪 Galerie" },
     { id: "bonplan", label: "🎁 Bons plans" },
   ];
 
-  const photoPosts = posts.filter(p => !!p.image_url);
+  // Photos clients (taguent le magasin mais ne sont pas du magasin)
+  const photoPosts = posts.filter(p => !!p.image_url && p.author_id !== com.id);
+  // Photos du commerçant lui-même
+  const galeriePosts = posts.filter(p => !!p.image_url && p.author_id === com.id);
+
   const filtered = activeFilter === "photos"
     ? photoPosts
-    : activeFilter === "bonplan"
-      ? posts.filter(p => p.post_type === "bonplan")
-      : posts;
+    : activeFilter === "galerie"
+      ? galeriePosts
+      : activeFilter === "bonplan"
+        ? posts.filter(p => p.post_type === "bonplan")
+        : posts;
 
   return (
     <div style={{ padding: "0 0 100px" }}>
@@ -598,7 +605,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user }) {
         <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
           Aucun contenu pour l'instant.
         </div>
-      ) : activeFilter === "photos" ? (
+      ) : (activeFilter === "photos" || activeFilter === "galerie") ? (
         /* ── Grille photos ── */
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
           {filtered.map(post => (
