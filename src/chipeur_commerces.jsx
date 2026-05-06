@@ -524,7 +524,7 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
 // ─── ONGLET VITRINE ───
 function TabVitrine({ com, realPosts, loadingPosts, user }) {
   const [posts, setPosts] = useState(realPosts);
-  const [activeFilter, setActiveFilter] = useState("photos");
+  const [activeFilter, setActiveFilter] = useState("tous");
   const [selectedPost, setSelectedPost] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
 
@@ -678,8 +678,8 @@ function TabInfos({ com }) {
             <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 8 }}>HORAIRES</div>
             {com.hours.map((h, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: i < com.hours.length - 1 ? 6 : 0, marginBottom: i < com.hours.length - 1 ? 6 : 0, borderBottom: i < com.hours.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                <span style={{ fontSize: 13, color: C.ink2, fontWeight: 500 }}>{h.j}</span>
-                <span style={{ fontSize: 13, color: h.h === "Fermé" ? "#C0392B" : C.pro, fontWeight: 600 }}>{h.h}</span>
+                <span style={{ fontSize: 13, color: C.ink2, fontWeight: 500 }}>{h.j || "—"}</span>
+                <span style={{ fontSize: 13, color: h.h === "Fermé" ? "#C0392B" : C.pro, fontWeight: 600 }}>{h.h || "—"}</span>
               </div>
             ))}
           </div>
@@ -910,7 +910,9 @@ export default function ChipeurCommerces({ setPage, user }) {
       const name = (c.name || "").toLowerCase();
       const desc = (c.desc || "").toLowerCase();
       const cat = (c.cat || "").toLowerCase();
-      if (!name.includes(q) && !desc.includes(q) && !cat.includes(q)) return false;
+      const metier = (c.metier || "").toLowerCase();
+      const categorie = (c.categorie || "").toLowerCase();
+      if (!name.includes(q) && !desc.includes(q) && !cat.includes(q) && !metier.includes(q) && !categorie.includes(q)) return false;
     }
     return true;
   });
