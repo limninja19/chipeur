@@ -348,7 +348,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
 
 const BG_COLORS = ["#FEF3E0","#F7EEF7","#E8F4FD","#EBF5F0","#FFF3E0","#F0E8FF"];
 
-export default function ChipeurPageVoisins({ setPage, user, setConversationWith, selectedVoisinId, setSelectedVoisinId }) {
+export default function ChipeurPageVoisins({ setPage, user, profile, setConversationWith, selectedVoisinId, setSelectedVoisinId }) {
   const [screen, setScreen] = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -375,7 +375,7 @@ export default function ChipeurPageVoisins({ setPage, user, setConversationWith,
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, univers, bonus_xp")
+      .select("id, pseudo, bio, quartier, avatar_url, univers, bonus_xp, xp")
       .not("pseudo", "is", null)
       .order("created_at", { ascending: true })
       .then(async ({ data }) => {
@@ -383,9 +383,12 @@ export default function ChipeurPageVoisins({ setPage, user, setConversationWith,
         // Pour chaque profil, compter ses posts
         const withCounts = await Promise.all(data.map(async (p, i) => {
           const { count } = await supabase.from("posts").select("*", { count: "exact", head: true }).eq("author_id", p.id);
+          // Utilise le champ xp du profil (mis à jour par addXP) comme source de vérité
+          // Fallback calculé pour les anciens profils sans xp
           const universMap = (p.univers && !Array.isArray(p.univers)) ? p.univers : {};
           const universXp = Object.values(universMap).reduce((sum, it) => sum + (it?.xp || 0), 0);
-          const xp = (count || 0) * 10 + universXp + (p.bonus_xp || 0);
+          const xpFallback = (count || 0) * 10 + universXp + (p.bonus_xp || 0);
+          const xp = p.xp != null ? p.xp : xpFallback;
           const lvl = getLevel(xp);
           return {
             ...p,
@@ -439,6 +442,9 @@ export default function ChipeurPageVoisins({ setPage, user, setConversationWith,
 
   const filtered = voisins.filter(v => {
     if (search && !v.pseudo?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filter === "Mon quartier 📍" && profile?.quartier) {
+      if (v.quartier !== profile.quartier && !v.isMe) return false;
+    }
     return true;
   });
   const top3 = filtered.slice(0, 3);
@@ -458,6 +464,18 @@ export default function ChipeurPageVoisins({ setPage, user, setConversationWith,
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, borderRadius: 14, padding: "9px 14px", border: `1px solid ${C.border}`, marginBottom: 10 }}>
               <span style={{ fontSize: 13, color: C.ink2 }}>🔍</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche un voisin…" style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
+            </div>
+            {/* Filtres */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto", scrollbarWidth: "none" }}>
+              {["Tous", "Mon quartier 📍"].map(f => (
+                <button key={f} onClick={() => setFilter(f)} style={{
+                  fontSize: 12, fontWeight: 600, padding: "7px 16px", borderRadius: 20,
+                  border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                  background: filter === f ? C.ink : C.pill,
+                  color: filter === f ? "#fff" : C.ink2,
+                  fontFamily: dm, transition: "all 0.15s",
+                }}>{f}</button>
+              ))}
             </div>
           </div>
 

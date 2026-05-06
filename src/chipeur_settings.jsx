@@ -121,10 +121,17 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   if (!open) return null;
 
   const handleLogout = async () => {
+    if (!confirmLogout) {
+      // Premier clic : demander confirmation
+      setConfirmLogout(true);
+      return;
+    }
+    // Deuxième clic : déconnexion réelle
     setLoggingOut(true);
     await supabase.auth.signOut();
     // App.jsx gère la redirection via onAuthStateChange
@@ -216,10 +223,11 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
         <SectionTitle>Mon compte</SectionTitle>
         <Row icon="🔄" label="Changer de compte" sublabel="Retour à l'écran de connexion" onClick={handleLogout} />
         <Row
-          icon={loggingOut ? "⏳" : "🚪"}
-          label={loggingOut ? "Déconnexion…" : "Se déconnecter"}
-          sublabel="Tu pourras te reconnecter à tout moment"
+          icon={loggingOut ? "⏳" : confirmLogout ? "⚠️" : "🚪"}
+          label={loggingOut ? "Déconnexion…" : confirmLogout ? "Confirmer la déconnexion ?" : "Se déconnecter"}
+          sublabel={confirmLogout && !loggingOut ? "Appuie encore pour confirmer" : "Tu pourras te reconnecter à tout moment"}
           onClick={handleLogout}
+          danger={confirmLogout}
           chevron={false}
         />
 

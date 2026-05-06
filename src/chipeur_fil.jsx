@@ -256,9 +256,15 @@ function BandeauDefis({ setPage }) {
       .then(async ({ data: defisData }) => {
         if (!defisData || defisData.length === 0) return;
         const { data: countsData } = await supabase
-          .from("posts").select("defi_id").not("defi_id", "is", null);
+          .from("posts").select("defi_id, author_id").not("defi_id", "is", null);
+        // Participants uniques par défi
+        const seen = {};
+        (countsData || []).forEach(r => {
+          if (!seen[r.defi_id]) seen[r.defi_id] = new Set();
+          seen[r.defi_id].add(r.author_id);
+        });
         const counts = {};
-        (countsData || []).forEach(r => { counts[r.defi_id] = (counts[r.defi_id] || 0) + 1; });
+        Object.keys(seen).forEach(id => { counts[id] = seen[id].size; });
         const mapped = defisData.map((d, i) => {
           const current = counts[d.id] || 0;
           const total = d.total_target || 100;

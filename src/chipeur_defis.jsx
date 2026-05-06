@@ -849,15 +849,21 @@ export default function ChipeurDefis({ setPage, user, profile }) {
         return;
       }
 
-      // 2. Compter les participants (posts par defi_id)
+      // 2. Compter les participants UNIQUES par défi (1 user = 1 participation même s'il a posté plusieurs fois)
       const { data: countsData } = await supabase
         .from("posts")
-        .select("defi_id")
+        .select("defi_id, author_id")
         .not("defi_id", "is", null);
 
-      const countMap = {};
+      // Regrouper par defi_id → Set d'author_id distincts
+      const seenMap = {};
       (countsData || []).forEach(row => {
-        countMap[row.defi_id] = (countMap[row.defi_id] || 0) + 1;
+        if (!seenMap[row.defi_id]) seenMap[row.defi_id] = new Set();
+        seenMap[row.defi_id].add(row.author_id);
+      });
+      const countMap = {};
+      Object.keys(seenMap).forEach(defiId => {
+        countMap[defiId] = seenMap[defiId].size;
       });
 
       // 3. Construire les défis enrichis
