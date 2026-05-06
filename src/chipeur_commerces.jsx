@@ -556,84 +556,86 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
 // ─── ONGLET VITRINE ───
 function TabVitrine({ com, realPosts, loadingPosts, user }) {
   const [posts, setPosts] = useState(realPosts);
+  const [activeFilter, setActiveFilter] = useState("photos");
   const [selectedPost, setSelectedPost] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
 
   const isOwner = user?.id === com.id;
+
+  const filters = [
+    { id: "photos",  label: "📸 Photos" },
+    { id: "tous",    label: "✦ Tous" },
+    { id: "bonplan", label: "🎁 Bons plans" },
+  ];
+
   const photoPosts = posts.filter(p => !!p.image_url);
-  const otherPosts = posts.filter(p => !p.image_url);
+  const filtered = activeFilter === "photos"
+    ? photoPosts
+    : activeFilter === "bonplan"
+      ? posts.filter(p => p.post_type === "bonplan")
+      : posts;
 
   return (
     <div style={{ padding: "0 0 100px" }}>
+      {/* Filtres */}
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", padding: "14px 16px 12px" }}>
+        {filters.map(f => (
+          <button key={f.id} onClick={() => setActiveFilter(f.id)} style={{
+            padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+            border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+            fontFamily: dm, transition: "all 0.15s",
+            background: activeFilter === f.id ? C.ink : C.pill,
+            color: activeFilter === f.id ? "#fff" : C.ink2,
+          }}>{f.label}</button>
+        ))}
+      </div>
+
       {loadingPosts ? (
         <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
-      ) : posts.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
           Aucun contenu pour l'instant.
         </div>
+      ) : activeFilter === "photos" ? (
+        /* ── Grille photos ── */
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
+          {filtered.map(post => (
+            <div
+              key={post.id}
+              onClick={() => setSelectedPost(post)}
+              style={{ aspectRatio: "1", overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill }}
+            >
+              <img src={post.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              {/* Badge fiche produit */}
+              {(post.product_label || post.product_price) && (
+                <div style={{ position: "absolute", bottom: 4, right: 4, background: C.pro, borderRadius: 6, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff" }}>✦</div>
+              )}
+              {/* Badge bon plan */}
+              {post.post_type === "bonplan" && (
+                <div style={{ position: "absolute", top: 4, left: 4, background: C.accent, borderRadius: 6, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff" }}>🎁</div>
+              )}
+            </div>
+          ))}
+        </div>
       ) : (
-        <>
-          {/* Grille photos */}
-          {photoPosts.length > 0 && (
-            <div style={{
-              display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 2, marginBottom: otherPosts.length > 0 ? 12 : 0,
-            }}>
-              {photoPosts.map(post => (
-                <div
-                  key={post.id}
-                  onClick={() => setSelectedPost(post)}
-                  style={{
-                    aspectRatio: "1", overflow: "hidden", cursor: "pointer",
-                    position: "relative", background: C.pill,
-                  }}
-                >
-                  <img
-                    src={post.image_url} alt=""
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                  />
-                  {/* Badge enrichissement */}
-                  {(post.product_label || post.product_price) && (
-                    <div style={{
-                      position: "absolute", bottom: 4, right: 4,
-                      background: C.pro, borderRadius: 6, padding: "2px 5px",
-                      fontSize: 9, fontWeight: 700, color: "#fff",
-                    }}>✦</div>
-                  )}
-                  {/* Badge bon plan */}
-                  {post.post_type === "bonplan" && (
-                    <div style={{
-                      position: "absolute", top: 4, left: 4,
-                      background: C.accent, borderRadius: 6, padding: "2px 5px",
-                      fontSize: 9, fontWeight: 700, color: "#fff",
-                    }}>🎁</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Posts sans photo */}
-          {otherPosts.length > 0 && (
-            <div style={{ padding: "0 16px" }}>
-              {otherPosts.map(post => (
-                <VitrinePostCard
-                  key={post.id}
-                  post={post}
-                  userId={user?.id}
-                  comId={com.id}
-                  isOwner={isOwner}
-                  onEnrich={() => setEnrichingPost(post)}
-                />
-              ))}
-            </div>
-          )}
-        </>
+        /* ── Liste cartes complètes ── */
+        <div style={{ padding: "0 16px" }}>
+          {filtered.map(post => (
+            <VitrinePostCard
+              key={post.id}
+              post={post}
+              userId={user?.id}
+              comId={com.id}
+              isOwner={isOwner}
+              onEnrich={() => setEnrichingPost(post)}
+            />
+          ))}
+        </div>
       )}
 
-      {/* Modal détail photo */}
+      {/* Modal détail photo (clic sur la grille) */}
       {selectedPost && (
         <PostDetailModal
           post={selectedPost}
