@@ -11,39 +11,7 @@ const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
 // ─── DONNÉES STATIQUES (modèle de démonstration uniquement) ───
-const STATIC_COMMERCES = [
-  {
-    id: null, category: "Beauté",
-    name: "Studio Lara", cat: "Beauté · Place Saint-Épvre",
-    shortCat: "Beauté & Soins · Place Saint-Épvre",
-    desc: "Institut de beauté, ongles & soins visage naturels. Produits bio et cruelty-free uniquement.",
-    shortDesc: "Institut de beauté, ongles & soins naturels.",
-    cover: "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&h=300&fit=crop",
-    gallery: [
-      { src: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&h=600&fit=crop", label: "Soin visage", price: "45€", detail: "60 min" },
-      { src: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=600&fit=crop", label: "Pose ongles gel", price: "35€", detail: "Toutes couleurs" },
-      { src: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&h=600&fit=crop", label: "Maquillage", price: "50€", detail: "Événement spécial" },
-      { src: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&h=600&fit=crop", label: "Soin corps", price: "60€", detail: "90 min relaxation" },
-      { src: "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=600&h=600&fit=crop", label: "Épilation", price: "25€", detail: "Gambe complètes" },
-      { src: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&h=600&fit=crop", label: "Nail art", price: "40€", detail: "Design personnalisé" },
-    ],
-    vues: "184", int: "31", posts: "9",
-    plan: "Mixte", planBg: C.proBg, planColor: C.pro,
-    tag: "#Soins", role: "magasin",
-    phone: "03 29 51 44 22",
-    adresse: "3 Place Saint-Épvre, 88100 Saint-Dié-des-Vosges",
-    website: null, instagram: "@studiolara_beauty", facebook: "Studio Lara Beauté",
-    hours: [
-      { j: "Mar – Ven", h: "9h – 19h" },
-      { j: "Samedi", h: "9h – 17h" },
-      { j: "Lun & Dim", h: "Fermé" },
-    ],
-    products: [
-      { price: "45€", detail: "Soin visage complet · 60 min" },
-      { price: "35€", detail: "Pose ongles gel · Toutes couleurs" },
-    ],
-  },
-];
+const STATIC_COMMERCES = [];
 
 // ─── CATÉGORIES : mapping DB → affichage ───
 const CATEGORIES = [
