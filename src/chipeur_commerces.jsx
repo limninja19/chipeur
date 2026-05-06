@@ -97,7 +97,7 @@ function profileToCommerce(p, postCount) {
     plan: "Découverte",
     planBg: C.pill,
     planColor: C.ink2,
-    tag: `#${label}`,
+    tag: `#${cat}`,
     phone: p.phone || null,
     adresse: p.quartier || null,
     website: p.website || null,
@@ -276,9 +276,9 @@ function TabVitrine({ com, realPosts, loadingPosts }) {
   if (com.id && realPosts.length > 0) {
     // Vrais posts Supabase avec photo
     galleryItems = realPosts
-      .filter(p => p.photo_url)
+      .filter(p => p.image_url)
       .map(p => ({
-        src: p.photo_url,
+        src: p.image_url,
         label: p.content || com.name,
         price: null,
         detail: null,
@@ -575,6 +575,7 @@ export default function ChipeurCommerces({ setPage, user }) {
   const [screen, setScreen] = useState("list");
   const [selectedCom, setSelectedCom] = useState(null);
   const [activeCat, setActiveCat] = useState("Tous");
+  const [search, setSearch] = useState("");
   const [realMerchants, setRealMerchants] = useState([]);
   const [loadingMerchants, setLoadingMerchants] = useState(true);
 
@@ -610,9 +611,18 @@ export default function ChipeurCommerces({ setPage, user }) {
   // Filtrer par catégorie
   const activeCatDef = CATEGORIES.find(c => c.key === activeCat) || CATEGORIES[0];
   const filtered = allCommerces.filter(c => {
-    if (activeCat === "Tous") return true;
-    const haystack = (c.categorie || c.category || "").toLowerCase();
-    return activeCatDef.match.some(m => haystack.includes(m.toLowerCase()));
+    if (activeCat !== "Tous") {
+      const haystack = (c.categorie || c.category || "").toLowerCase();
+      if (!activeCatDef.match.some(m => haystack.includes(m.toLowerCase()))) return false;
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const name = (c.name || "").toLowerCase();
+      const desc = (c.desc || "").toLowerCase();
+      const cat = (c.cat || "").toLowerCase();
+      if (!name.includes(q) && !desc.includes(q) && !cat.includes(q)) return false;
+    }
+    return true;
   });
 
   const featured = filtered.find(c => c.featured);
@@ -631,7 +641,7 @@ export default function ChipeurCommerces({ setPage, user }) {
             {/* Recherche */}
             <div style={{ margin: "0 16px 10px", display: "flex", alignItems: "center", gap: 8, background: C.card, borderRadius: 16, padding: "10px 14px", border: `1px solid ${C.border}` }}>
               <span style={{ fontSize: 14, color: C.ink2 }}>🔍</span>
-              <input placeholder="Recherche un commerce ou artisan…" style={{ border: "none", outline: "none", fontSize: 14, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche un commerce ou artisan…" style={{ border: "none", outline: "none", fontSize: 14, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
             </div>
             {/* Catégories */}
             <div style={{ display: "flex", gap: 6, padding: "0 16px 12px", overflowX: "auto", scrollbarWidth: "none" }}>
