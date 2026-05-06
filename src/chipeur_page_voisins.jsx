@@ -348,7 +348,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
 
 const BG_COLORS = ["#FEF3E0","#F7EEF7","#E8F4FD","#EBF5F0","#FFF3E0","#F0E8FF"];
 
-export default function ChipeurPageVoisins({ setPage, user, setConversationWith }) {
+export default function ChipeurPageVoisins({ setPage, user, setConversationWith, selectedVoisinId, setSelectedVoisinId }) {
   const [screen, setScreen] = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -426,6 +426,14 @@ export default function ChipeurPageVoisins({ setPage, user, setConversationWith 
     }
   };
   const openVoisin = (id) => { setSelectedId(id); setScreen("profile"); };
+
+  // Si on arrive depuis un post (clic auteur), ouvrir directement ce voisin
+  useEffect(() => {
+    if (!loading && selectedVoisinId && voisins.length > 0) {
+      openVoisin(selectedVoisinId);
+      setSelectedVoisinId?.(null);
+    }
+  }, [loading, selectedVoisinId, voisins.length]);
   const filters = ["Tous", "Top XP 🏆", "Mon quartier 📍"];
   const selectedVoisin = voisins.find(v => v.id === selectedId);
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { useUnreadNotifs } from "./chipeur_notifications";
 import { useUnreadMessages } from "./chipeur_messages";
+import { addXP } from "./chipeur_xp";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -358,12 +359,8 @@ function Reactions({ postId, userId, authorId }) {
         console.log("✅ Réaction sauvegardée:", type, "postId:", postId, "userId:", userId);
         // +2 XP à l'auteur du post + notification
         if (authorId && authorId !== userId) {
-          const { data: ap } = await supabase
-            .from("profiles").select("bonus_xp").eq("id", authorId).single();
-          if (ap !== null) {
-            await supabase.from("profiles")
-              .update({ bonus_xp: (ap?.bonus_xp || 0) + 2 }).eq("id", authorId);
-          }
+          // Ajout correct via addXP (met à jour xp + level + xp_log)
+          addXP(authorId, 2, "reaction_received");
           // Notif pour l'auteur du post (une seule par type pour ce post)
           supabase.from("notifications").upsert(
             { user_id: authorId, from_user_id: userId, type, reference_id: postId, read: false },
@@ -439,7 +436,7 @@ function Lightbox({ src, alt, onClose }) {
 }
 
 // ─── POST CARD RÉEL (Supabase) ───
-function PostCard({ post, setPage, userId }) {
+function PostCard({ post, setPage, userId, setSelectedVoisinId }) {
   const [lightbox, setLightbox] = useState(false);
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
@@ -455,7 +452,14 @@ function PostCard({ post, setPage, userId }) {
       <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
         {/* Header — clic sur l'auteur */}
         <div
-          onClick={() => setPage(post.author_id === userId ? "profil" : "voisins")}
+          onClick={() => {
+            if (post.author_id === userId) {
+              setPage("profil");
+            } else {
+              setSelectedVoisinId?.(post.author_id);
+              setPage("voisins");
+            }
+          }}
           style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px", cursor: "pointer" }}
         >
           <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
@@ -571,7 +575,7 @@ function BottomNav({ active, onNavigate, onFab }) {
   );
 }
 
-export default function Fil({ setPage, profile, user }) {
+export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
   const [activeTab, setActiveTab] = useState("Tout");
   const [fabOpen, setFabOpen] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -653,7 +657,7 @@ export default function Fil({ setPage, profile, user }) {
           </div>
         ) : (
           posts.map((post, i) => (
-            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} />
+            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} />
           ))
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase";
 import { useProfile } from "./useProfile";
 
@@ -32,8 +32,37 @@ function SplashScreen() {
 }
 
 export default function App() {
-  const [page, setPage] = useState("fil");
+  const [page, setPageRaw] = useState("fil");
   const [conversationWith, setConversationWith] = useState(null);
+  const [selectedVoisinId, setSelectedVoisinId] = useState(null);
+  const pageHistoryRef = useRef(["fil"]);
+
+  // Wrapper setPage : pousse dans l'historique du navigateur pour que le bouton
+  // Retour Android fonctionne correctement (sinon il ferme l'app)
+  const setPage = useCallback((newPage) => {
+    window.history.pushState({ page: newPage }, "");
+    pageHistoryRef.current = [...pageHistoryRef.current, newPage];
+    setPageRaw(newPage);
+  }, []);
+
+  // Écouter le bouton Retour (Android / navigateur)
+  useEffect(() => {
+    const handlePop = () => {
+      const history = pageHistoryRef.current;
+      if (history.length <= 1) {
+        // On est à la racine, rien à faire (empêche la fermeture)
+        window.history.pushState({ page: "fil" }, "");
+        return;
+      }
+      const newHistory = history.slice(0, -1);
+      pageHistoryRef.current = newHistory;
+      setPageRaw(newHistory[newHistory.length - 1]);
+    };
+    window.addEventListener("popstate", handlePop);
+    // On pousse un état initial pour qu'il y ait toujours quelque chose à "dépiler"
+    window.history.pushState({ page: "fil" }, "");
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
   const [user, setUser] = useState(undefined);
   const { profile, loading: profileLoading, updateProfile } = useProfile(user?.id);
 
@@ -74,7 +103,7 @@ export default function App() {
   if (user === null) return <Connexion setPage={setPage} onAuth={() => setPage("fil")} />;
 
   // Props communes passées à toutes les pages
-  const sharedProps = { setPage, user, profile, updateProfile, conversationWith, setConversationWith };
+  const sharedProps = { setPage, user, profile, updateProfile, conversationWith, setConversationWith, selectedVoisinId, setSelectedVoisinId };
 
   if (page === "defis") return <Defis {...sharedProps} />;
   if (page === "sorties") return <Sorties {...sharedProps} />;
