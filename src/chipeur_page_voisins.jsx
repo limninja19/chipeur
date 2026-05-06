@@ -1,20 +1,21 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { THEMES, miniDefisAll } from "./chipeur_univers_data";
+import { getLevel as getXPLevel } from "./chipeur_xp";
 
 const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)", gold: "#F7A72D" };
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
-const LEVELS = [
-  { name: "Débutant·e", min: 0, max: 50, bg: C.pill, color: C.ink2 },
-  { name: "Explorateur·trice", min: 50, max: 150, bg: C.proBg, color: C.pro },
-  { name: "Pépite du Quartier", min: 150, max: 300, bg: "#F0E6FC", color: "#5B2D8E" },
-  { name: "Légende Locale", min: 300, max: Infinity, bg: "#FFF0EB", color: C.accent },
-];
-function getLevel(xp) {
-  return LEVELS.find(l => xp < l.max) || LEVELS[LEVELS.length - 1];
-}
+// Style visuel par numéro de niveau (1-6), aligné avec chipeur_xp.js
+const LEVEL_STYLES = {
+  1: { bg: C.pill,    color: C.ink2 },
+  2: { bg: C.proBg,  color: C.pro },
+  3: { bg: "#F0E6FC", color: "#5B2D8E" },
+  4: { bg: "#FFF0EB", color: C.accent },
+  5: { bg: "#FFF8E8", color: "#B45309" },
+  6: { bg: "#1A1714", color: "#F7A72D" },
+};
 
 function FabMenu({ open, onClose }) {
   if (!open) return null;
@@ -389,15 +390,16 @@ export default function ChipeurPageVoisins({ setPage, user, profile, setConversa
           const universXp = Object.values(universMap).reduce((sum, it) => sum + (it?.xp || 0), 0);
           const xpFallback = (count || 0) * 10 + universXp + (p.bonus_xp || 0);
           const xp = p.xp != null ? p.xp : xpFallback;
-          const lvl = getLevel(xp);
+          const lvl = getXPLevel(xp);
+          const style = LEVEL_STYLES[lvl.level] || LEVEL_STYLES[1];
           return {
             ...p,
             idx: i,
             postCount: count || 0,
             xp,
-            level: lvl.name,
-            levelBg: lvl.bg,
-            levelColor: lvl.color,
+            level: `${lvl.emoji} ${lvl.title}`,
+            levelBg: style.bg,
+            levelColor: style.color,
             bg: BG_COLORS[i % BG_COLORS.length],
             isMe: p.id === user?.id,
           };
