@@ -410,7 +410,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
 
 // ─── ONGLETS STICKY ───
 function StickyTabs({ activeTab, onTabChange }) {
-  const tabs = ["Posts", "Mon univers", "Défis", "Récompenses"];
+  const tabs = ["Posts", "Événements", "Mon univers", "Défis", "Récompenses"];
   return (
     <div style={{
       position: "sticky", top: 0, zIndex: 20,
@@ -459,6 +459,48 @@ function TabPosts({ posts, onDelete, loading }) {
               {new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
             </span>
           </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TabEvenements({ sorties, onDelete, loading }) {
+  if (loading) return <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>Chargement…</div>;
+  if (sorties.length === 0) return (
+    <div style={{ textAlign: "center", padding: "40px 16px" }}>
+      <div style={{ fontSize: 36, marginBottom: 10 }}>📅</div>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun événement créé</div>
+      <div style={{ fontSize: 12, color: C.ink2 }}>Crée ton premier événement depuis l'onglet Évén. !</div>
+    </div>
+  );
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {sorties.map(s => (
+        <div key={s.id} style={{
+          background: C.card, borderRadius: 14, border: `1px solid ${C.border}`,
+          padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <div style={{
+            width: 42, height: 42, borderRadius: 10, background: C.accent,
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", flexShrink: 0,
+          }}>
+            <div style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: "#fff", lineHeight: 1 }}>
+              {s.date_text ? s.date_text.split("/")[0] : "—"}
+            </div>
+            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.8)", textTransform: "uppercase" }}>
+              {s.date_text ? ["jan","fév","mar","avr","mai","jun","jul","aoû","sep","oct","nov","déc"][parseInt(s.date_text.split("/")[1]) - 1] : ""}
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.title}</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>{s.type || "Événement"}{s.lieu ? ` · 📍 ${s.lieu}` : ""}</div>
+          </div>
+          <button
+            onClick={() => onDelete(s.id)}
+            style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: C.ink2, flexShrink: 0 }}
+          >🗑️</button>
         </div>
       ))}
     </div>
@@ -683,6 +725,27 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
       });
   }, [user?.id]);
 
+  const [sorties, setSorties] = useState([]);
+  const [sortiesLoading, setSortiesLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) { setSortiesLoading(false); return; }
+    supabase
+      .from("sorties")
+      .select("*")
+      .eq("author_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setSorties(data);
+        setSortiesLoading(false);
+      });
+  }, [user?.id]);
+
+  const handleDeleteSortie = async (id) => {
+    await supabase.from("sorties").delete().eq("id", id).eq("author_id", user.id);
+    setSorties(prev => prev.filter(s => s.id !== id));
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
@@ -707,6 +770,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
+              {activeTab === "Événements" && <TabEvenements sorties={sorties} onDelete={handleDeleteSortie} loading={sortiesLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis setPage={setPage} />}
               {activeTab === "Récompenses" && <TabRewards />}

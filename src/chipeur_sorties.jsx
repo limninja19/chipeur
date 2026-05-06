@@ -102,15 +102,25 @@ function useParticipation(sortieId, userId) {
     setCount(prev => wasGoing ? Math.max(0, prev - 1) : prev + 1);
 
     if (wasGoing) {
-      await supabase
+      const { error } = await supabase
         .from("sorties_participations")
         .delete()
         .eq("sortie_id", sortieId)
         .eq("user_id", userId);
+      if (error) {
+        console.error("Erreur suppression participation:", error);
+        setGoing(wasGoing);
+        setCount(prev => prev + 1);
+      }
     } else {
-      await supabase
+      const { error } = await supabase
         .from("sorties_participations")
         .insert({ sortie_id: sortieId, user_id: userId });
+      if (error) {
+        console.error("Erreur ajout participation:", error);
+        setGoing(wasGoing);
+        setCount(prev => Math.max(0, prev - 1));
+      }
     }
   };
 
@@ -144,7 +154,7 @@ function GoingBtn({ going, count, onToggle, disabled }) {
 }
 
 // ─── EVENT CARD (in list) ───
-function EventCard({ s, idx, onClick, user }) {
+function EventCard({ s, idx, onClick, user, onDelete }) {
   const { going, count, loading, toggle } = useParticipation(s.id, user?.id);
   const col = DATE_COLORS[idx % DATE_COLORS.length];
   const d = parseDate(s.date_text);
@@ -152,6 +162,9 @@ function EventCard({ s, idx, onClick, user }) {
   const month = d ? d.toLocaleDateString("fr-FR", { month: "short" }) : "";
   const ts = TYPE_STYLES[s.type] || TYPE_STYLES["Autre"];
   const today = s.date_text ? isToday(s.date_text) : false;
+  const isAuthor = user?.id && s.author_id && user.id === s.author_id;
+  const authorPseudo = s.profiles?.pseudo;
+  const authorAvatar = s.profiles?.avatar_url;
 
   return (
     <div
@@ -196,7 +209,30 @@ function EventCard({ s, idx, onClick, user }) {
         padding: "8px 12px 10px", borderTop: `1px solid ${C.border}`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <div style={{ fontSize: 11, color: C.ink2 }}>📍 {s.ville || "Saint-Dié"}</div>
+        {/* Auteur */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{
+            width: 20, height: 20, borderRadius: "50%", background: C.pill,
+            overflow: "hidden", display: "flex", alignItems: "center",
+            justifyContent: "center", fontSize: 10, flexShrink: 0,
+          }}>
+            {authorAvatar
+              ? <img src={authorAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : "👤"}
+          </div>
+          <div style={{ fontSize: 10, color: C.ink2 }}>{authorPseudo || "Voisin"}</div>
+          {isAuthor && (
+            <button
+              onClick={e => { e.stopPropagation(); onDelete && onDelete(s.id); }}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 12, color: C.ink2, padding: "2px 4px",
+                marginLeft: 4,
+              }}
+              title="Supprimer"
+            >🗑️</button>
+          )}
+        </div>
         <GoingBtn going={going} count={count} onToggle={toggle} disabled={loading || !user} />
       </div>
     </div>
@@ -816,10 +852,15 @@ export default function ChipeurSorties({ setPage, user, profile }) {
   const [screen, setScreen]         = useState("list"); // "list" | "detail" | "nouveau"
   const [selectedEvent, setSelectedEvent] = useState(null);
 
+  const handleDeleteSortie = async (id) => {
+    await supabase.from("sorties").delete().eq("id", id);
+    setEvents(prev => prev.filter(e => e.id !== id));
+  };
+
   const loadEvents = () => {
     supabase
       .from("sorties")
-      .select("*")
+      .select("*, profiles:author_id(pseudo, avatar_url)")
       .then(({ data }) => {
         // Tri chronologique côté client (date_text est DD/MM/YYYY, le tri SQL alphabétique serait faux)
         const sorted = (data || []).sort((a, b) => {
@@ -920,6 +961,7 @@ export default function ChipeurSorties({ setPage, user, profile }) {
               idx={i}
               user={user}
               onClick={ev => { setSelectedEvent(ev); setScreen("detail"); }}
+              onDelete={handleDeleteSortie}
             />
           ))
         )}
