@@ -64,26 +64,88 @@ function Filters({ active, onSelect }) {
   );
 }
 
+// ─── HOOK PARTICIPATION ───
+// Charge et sauvegarde la participation d'un user à une sortie dans Supabase
+function useParticipation(sortieId, userId) {
+  const [going, setGoing] = useState(false);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!sortieId) return;
+    // Charger le nombre total de participants
+    supabase
+      .from("sorties_participations")
+      .select("user_id", { count: "exact" })
+      .eq("sortie_id", sortieId)
+      .then(({ count: c }) => setCount(c || 0));
+
+    // Charger si l'utilisateur connecté participe déjà
+    if (!userId) { setLoading(false); return; }
+    supabase
+      .from("sorties_participations")
+      .select("id")
+      .eq("sortie_id", sortieId)
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setGoing(!!data);
+        setLoading(false);
+      });
+  }, [sortieId, userId]);
+
+  const toggle = async () => {
+    if (!userId) return;
+    const wasGoing = going;
+    // Mise à jour optimiste
+    setGoing(!wasGoing);
+    setCount(prev => wasGoing ? Math.max(0, prev - 1) : prev + 1);
+
+    if (wasGoing) {
+      await supabase
+        .from("sorties_participations")
+        .delete()
+        .eq("sortie_id", sortieId)
+        .eq("user_id", userId);
+    } else {
+      await supabase
+        .from("sorties_participations")
+        .insert({ sortie_id: sortieId, user_id: userId });
+    }
+  };
+
+  return { going, count, loading, toggle };
+}
+
 // ─── GOING BUTTON ───
-function GoingBtn({ going, onToggle }) {
+function GoingBtn({ going, count, onToggle, disabled }) {
   return (
-    <button
-      onClick={e => { e.stopPropagation(); onToggle && onToggle(); }}
-      style={{
-        padding: "7px 14px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-        fontFamily: dm, border: "none", cursor: "pointer", whiteSpace: "nowrap",
-        background: going ? C.proBg : C.accent,
-        color: going ? C.pro : "#fff",
-      }}
-    >
-      {going ? "✓ J'y vais !" : "J'y vais ?"}
-    </button>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {count > 0 && (
+        <span style={{ fontSize: 10, color: C.ink2, fontFamily: dm }}>
+          👥 {count}
+        </span>
+      )}
+      <button
+        onClick={e => { e.stopPropagation(); !disabled && onToggle && onToggle(); }}
+        style={{
+          padding: "7px 14px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+          fontFamily: dm, border: "none", cursor: disabled ? "default" : "pointer",
+          whiteSpace: "nowrap",
+          background: going ? C.proBg : C.accent,
+          color: going ? C.pro : "#fff",
+          opacity: disabled ? 0.6 : 1,
+        }}
+      >
+        {going ? "✓ J'y vais !" : "J'y vais ?"}
+      </button>
+    </div>
   );
 }
 
 // ─── EVENT CARD (in list) ───
-function EventCard({ s, idx, onClick }) {
-  const [going, setGoing] = useState(false);
+function EventCard({ s, idx, onClick, user }) {
+  const { going, count, loading, toggle } = useParticipation(s.id, user?.id);
   const col = DATE_COLORS[idx % DATE_COLORS.length];
   const d = parseDate(s.date_text);
   const day = d ? d.getDate() : "—";
@@ -135,7 +197,7 @@ function EventCard({ s, idx, onClick }) {
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <div style={{ fontSize: 11, color: C.ink2 }}>📍 {s.ville || "Saint-Dié"}</div>
-        <GoingBtn going={going} onToggle={() => setGoing(!going)} />
+        <GoingBtn going={going} count={count} onToggle={toggle} disabled={loading || !user} />
       </div>
     </div>
   );
@@ -309,7 +371,7 @@ function EventDetailScreen({ event, user, onBack }) {
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
-  const [going, setGoing] = useState(false);
+  const { going, count, loading: loadingGoing, toggle } = useParticipation(event.id, user?.id);
 
   const d = parseDate(event.date_text);
   const day = d ? d.getDate() : "—";
@@ -369,7 +431,7 @@ function EventDetailScreen({ event, user, onBack }) {
               <span style={{ fontSize: 11, color: C.ink2 }}>🕐 {event.time_text}</span>
             )}
           </div>
-          <GoingBtn going={going} onToggle={() => setGoing(!going)} />
+          <GoingBtn going={going} count={count} onToggle={toggle} disabled={loadingGoing || !user} />
         </div>
 
         {/* Bannière "C'est aujourd'hui" */}
@@ -847,6 +909,7 @@ export default function ChipeurSorties({ setPage, user, profile }) {
               key={s.id}
               s={s}
               idx={i}
+              user={user}
               onClick={ev => { setSelectedEvent(ev); setScreen("detail"); }}
             />
           ))
