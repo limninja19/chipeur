@@ -602,6 +602,13 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
     }
   };
 
+  // Mapping onglet → valeur post_type en base
+  const TAB_TO_POST_TYPE = {
+    "Trouvailles": "decouverte",
+    "Lieux": "lieu",
+    "Bons plans": "bonplan",
+  };
+
   const loadPosts = () => {
     setLoading(true);
     let q = supabase
@@ -619,6 +626,11 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
   };
 
   useEffect(() => { loadPosts(); }, [filtreVille]);
+
+  // Filtrage client-side selon l'onglet actif
+  const filteredPosts = activeTab === "Tout" || !TAB_TO_POST_TYPE[activeTab]
+    ? posts
+    : posts.filter(p => p.post_type === TAB_TO_POST_TYPE[activeTab]);
 
   return (
     <div style={{
@@ -649,14 +661,16 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
         )}
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>Chargement du fil…</div>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 16px" }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>🏘️</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 6 }}>Le fil est vide pour l'instant</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 6 }}>
+              {activeTab === "Tout" ? "Le fil est vide pour l'instant" : `Aucun post "${activeTab}" pour l'instant`}
+            </div>
             <div style={{ fontSize: 13, color: C.ink2 }}>Sois le premier à partager une trouvaille de ton quartier !</div>
           </div>
         ) : (
-          posts.map((post, i) => (
+          filteredPosts.map((post) => (
             <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} />
           ))
         )}

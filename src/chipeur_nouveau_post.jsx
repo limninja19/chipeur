@@ -129,10 +129,9 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
   );
 }
 
-// ─── MAG LINK ───
-function MagLink() {
+// ─── MAG LINK ─── (état contrôlé depuis le parent)
+function MagLink({ selectedId, onSelect }) {
   const [merchants, setMerchants] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -147,7 +146,7 @@ function MagLink() {
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <div onClick={() => selectedId ? setSelectedId(null) : setOpen(!open)} style={{
+      <div onClick={() => selectedId ? onSelect(null) : setOpen(!open)} style={{
         display: "flex", alignItems: "center", gap: 10,
         background: selectedId ? C.proBg : C.card,
         borderRadius: 14, border: `1.5px solid ${selectedId ? C.pro : C.border}`,
@@ -165,7 +164,7 @@ function MagLink() {
           {merchants.length === 0 ? (
             <div style={{ padding: "12px 14px", fontSize: 12, color: C.ink2 }}>Aucun commerce trouvé pour l'instant</div>
           ) : merchants.map((m, i) => (
-            <div key={m.id} onClick={() => { setSelectedId(m.id); setOpen(false); }} style={{
+            <div key={m.id} onClick={() => { onSelect(m.id); setOpen(false); }} style={{
               display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
               cursor: "pointer", borderBottom: i < merchants.length - 1 ? `1px solid ${C.border}` : "none",
             }}>
@@ -183,11 +182,10 @@ function MagLink() {
   );
 }
 
-// ─── PEPITE TOGGLE ───
-function PepiteToggle() {
-  const [on, setOn] = useState(false);
+// ─── PEPITE TOGGLE ─── (état contrôlé depuis le parent)
+function PepiteToggle({ on, onChange }) {
   return (
-    <div onClick={() => setOn(!on)} style={{
+    <div onClick={() => onChange(!on)} style={{
       display: "flex", alignItems: "center", gap: 10,
       background: on ? "#F5F0FF" : C.card,
       borderRadius: 14, border: `1.5px solid ${on ? "#7C3AED" : C.border}`,
@@ -214,7 +212,7 @@ function PepiteToggle() {
 }
 
 // ─── FORM: TROUVAILLE ───
-function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagToggle }) {
+function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagToggle, pepiteOn, onPepiteChange, magasinId, onMagasinSelect }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} />
@@ -229,7 +227,7 @@ function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagTog
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
-        <MagLink />
+        <MagLink selectedId={magasinId} onSelect={onMagasinSelect} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Tags</label>
@@ -242,7 +240,7 @@ function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagTog
           onToggle={onTagToggle}
         />
       </div>
-      <PepiteToggle />
+      <PepiteToggle on={pepiteOn} onChange={onPepiteChange} />
     </>
   );
 }
@@ -337,7 +335,7 @@ function FormSortie({ fields, onChange }) {
 }
 
 // ─── FORM: BON PLAN ───
-function FormBonPlan({ content, onChange, onPhotoSelect, activeTags, onTagToggle }) {
+function FormBonPlan({ content, onChange, onPhotoSelect, activeTags, onTagToggle, magasinId, onMagasinSelect }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-bonplan" />
@@ -352,7 +350,7 @@ function FormBonPlan({ content, onChange, onPhotoSelect, activeTags, onTagToggle
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
-        <MagLink />
+        <MagLink selectedId={magasinId} onSelect={onMagasinSelect} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Tags</label>
@@ -484,6 +482,9 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [activeTags, setActiveTags] = useState([]);
   const handleTagToggle = (label) =>
     setActiveTags(prev => prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]);
+  // ✅ Pépite et MagLink remontés ici pour être pris en compte à la publication
+  const [pepiteOn, setPepiteOn] = useState(false);
+  const [magasinId, setMagasinId] = useState(null);
   // Sortie fields
   const [sortieFields, setSortieFields] = useState({ title: "", date: "", time: "", lieu: "", desc: "", type: "" });
   const updateSortieField = (key, val) => setSortieFields(prev => ({ ...prev, [key]: val }));
@@ -520,10 +521,16 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
         setPublishError("Le titre de la sortie est obligatoire !");
         return;
       }
+      // ✅ Fix : convertir YYYY-MM-DD → DD/MM/YYYY pour que la page Événements affiche bien la date
+      let dateText = null;
+      if (sortieFields.date) {
+        const [y, m, d] = sortieFields.date.split("-");
+        dateText = `${d}/${m}/${y}`;
+      }
       const { error } = await supabase.from("sorties").insert({
         author_id: user.id,
         title: sortieFields.title.trim(),
-        date_text: sortieFields.date.trim() || null,
+        date_text: dateText,
         time_text: sortieFields.time.trim() || null,
         lieu: sortieFields.lieu.trim() || null,
         description: sortieFields.desc.trim() || null,
@@ -536,6 +543,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
         setPublishError("Erreur Supabase : " + error.message);
         return;
       }
+      // ✅ Fix : XP pour création d'une sortie
+      addXP(user.id, 10, "sortie_publiee");
       setScreen("success");
       return;
     }
@@ -567,9 +576,12 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
         image_url,
         location: profile?.quartier || "Saint-Dié-des-Vosges",
         tags: lieuFields.type ? [lieuFields.type] : [],
+        post_type: "lieu",
       });
       setPublishing(false);
       if (error) { setPublishError("Erreur Supabase : " + error.message); return; }
+      // ✅ Fix : XP pour publication d'un lieu
+      addXP(user.id, 10, "lieu_publie");
       setScreen("success");
       return;
     }
@@ -593,12 +605,17 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       image_url = urlData.publicUrl;
     }
 
+    // ✅ Pépite : ajoute le tag "Pépite ⭐" si activé
+    const finalTags = pepiteOn ? [...activeTags, "Pépite ⭐"] : activeTags;
+
     const { error } = await supabase.from("posts").insert({
       author_id: user.id,
       content: content.trim(),
       image_url,
       location: profile?.quartier || "Saint-Dié-des-Vosges",
-      tags: activeTags,
+      tags: finalTags,
+      post_type: selectedType, // "decouverte" ou "bonplan"
+      magasin_id: magasinId || null, // ✅ MagLink maintenant sauvegardé
     });
     setPublishing(false);
     if (error) {
@@ -606,16 +623,24 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       setPublishError("Erreur Supabase : " + error.message);
       return;
     }
-    // XP pour publication
     addXP(user.id, 10, "post_publie");
     setScreen("success");
   };
 
   const formMap = {
-    decouverte: <FormDecouverte content={content} onChange={setContent} onPhotoSelect={setPhotoFile} activeTags={activeTags} onTagToggle={handleTagToggle} />,
+    decouverte: <FormDecouverte
+      content={content} onChange={setContent} onPhotoSelect={setPhotoFile}
+      activeTags={activeTags} onTagToggle={handleTagToggle}
+      pepiteOn={pepiteOn} onPepiteChange={setPepiteOn}
+      magasinId={magasinId} onMagasinSelect={setMagasinId}
+    />,
     lieu: <FormLieu fields={lieuFields} onChange={updateLieuField} onPhotoSelect={setLieuPhotoFile} />,
     sortie: <FormSortie fields={sortieFields} onChange={updateSortieField} />,
-    bonplan: <FormBonPlan content={content} onChange={setContent} onPhotoSelect={setPhotoFile} activeTags={activeTags} onTagToggle={handleTagToggle} />,
+    bonplan: <FormBonPlan
+      content={content} onChange={setContent} onPhotoSelect={setPhotoFile}
+      activeTags={activeTags} onTagToggle={handleTagToggle}
+      magasinId={magasinId} onMagasinSelect={setMagasinId}
+    />,
   };
 
   return (
