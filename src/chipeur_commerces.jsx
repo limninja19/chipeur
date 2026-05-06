@@ -305,12 +305,17 @@ function EnrichModal({ post, onClose, onSaved }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await supabase.from("posts").update({
+    const { error } = await supabase.from("posts").update({
       product_label: label.trim() || null,
       product_price: price.trim() || null,
       product_detail: detail.trim() || null,
     }).eq("id", post.id);
     setSaving(false);
+    if (error) {
+      console.error("❌ Erreur enrichissement:", error);
+      alert("Erreur lors de l'enregistrement : " + error.message);
+      return;
+    }
     onSaved({ ...post, product_label: label.trim(), product_price: price.trim(), product_detail: detail.trim() });
     onClose();
   };
