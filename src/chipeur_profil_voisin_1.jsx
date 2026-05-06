@@ -210,6 +210,7 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [pseudoError, setPseudoError] = useState("");
   const inp = { width: "100%", padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.card, outline: "none", boxSizing: "border-box" };
 
   const handleAvatarFile = (e) => {
@@ -222,6 +223,28 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
   const handleSave = async () => {
     setSaving(true);
     setUploadError("");
+    setPseudoError("");
+
+    // Vérifier unicité du pseudo (seulement si changé)
+    const newPseudo = name.trim();
+    if (!newPseudo) {
+      setPseudoError("Le pseudo ne peut pas être vide.");
+      setSaving(false);
+      return;
+    }
+    if (newPseudo !== profile?.pseudo) {
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("pseudo", newPseudo)
+        .neq("id", user.id)
+        .maybeSingle();
+      if (existing) {
+        setPseudoError("❌ Ce pseudo est déjà pris, choisis-en un autre.");
+        setSaving(false);
+        return;
+      }
+    }
     let avatar_url = profile?.avatar_url?.startsWith("http") ? profile.avatar_url : null;
     if (avatarFile && user?.id) {
       // Compresse + convertit en JPEG (gère HEIC iPhone et photos > 1Mo)
@@ -280,7 +303,15 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
         {/* Pseudo */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Pseudo</label>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Ton pseudo visible par les voisins" style={inp} />
+          <input
+            value={name}
+            onChange={e => { setName(e.target.value); setPseudoError(""); }}
+            placeholder="Ton pseudo visible par les voisins"
+            style={{ ...inp, borderColor: pseudoError ? C.accent : C.border }}
+          />
+          {pseudoError && (
+            <div style={{ fontSize: 11, color: C.accent, marginTop: 5, fontWeight: 600 }}>{pseudoError}</div>
+          )}
         </div>
 
         {/* Ville — menu déroulant */}

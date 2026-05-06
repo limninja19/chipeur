@@ -714,6 +714,17 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     setAccountType(type);
     if (type === "voisin") {
       setLoadingSignup(true);
+      // Vérifier que le pseudo est disponible
+      const { data: existingPseudo } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("pseudo", creds.prenom.trim())
+        .maybeSingle();
+      if (existingPseudo) {
+        setSignupError("Ce pseudo est déjà pris. Choisis-en un autre !");
+        setLoadingSignup(false);
+        return;
+      }
       const { data, error } = await supabase.auth.signUp({
         email: creds.email,
         password: creds.mdp,
@@ -738,6 +749,18 @@ export default function ChipeurInscription({ setPage, onAuth }) {
   const handleMagasinValidate = async ({ nom, cat, metier, adr, desc, plan }) => {
     setSignupError("");
     setLoadingSignup(true);
+
+    // Vérifier que le pseudo (nom) est disponible
+    const { data: existingNom } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("pseudo", nom.trim())
+      .maybeSingle();
+    if (existingNom) {
+      setSignupError("Ce nom est déjà utilisé. Choisis un autre nom pour ta boutique !");
+      setLoadingSignup(false);
+      return;
+    }
 
     // 1. Créer le compte Supabase Auth
     const { data, error } = await supabase.auth.signUp({
