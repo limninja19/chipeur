@@ -724,8 +724,6 @@ export default function ChipeurInscription({ setPage, onAuth }) {
           id: data.user.id,
           pseudo: creds.prenom,
           age_range: ageRange,
-          xp: 50,
-          level: 1,
         });
         await addXP(data.user.id, 50, "inscription");
       }
