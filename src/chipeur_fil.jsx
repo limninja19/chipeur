@@ -474,7 +474,18 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId }) {
               : "😊"}
           </div>
           <div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>{post.profiles?.pseudo || "Voisin·e"}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>{post.profiles?.pseudo || "Voisin·e"}</span>
+              {["magasin", "artisan", "commercant"].includes(post.profiles?.role) && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6,
+                  background: post.profiles.role === "artisan" ? "#F5F3FF" : "#EBF5F0",
+                  color: post.profiles.role === "artisan" ? "#7C3AED" : "#0A3D2E",
+                }}>
+                  {post.profiles.role === "artisan" ? "🎨 Artisan" : "🏪 Commerçant"}
+                </span>
+              )}
+            </div>
             <div style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</div>
           </div>
         </div>
@@ -619,7 +630,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
     setLoading(true);
     let q = supabase
       .from("posts")
-      .select("*, profiles(id, pseudo, avatar_url)")
+      .select("*, profiles(id, pseudo, avatar_url, role)")
       .order("created_at", { ascending: false });
     if (filtreVille && profile?.quartier) {
       q = q.eq("location", profile.quartier);

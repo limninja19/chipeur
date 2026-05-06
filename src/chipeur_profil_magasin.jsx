@@ -300,12 +300,25 @@ function MentionedPosts({ userId, onEnrich }) {
       .eq("magasin_id", userId)
       .neq("author_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10)
+      .limit(20)
       .then(({ data }) => { setPosts(data || []); setLoading(false); });
   }, [userId]);
 
+  const handleRetirer = async (postId) => {
+    const { error } = await supabase
+      .from("posts")
+      .update({ magasin_id: null })
+      .eq("id", postId);
+    if (!error) setPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
   if (loading) return null;
-  if (posts.length === 0) return null;
+  if (posts.length === 0) return (
+    <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "14px", marginBottom: 8, textAlign: "center" }}>
+      <div style={{ fontSize: 24, marginBottom: 6 }}>📌</div>
+      <div style={{ fontSize: 12, color: C.ink2 }}>Aucun voisin n'a encore taguè ta boutique</div>
+    </div>
+  );
 
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
@@ -336,21 +349,145 @@ function MentionedPosts({ userId, onEnrich }) {
                 </div>
                 <div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{timeAgo(p.created_at)}</div>
               </div>
-              <button
-                onClick={() => onEnrich(p)}
-                style={{
-                  background: hasEnrichment ? C.proBg : C.pill,
-                  color: hasEnrichment ? C.pro : C.ink2,
-                  border: "none", borderRadius: 10, padding: "6px 10px",
-                  fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer", flexShrink: 0,
-                }}
-              >
-                {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+                <button
+                  onClick={() => onEnrich(p)}
+                  style={{
+                    background: hasEnrichment ? C.proBg : C.pill,
+                    color: hasEnrichment ? C.pro : C.ink2,
+                    border: "none", borderRadius: 10, padding: "5px 8px",
+                    fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+                  }}
+                >
+                  {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
+                </button>
+                <button
+                  onClick={() => handleRetirer(p.id)}
+                  style={{
+                    background: "#FFF0EE", color: "#C0392B",
+                    border: "none", borderRadius: 10, padding: "5px 8px",
+                    fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+                  }}
+                >
+                  ✕ Retirer
+                </button>
+              </div>
             </div>
           </div>
         );
       })}
+    </>
+  );
+}
+
+// ─── MES DÉFIS (dans dashboard) ───
+function MesDefis({ userId }) {
+  const [defis, setDefis] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingDefi, setEditingDefi] = useState(null);
+  const [editReward, setEditReward] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!userId) { setLoading(false); return; }
+    supabase
+      .from("defis")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { setDefis(data || []); setLoading(false); });
+  }, [userId]);
+
+  const handleDelete = async (id) => {
+    await supabase.from("defis").delete().eq("id", id);
+    setDefis(prev => prev.filter(d => d.id !== id));
+  };
+
+  const handleEdit = (defi) => {
+    setEditingDefi(defi);
+    setEditTitle(defi.title || "");
+    setEditReward(defi.reward || "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingDefi) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("defis")
+      .update({ title: editTitle.trim(), reward: editReward.trim() })
+      .eq("id", editingDefi.id);
+    if (!error) {
+      setDefis(prev => prev.map(d => d.id === editingDefi.id ? { ...d, title: editTitle.trim(), reward: editReward.trim() } : d));
+      setEditingDefi(null);
+    }
+    setSaving(false);
+  };
+
+  if (loading) return null;
+
+  return (
+    <>
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 6px" }}>
+        🏆 Mes défis · {defis.length}
+      </div>
+
+      {defis.length === 0 ? (
+        <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: 14, marginBottom: 8, textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: C.ink2 }}>Aucun défi créé pour l'instant</div>
+        </div>
+      ) : defis.map(d => (
+        <div key={d.id} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, marginBottom: 8, overflow: "hidden" }}>
+          <div style={{ display: "flex", gap: 10, padding: "10px 10px 8px", alignItems: "center" }}>
+            <div style={{ fontSize: 26, flexShrink: 0 }}>{d.emoji || "🏆"}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, lineHeight: 1.3 }}>{d.title}</div>
+              {d.reward && <div style={{ fontSize: 10, color: C.pro, marginTop: 2 }}>🎁 {d.reward}</div>}
+              <div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>
+                {d.ends_at ? `Fin : ${new Date(d.ends_at).toLocaleDateString("fr-FR")}` : "Sans date limite"}
+                {d.ended ? " · Terminé" : ""}
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+              <button
+                onClick={() => handleEdit(d)}
+                style={{ background: C.proBg, color: C.pro, border: "none", borderRadius: 10, padding: "5px 8px", fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}
+              >✏️ Modifier</button>
+              <button
+                onClick={() => handleDelete(d.id)}
+                style={{ background: "#FFF0EE", color: "#C0392B", border: "none", borderRadius: 10, padding: "5px 8px", fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}
+              >🗑️ Supprimer</button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Modal modification défi */}
+      {editingDefi && (
+        <div onClick={() => setEditingDefi(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "flex-end" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: C.card, borderRadius: "20px 20px 0 0", width: "100%", padding: "20px 16px 40px" }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 14 }}>✏️ Modifier le défi</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>TITRE</div>
+            <input
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.bg, outline: "none", boxSizing: "border-box", marginBottom: 12 }}
+            />
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>RÉCOMPENSE</div>
+            <input
+              value={editReward}
+              onChange={e => setEditReward(e.target.value)}
+              placeholder="Ex : Bon cadeau 20€ pour le Top 3"
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: `1px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.bg, outline: "none", boxSizing: "border-box", marginBottom: 16 }}
+            />
+            <button
+              onClick={handleSaveEdit}
+              disabled={saving}
+              style={{ width: "100%", background: saving ? "#ccc" : C.pro, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}
+            >{saving ? "Enregistrement…" : "Enregistrer"}</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -609,6 +746,9 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
           </div>
         ))}
       </>}
+
+      {/* ── MES DÉFIS ── */}
+      <MesDefis userId={userId} />
 
       {/* ── POSTS VOISINS QUI ME MENTIONNENT ── */}
       <MentionedPosts userId={userId} onEnrich={onEnrich} />
