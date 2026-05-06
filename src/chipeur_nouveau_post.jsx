@@ -137,7 +137,7 @@ function MagLink({ selectedId, onSelect }) {
   useEffect(() => {
     supabase.from("profiles")
       .select("id, pseudo, avatar_url")
-      .eq("role", "commercant")
+      .eq("role", "magasin")
       .order("pseudo")
       .then(({ data }) => setMerchants(data || []));
   }, []);
