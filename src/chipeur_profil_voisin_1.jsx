@@ -441,7 +441,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
 
 // ─── ONGLETS STICKY ───
 function StickyTabs({ activeTab, onTabChange }) {
-  const tabs = ["Posts", "Événements", "Mon univers", "Défis", "Récompenses"];
+  const tabs = ["Publications", "Événements", "Mon univers", "Défis", "Récompenses"];
   return (
     <div style={{
       position: "sticky", top: 0, zIndex: 20,
@@ -723,7 +723,7 @@ function TabRewards() {
 
 export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, user }) {
   const [screen, setScreen] = useState("profil");
-  const [activeTab, setActiveTab] = useState("Posts");
+  const [activeTab, setActiveTab] = useState("Publications");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [miniDefiId, setMiniDefiId] = useState(null);
@@ -800,7 +800,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
             <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
-              {activeTab === "Posts" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
+              {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
               {activeTab === "Événements" && <TabEvenements sorties={sorties} onDelete={handleDeleteSortie} loading={sortiesLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis setPage={setPage} />}

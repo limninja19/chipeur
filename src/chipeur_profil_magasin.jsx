@@ -75,7 +75,7 @@ function MagHeader({ profile, postCount, headerStats, onEdit, onSettings }) {
       {/* Stats */}
       <div style={{ display: "flex", marginTop: 12 }}>
         {[
-          { v: postCount != null ? String(postCount) : "—", l: "Posts" },
+          { v: postCount != null ? String(postCount) : "—", l: "Publications" },
           { v: headerStats?.reactions != null ? String(headerStats.reactions) : "—", l: "Réactions" },
           { v: headerStats?.voisins != null ? String(headerStats.voisins) : "—", l: "Voisins touchés" },
           { v: "—", l: "Remises actives" },
