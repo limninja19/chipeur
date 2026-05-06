@@ -287,6 +287,74 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
   );
 }
 
+// ─── POSTS VOISINS QUI MENTIONNENT LE COMMERCE ───
+function MentionedPosts({ userId, onEnrich }) {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) { setLoading(false); return; }
+    supabase
+      .from("posts")
+      .select("*, profiles:author_id(pseudo, avatar_url)")
+      .eq("magasin_id", userId)
+      .neq("author_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .then(({ data }) => { setPosts(data || []); setLoading(false); });
+  }, [userId]);
+
+  if (loading) return null;
+  if (posts.length === 0) return null;
+
+  const timeAgo = (ts) => {
+    const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
+    if (diff < 60) return diff + "min";
+    if (diff < 1440) return Math.floor(diff / 60) + "h";
+    return Math.floor(diff / 1440) + "j";
+  };
+
+  return (
+    <>
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 6px" }}>
+        📌 Posts voisins me mentionnant · {posts.length}
+      </div>
+      {posts.map(p => {
+        const hasEnrichment = p.product_label || p.product_price;
+        return (
+          <div key={p.id} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, marginBottom: 8, overflow: "hidden" }}>
+            <div style={{ display: "flex", gap: 10, padding: "10px 10px 8px", alignItems: "center" }}>
+              {p.image_url ? (
+                <img src={p.image_url} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 48, height: 48, borderRadius: 10, background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>📝</div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{p.profiles?.pseudo || "Voisin·e"}</div>
+                <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {p.content?.substring(0, 50) || "Post sans texte"}
+                </div>
+                <div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{timeAgo(p.created_at)}</div>
+              </div>
+              <button
+                onClick={() => onEnrich(p)}
+                style={{
+                  background: hasEnrichment ? C.proBg : C.pill,
+                  color: hasEnrichment ? C.pro : C.ink2,
+                  border: "none", borderRadius: 10, padding: "6px 10px",
+                  fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 // ─── ONGLET DASHBOARD ───
 const REACTION_TYPES = [
   { type: "veux",       emoji: "🛒", label: "Je le veux",    color: "#0F766E", bg: "#F0FDF9", highlight: true },
@@ -542,6 +610,9 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
         ))}
       </>}
 
+      {/* ── POSTS VOISINS QUI ME MENTIONNENT ── */}
+      <MentionedPosts userId={userId} onEnrich={onEnrich} />
+
       {/* ── PRO LAYER TIP ── */}
       <div style={{ background: "#FFF8F6", border: "1px solid rgba(255,87,51,0.15)", borderRadius: 14, padding: "10px 14px", marginBottom: 10 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, marginBottom: 3 }}>💡 Pro Layer</div>
@@ -762,21 +833,25 @@ function TabPlan({ profile }) {
 }
 
 // ─── PAGE ENRICHIR UN POST ───
-function EnrichScreen({ onBack, merchantName, voisinPost }) {
-  const [nomProduit, setNomProduit] = useState("");
-  const [prix, setPrix] = useState("");
-  const [tailles, setTailles] = useState("");
-  const [description, setDescription] = useState("");
+function EnrichScreen({ onBack, merchantName, voisinPost, onSaved }) {
+  const [nomProduit, setNomProduit] = useState(voisinPost?.product_label || "");
+  const [prix, setPrix] = useState(voisinPost?.product_price || "");
+  const [description, setDescription] = useState(voisinPost?.product_detail || "");
   const [saving, setSaving] = useState(false);
   const [published, setPublished] = useState(false);
   const name = merchantName || "Mon enseigne";
 
   const handlePublish = async () => {
+    if (!voisinPost?.id) return;
     setSaving(true);
-    // Aperçu Pro Layer : dans une prochaine version, on sauvegardera en base
-    // avec une table `enrichissements` (post_id, merchant_id, produit, prix…)
-    await new Promise(r => setTimeout(r, 800)); // simulation
+    const { error } = await supabase.from("posts").update({
+      product_label:  nomProduit.trim() || null,
+      product_price:  prix.trim() || null,
+      product_detail: description.trim() || null,
+    }).eq("id", voisinPost.id);
     setSaving(false);
+    if (error) { console.error("Enrichir:", error); return; }
+    if (onSaved) onSaved(voisinPost.id, { product_label: nomProduit.trim(), product_price: prix.trim(), product_detail: description.trim() });
     setPublished(true);
   };
 
@@ -823,16 +898,10 @@ function EnrichScreen({ onBack, merchantName, voisinPost }) {
               <Input placeholder="89€" value={prix} onChange={e => setPrix(e.target.value)} />
             </div>
             <div>
-              <Label>Tailles dispo</Label>
-              <Input placeholder="XS S M L" value={tailles} onChange={e => setTailles(e.target.value)} />
+              <Label>Détail</Label>
+              <Input placeholder="Lin naturel, 3 coloris…" value={description} onChange={e => setDescription(e.target.value)} />
             </div>
           </div>
-          <Label>Description courte</Label>
-          <Input
-            placeholder="Ex : Lin 100% naturel, coupe ample, 3 coloris"
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-          />
 
           {/* Aperçu Pro Layer */}
           <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, marginTop: 4 }}>
@@ -840,12 +909,11 @@ function EnrichScreen({ onBack, merchantName, voisinPost }) {
           </div>
           <div style={{ background: C.proBg, borderRadius: 14, padding: 12, border: "1px solid rgba(10,61,46,0.12)", marginBottom: 16 }}>
             <div style={{ fontSize: 10, color: C.pro, fontWeight: 600, marginBottom: 6 }}>★ Enrichi par {name}</div>
-            <div style={{ fontFamily: syne, fontSize: 16, fontWeight: 700, color: C.pro }}>
-              {prix || "Prix à définir"}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: C.pro, flex: 1 }}>{nomProduit || "Nom du produit"}</div>
+              {prix && <div style={{ fontFamily: syne, fontSize: 16, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{prix}</div>}
             </div>
-            {tailles && <div style={{ fontSize: 11, color: C.pro, opacity: 0.8, marginTop: 2 }}>{tailles.split(" ").join(" · ")}</div>}
-            {nomProduit && <div style={{ fontSize: 12, fontWeight: 600, color: C.pro, marginTop: 4 }}>{nomProduit}</div>}
-            {description && <div style={{ fontSize: 10, color: C.pro, opacity: 0.7, marginTop: 3 }}>{description}</div>}
+            {description && <div style={{ fontSize: 11, color: C.ink2, marginTop: 3 }}>{description}</div>}
           </div>
 
           <button
@@ -853,7 +921,7 @@ function EnrichScreen({ onBack, merchantName, voisinPost }) {
             disabled={saving || !nomProduit.trim()}
             style={{ width: "100%", padding: 14, borderRadius: 14, background: saving || !nomProduit.trim() ? "#ccc" : C.pro, color: "#fff", fontFamily: dm, fontSize: 13, fontWeight: 600, border: "none", cursor: saving || !nomProduit.trim() ? "not-allowed" : "pointer" }}
           >
-            {saving ? "⏳ Publication…" : "Publier l'enrichissement"}
+            {saving ? "⏳ Enregistrement…" : "Enregistrer l'enrichissement ✓"}
           </button>
         </>}
       </div>
@@ -963,6 +1031,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
           onBack={() => setScreen("main")}
           merchantName={localProfile?.pseudo}
           voisinPost={voisinPost}
+          onSaved={() => setScreen("main")}
         />
       )}
 
