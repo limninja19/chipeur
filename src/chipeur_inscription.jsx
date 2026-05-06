@@ -558,79 +558,26 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
           style={{ ...inputStyle("desc"), resize: "none", marginBottom: 20 }}
         />
 
+        {/* Plans masqués temporairement — à réactiver lors du lancement commercial */}
         <div style={{
-          fontSize: 11, fontWeight: 700, color: COLORS.ink2,
-          letterSpacing: 0.8, textTransform: "uppercase",
-          marginBottom: 10, marginTop: 4,
-          fontFamily: "'DM Sans', sans-serif",
-        }}>Choix du plan</div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {plans.map(plan => (
-            <div
-              key={plan.id}
-              onClick={() => setSelectedPlan(plan.id)}
-              style={{
-                background: COLORS.card,
-                borderRadius: 16,
-                border: `2px solid ${selectedPlan === plan.id ? COLORS.accent : COLORS.border}`,
-                padding: "14px 14px",
-                cursor: "pointer",
-                transition: "border-color 0.2s",
-                position: "relative",
-              }}
-            >
-              {plan.trial && (
-                <div style={{
-                  position: "absolute", top: -1, right: 12,
-                  background: COLORS.pro, color: "#fff",
-                  fontSize: 9, fontWeight: 700, padding: "3px 8px",
-                  borderRadius: "0 0 8px 8px", letterSpacing: 0.3,
-                  fontFamily: "'DM Sans', sans-serif",
-                }}>🎁 Offre pilote</div>
-              )}
-              {plan.popular && !plan.trial && (
-                <div style={{
-                  position: "absolute", top: -1, right: 12,
-                  background: COLORS.accent, color: "#fff",
-                  fontSize: 9, fontWeight: 700, padding: "3px 8px",
-                  borderRadius: "0 0 8px 8px", letterSpacing: 0.3,
-                  fontFamily: "'DM Sans', sans-serif",
-                }}>Recommandé</div>
-              )}
-              <div style={{
-                display: "flex", alignItems: "baseline",
-                justifyContent: "space-between", marginBottom: 8,
-              }}>
-                <div style={{
-                  fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: COLORS.ink,
-                }}>{plan.name}</div>
-                <div style={{
-                  fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 18,
-                  color: plan.trial ? COLORS.pro : COLORS.accent,
-                }}>
-                  {plan.price}{" "}
-                  {!plan.trial && <span style={{
-                    fontSize: 11, fontWeight: 400, color: COLORS.ink2,
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}>/mois</span>}
-                  {plan.trial && <span style={{
-                    fontSize: 10, fontWeight: 400, color: COLORS.pro,
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}>pendant 3 mois</span>}
-                </div>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                {plan.features.map((f, i) => (
-                  <span key={i} style={{
-                    fontSize: 10, padding: "2px 7px", borderRadius: 6,
-                    background: featBg[f.type], color: featColor[f.type],
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}>{f.text}</span>
-                ))}
-              </div>
+          background: COLORS.pro + "15",
+          border: `1.5px solid ${COLORS.pro}30`,
+          borderRadius: 16,
+          padding: "14px 16px",
+          marginTop: 4,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}>
+          <div style={{ fontSize: 28 }}>🎁</div>
+          <div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, color: COLORS.pro, marginBottom: 2 }}>
+              C'est gratuit pour démarrer
             </div>
-          ))}
+            <div style={{ fontSize: 12, color: COLORS.ink2, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+              Crée ta vitrine, publie tes posts et touche tes premiers voisins sans engagement.
+            </div>
+          </div>
         </div>
 
         <div style={{ marginTop: 16 }}>
@@ -654,7 +601,7 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
             cursor: loading || !nomMagasin.trim() || !acceptCGUM ? "not-allowed" : "pointer", marginTop: 8,
             transition: "background 0.2s",
           }}>
-          {loading ? "⏳ Création du compte…" : "Choisir ce plan et continuer →"}
+          {loading ? "⏳ Création du compte…" : "Créer ma vitrine gratuitement →"}
         </button>
       </div>
     </div>
