@@ -723,10 +723,15 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
           user={user}
           onBack={() => { setScreen("profil"); setActiveTab("Mon univers"); }}
           onSave={async (val, photoUrl, xpGained) => {
+            // On vérifie si c'est la première fois qu'on complète ce défi
+            const defiAvant = univers.find(it => it.id === miniDefiId);
+            const estPremiereFois = !defiAvant?.done;
+
             const updated = univers.map(it => it.id === miniDefiId
-              ? { ...it, done: true, a: val || it.a, photoUrl: photoUrl || it.photoUrl, xp: (it.xp || 0) + (xpGained || 0) }
+              ? { ...it, done: true, a: val || it.a, photoUrl: photoUrl || it.photoUrl, xp: estPremiereFois ? xpGained : (it.xp || 0) }
               : it);
             setUnivers(updated);
+
             // Sauvegarder en objet keyed par ID (plus stable que par index)
             const toSave = {};
             updated.forEach(it => {
@@ -734,7 +739,24 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
                 toSave[it.id] = { done: it.done || false, a: it.a || "", photoUrl: it.photoUrl || null, xp: it.xp || 0 };
               }
             });
-            await updateProfile({ univers: toSave });
+
+            // ✅ Si c'est la première fois, on inclut le nouvel XP dans updateProfile
+            // pour que la barre XP se mette à jour instantanément (updateProfile = state local + Supabase)
+            const profileUpdates = { univers: toSave };
+            if (estPremiereFois && xpGained > 0) {
+              const currentXP = profile?.xp || 0;
+              const newXP = currentXP + xpGained;
+              profileUpdates.xp = newXP;
+              profileUpdates.level = getLevel(newXP).level;
+              // On logue aussi dans xp_log pour garder l'historique complet
+              supabase.from("xp_log").insert({
+                user_id: user.id,
+                amount: xpGained,
+                reason: `minidefi_${miniDefiId}`,
+              }).then(() => {});
+            }
+
+            await updateProfile(profileUpdates);
             setScreen("profil"); setActiveTab("Mon univers"); setMiniDefiId(null);
           }}
         />
