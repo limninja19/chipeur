@@ -218,7 +218,7 @@ function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagTog
       <PhotoZone onPhotoSelect={onPhotoSelect} />
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Description</label>
-        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Partage ta trouvaille avec le quartier..." style={{
+        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Partage ta chope avec le quartier..." style={{
           width: "100%", padding: "10px 12px", borderRadius: 12,
           border: `1.5px solid ${C.border}`, fontFamily: "'DM Sans', sans-serif",
           fontSize: 12, color: C.ink, background: C.card, outline: "none",
@@ -440,9 +440,9 @@ function DroitImagePopup({ onConfirm, onCancel }) {
 // ─── SUCCESS SCREEN ───
 function SuccessScreen({ type, onBack }) {
   const msgs = {
-    decouverte: "Ta trouvaille est maintenant visible par tous les voisins du quartier. 🛍️",
+    decouverte: "Ta chope est maintenant visible par tous les voisins du quartier. 🛍️",
     lieu: "Ton spot est partagé ! Les voisins vont adorer le découvrir. 📍",
-    sortie: "La sortie est ajoutée à la page Sorties. Les voisins peuvent maintenant dire qu'ils y vont !",
+    sortie: "L'événement est ajouté à la page Sorties. Les voisins peuvent maintenant dire qu'ils y vont !",
     bonplan: "Ton bon plan est partagé avec le quartier ! 💡",
   };
   return (
@@ -495,9 +495,9 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [lieuPhotoFile, setLieuPhotoFile] = useState(null);
 
   const types = [
-    { id: "decouverte", icon: "🛍️", name: "Trouvaille", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
+    { id: "decouverte", icon: "🛍️", name: "Chope", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
     { id: "lieu", icon: "📍", name: "Lieu", desc: "Un spot nature, un endroit à découvrir", grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
-    { id: "sortie", icon: "🎉", name: "Sortie", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
+    { id: "sortie", icon: "🎉", name: "Événement", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
     { id: "bonplan", icon: "💡", name: "Bon plan", desc: "Un conseil, une adresse à ne pas rater", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
   ];
 
