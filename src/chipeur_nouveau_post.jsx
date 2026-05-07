@@ -444,6 +444,7 @@ function SuccessScreen({ type, onBack }) {
     lieu: "Ton spot est partagé ! Les voisins vont adorer le découvrir. 📍",
     sortie: "L'événement est ajouté à la page Sorties. Les voisins peuvent maintenant dire qu'ils y vont !",
     bonplan: "Ton bon plan est partagé avec le quartier ! 💡",
+    promo: "Ta promo est visible sur ta fiche commerce. Les voisins vont en profiter ! 🏷️",
   };
   return (
     <div style={{
@@ -494,7 +495,13 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   // Photo pour lieu (séparée de la photo post normal)
   const [lieuPhotoFile, setLieuPhotoFile] = useState(null);
 
-  const types = [
+  const isMagasin = profile?.role === "magasin";
+  const types = isMagasin ? [
+    { id: "decouverte", icon: "🛍️", name: "Chope", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
+    { id: "lieu", icon: "📍", name: "Lieu", desc: "Un spot nature, un endroit à découvrir", grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
+    { id: "sortie", icon: "🎉", name: "Événement", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
+    { id: "promo", icon: "🏷️", name: "Promo", desc: "Une réduction, une offre spéciale pour les voisins", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
+  ] : [
     { id: "decouverte", icon: "🛍️", name: "Chope", desc: "Une pièce chinée, un coup de cœur mode", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
     { id: "lieu", icon: "📍", name: "Lieu", desc: "Un spot nature, un endroit à découvrir", grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
     { id: "sortie", icon: "🎉", name: "Événement", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
@@ -637,6 +644,11 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
     lieu: <FormLieu fields={lieuFields} onChange={updateLieuField} onPhotoSelect={setLieuPhotoFile} />,
     sortie: <FormSortie fields={sortieFields} onChange={updateSortieField} />,
     bonplan: <FormBonPlan
+      content={content} onChange={setContent} onPhotoSelect={setPhotoFile}
+      activeTags={activeTags} onTagToggle={handleTagToggle}
+      magasinId={magasinId} onMagasinSelect={setMagasinId}
+    />,
+    promo: <FormBonPlan
       content={content} onChange={setContent} onPhotoSelect={setPhotoFile}
       activeTags={activeTags} onTagToggle={handleTagToggle}
       magasinId={magasinId} onMagasinSelect={setMagasinId}
