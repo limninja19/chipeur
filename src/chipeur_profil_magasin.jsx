@@ -817,7 +817,13 @@ function TabPosts({ userId }) {
 
 // ─── ONGLET CRÉER ───
 function TabCreer({ merchantName, setPage, user }) {
-  const [mode, setMode] = useState("remise");
+  const initMode = localStorage.getItem("chipeur_creer_mode") || "remise";
+  const [mode, setMode] = useState(initMode);
+  useEffect(() => {
+    if (localStorage.getItem("chipeur_creer_mode")) {
+      localStorage.removeItem("chipeur_creer_mode");
+    }
+  }, []);
   const [typeRemise, setTypeRemise] = useState("pct");
   const [ciblage, setCiblage] = useState("all");
   const [published, setPublished] = useState(false);
@@ -1095,7 +1101,13 @@ function BottomNav({ onNavigate }) {
 // ─── COMPOSANT PRINCIPAL ───
 export default function ChipeurProfilMagasin({ setPage, user, profile, updateProfile }) {
   const [screen, setScreen] = useState("main");
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const initTab = localStorage.getItem("chipeur_profil_tab") || "dashboard";
+  const [activeTab, setActiveTab] = useState(initTab);
+  useEffect(() => {
+    if (localStorage.getItem("chipeur_profil_tab")) {
+      localStorage.removeItem("chipeur_profil_tab");
+    }
+  }, []);
   const [postCount, setPostCount] = useState(null);
   const [voisinPost, setVoisinPost] = useState(null);
   const [localProfile, setLocalProfile] = useState(profile);

@@ -694,7 +694,15 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
                 {types.map(t => {
                   const isSelected = selectedType === t.id;
                   return (
-                    <div key={t.id} onClick={() => { setSelectedType(t.id); setActiveTags([]); }} style={{
+                    <div key={t.id} onClick={() => {
+                      if (t.id === "promo") {
+                        localStorage.setItem("chipeur_profil_tab", "creer");
+                        localStorage.setItem("chipeur_creer_mode", "remise");
+                        setPage("profil");
+                        return;
+                      }
+                      setSelectedType(t.id); setActiveTags([]);
+                    }} style={{
                       borderRadius: 20, cursor: "pointer", overflow: "hidden",
                       border: `2px solid ${isSelected ? "transparent" : C.border}`,
                       background: isSelected ? t.grad : C.card,
