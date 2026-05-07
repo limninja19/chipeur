@@ -207,7 +207,11 @@ function ScreenInscription({ onNext, ageRange }) {
   const [mdp, setMdp] = useState("");
   const [acceptCGU, setAcceptCGU] = useState(false);
   const [acceptRGPD, setAcceptRGPD] = useState(false);
-  const canProceed = prenom.trim() && email.trim() && mdp.length >= 6 && acceptCGU && acceptRGPD;
+  const pwdHas8    = mdp.length >= 8;
+  const pwdHasMaj  = /[A-Z]/.test(mdp);
+  const pwdHasNum  = /[0-9]/.test(mdp);
+  const pwdOk      = pwdHas8 && pwdHasMaj && pwdHasNum;
+  const canProceed = prenom.trim() && email.trim() && pwdOk && acceptCGU && acceptRGPD;
 
   return (
     <div style={{
@@ -229,7 +233,21 @@ function ScreenInscription({ onNext, ageRange }) {
       <StepDots current={0} />
       <Field label="PRÉNOM" placeholder="Comment tu t'appelles ?" value={prenom} onChange={setPrenom} />
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
-      <Field label="MOT DE PASSE" type="password" placeholder="6 caractères minimum" value={mdp} onChange={setMdp} />
+      <Field label="MOT DE PASSE" type="password" placeholder="8 caractères minimum" value={mdp} onChange={setMdp} />
+      {mdp.length > 0 && (
+        <div style={{ marginBottom: 14, marginTop: -6, display: "flex", flexDirection: "column", gap: 4 }}>
+          {[
+            { ok: pwdHas8,   label: "8 caractères minimum" },
+            { ok: pwdHasMaj, label: "1 majuscule" },
+            { ok: pwdHasNum, label: "1 chiffre" },
+          ].map(({ ok, label }) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "'DM Sans', sans-serif", color: ok ? "#16a34a" : COLORS.ink2 }}>
+              <span>{ok ? "✅" : "○"}</span>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {ageRange === "15-17" && (
         <div style={{ background: "#FFFBEA", border: "1.5px solid rgba(247,167,45,0.4)", borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 11, color: "#B45309", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
