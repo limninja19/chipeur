@@ -236,10 +236,16 @@ export function useUnreadNotifs(userId) {
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("read", false)
-        .then(({ count: c }) => setCount(c || 0));
+        .then(({ count: c }) => {
+          const n = c || 0;
+          setCount(n);
+          // Badge sur l'icône de l'écran d'accueil (Android PWA)
+          if ("setAppBadge" in navigator) {
+            n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge();
+          }
+        });
     };
     fetch();
-    // Rafraîchir toutes les 30s
     const interval = setInterval(fetch, 30000);
     return () => clearInterval(interval);
   }, [userId]);
