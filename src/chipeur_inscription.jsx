@@ -233,21 +233,19 @@ function ScreenInscription({ onNext, ageRange }) {
       <StepDots current={0} />
       <Field label="PRÉNOM" placeholder="Comment tu t'appelles ?" value={prenom} onChange={setPrenom} />
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
-      <Field label="MOT DE PASSE" type="password" placeholder="8 caractères minimum" value={mdp} onChange={setMdp} />
-      {mdp.length > 0 && (
-        <div style={{ marginBottom: 14, marginTop: -6, display: "flex", flexDirection: "column", gap: 4 }}>
-          {[
-            { ok: pwdHas8,   label: "8 caractères minimum" },
-            { ok: pwdHasMaj, label: "1 majuscule" },
-            { ok: pwdHasNum, label: "1 chiffre" },
-          ].map(({ ok, label }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "'DM Sans', sans-serif", color: ok ? "#16a34a" : COLORS.ink2 }}>
-              <span>{ok ? "✅" : "○"}</span>
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <Field label="MOT DE PASSE" type="password" placeholder="Ex : Chipeur2024" value={mdp} onChange={setMdp} />
+      <div style={{ marginBottom: 14, marginTop: -6, display: "flex", flexDirection: "column", gap: 4 }}>
+        {[
+          { ok: pwdHas8,   label: "8 caractères minimum" },
+          { ok: pwdHasMaj, label: "1 majuscule (ex : M)" },
+          { ok: pwdHasNum, label: "1 chiffre (ex : 3)" },
+        ].map(({ ok, label }) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "'DM Sans', sans-serif", color: mdp.length === 0 ? COLORS.ink2 : ok ? "#16a34a" : COLORS.accent }}>
+            <span>{mdp.length === 0 ? "○" : ok ? "✅" : "❌"}</span>
+            <span style={{ fontWeight: mdp.length > 0 && !ok ? 600 : 400 }}>{label}</span>
+          </div>
+        ))}
+      </div>
 
       {ageRange === "15-17" && (
         <div style={{ background: "#FFFBEA", border: "1.5px solid rgba(247,167,45,0.4)", borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 11, color: "#B45309", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
