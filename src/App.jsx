@@ -32,6 +32,12 @@ function SplashScreen() {
 }
 
 export default function App() {
+  // Capture le code de parrainage depuis l'URL (?ref=UUID) et le garde en localStorage
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) localStorage.setItem("chipeur_ref", ref);
+  }, []);
+
   const [page, setPageRaw] = useState("fil");
   const [conversationWith, setConversationWith] = useState(null);
   const [selectedVoisinId, setSelectedVoisinId] = useState(null);

@@ -706,16 +706,66 @@ function TabDefis({ setPage }) {
   );
 }
 
-function TabRewards() {
+function TabRewards({ user }) {
+  const [copied, setCopied] = useState(false);
+  const inviteLink = `${window.location.origin}?ref=${user?.id}`;
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Rejoins Chipeur !",
+          text: "Chope les bons plans mode et sorties de ton quartier sur Chipeur 🛍️",
+          url: inviteLink,
+        });
+      } catch (_) {}
+    } else {
+      navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
-    <div style={{ textAlign: "center", padding: "40px 20px" }}>
-      <div style={{ fontSize: 48, marginBottom: 14 }}>🎖️</div>
-      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 8 }}>Récompenses — Bientôt disponible</div>
-      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 16 }}>
-        Le classement, les trophées et les bons d'achat arrivent prochainement.<br />Continue à publier et à interagir pour accumuler des XP dès maintenant !
+    <div style={{ padding: "16px 16px 32px" }}>
+      {/* Carte invitation */}
+      <div style={{
+        background: "linear-gradient(135deg,#FF5733,#FF8C42)",
+        borderRadius: 20, padding: 20, marginBottom: 16,
+      }}>
+        <div style={{ fontSize: 36, marginBottom: 10 }}>🎁</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", marginBottom: 6 }}>
+          Chope des XP en invitant des voisins
+        </div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, marginBottom: 16 }}>
+          Pour chaque ami qui rejoint Chipeur via ton lien, tu gagnes <span style={{ fontWeight: 700 }}>+20 XP</span> automatiquement. Partage-le au maximum !
+        </div>
+        <button
+          onClick={handleShare}
+          style={{
+            width: "100%", background: "#fff", color: C.accent,
+            border: "none", borderRadius: 14, padding: "12px 16px",
+            fontSize: 13, fontWeight: 700, cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          {copied ? "✅ Lien copié !" : "🔗 Partager mon lien d'invitation"}
+        </button>
       </div>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF8E8", color: "#B45309", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>
-        ⚡ En cours de développement
+
+      {/* Bientôt dispo */}
+      <div style={{ textAlign: "center", padding: "24px 20px" }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🎖️</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 8 }}>
+          Récompenses — Bientôt disponible
+        </div>
+        <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 16 }}>
+          Le classement, les trophées et les bons d'achat arrivent prochainement.<br />Continue à publier et à interagir pour accumuler des XP dès maintenant !
+        </div>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF8E8", color: "#B45309", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>
+          ⚡ En cours de développement
+        </div>
       </div>
     </div>
   );
@@ -804,7 +854,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
               {activeTab === "Événements" && <TabEvenements sorties={sorties} onDelete={handleDeleteSortie} loading={sortiesLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis setPage={setPage} />}
-              {activeTab === "Récompenses" && <TabRewards />}
+              {activeTab === "Récompenses" && <TabRewards user={user} />}
             </div>
           </div>
         </>

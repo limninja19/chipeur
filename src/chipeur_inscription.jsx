@@ -696,12 +696,19 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         options: { data: { pseudo: creds.prenom, age_range: ageRange } },
       });
       if (!error && data?.user) {
+        const refId = localStorage.getItem("chipeur_ref");
         await supabase.from("profiles").upsert({
           id: data.user.id,
           pseudo: creds.prenom,
           age_range: ageRange,
+          ...(refId && refId !== data.user.id ? { invited_by: refId } : {}),
         });
         await addXP(data.user.id, 50, "inscription");
+        // Récompense l'invitant (+20 XP)
+        if (refId && refId !== data.user.id) {
+          await addXP(refId, 20, "invitation_acceptee");
+          localStorage.removeItem("chipeur_ref");
+        }
       }
       setLoadingSignup(false);
       if (error) { setSignupError(error.message); return; }
