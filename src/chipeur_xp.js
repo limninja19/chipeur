@@ -32,34 +32,18 @@ export function getLevelProgress(xp = 0) {
   return Math.min(100, Math.round(((xp - current.xpMin) / (next.xpMin - current.xpMin)) * 100));
 }
 
-// ─── AJOUTER DES XP ─────────────────────────────────────────────
+// ─── AJOUTER DES XP (via fonction sécurisée côté serveur) ────────
+// Le calcul et la validation sont faits en Postgres SECURITY DEFINER
+// → impossible à exploiter depuis le client ou les DevTools
 export async function addXP(userId, amount, reason) {
   if (!userId || !amount || amount <= 0) return;
   try {
-    // Récupère XP actuel
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("xp")
-      .eq("id", userId)
-      .single();
-
-    const currentXP = prof?.xp || 0;
-    const newXP     = currentXP + amount;
-    const newLevel  = getLevel(newXP).level;
-
-    // Met à jour profil
-    await supabase.from("profiles")
-      .update({ xp: newXP, level: newLevel })
-      .eq("id", userId);
-
-    // Log l'événement
-    await supabase.from("xp_log").insert({
-      user_id: userId,
-      amount,
-      reason,
+    const { error } = await supabase.rpc("increment_xp", {
+      p_user_id: userId,
+      p_amount:  amount,
+      p_reason:  reason,
     });
-
-    return newXP;
+    if (error) console.error("addXP RPC error:", error);
   } catch (e) {
     console.error("addXP error:", e);
   }
