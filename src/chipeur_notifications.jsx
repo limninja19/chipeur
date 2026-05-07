@@ -32,20 +32,48 @@ function timeAgo(ts) {
   return Math.floor(days / 7) + " sem";
 }
 
-function NotifItem({ n }) {
+function NotifItem({ n, setPage, setSelectedVoisinId }) {
   const cfg = NOTIF_CONFIG[n.type] || { icon: "🔔", label: n.message || "Nouvelle notification" };
   const pseudo = n.from_profile?.pseudo || "Quelqu'un";
   const avatar = n.from_profile?.avatar_url;
+  const fromId = n.from_profile?.id || n.from_user_id;
+
+  const goToSubject = () => {
+    supabase.from("notifications").update({ read: true }).eq("id", n.id).then(() => {});
+    if (n.type === "follow") {
+      if (fromId) { setSelectedVoisinId?.(fromId); setPage("voisins"); }
+    } else if (n.type === "message") {
+      setPage("messages");
+    } else if (n.type === "remise") {
+      setPage("commerces");
+    } else if (n.type === "defi") {
+      setPage("defis");
+    } else {
+      // like, kiffe, veux, style, recommande → retour au fil
+      setPage("fil");
+    }
+  };
+
+  const goToProfile = (e) => {
+    e.stopPropagation();
+    if (!fromId) return;
+    setSelectedVoisinId?.(fromId);
+    setPage("voisins");
+  };
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "14px 16px",
-      background: n.read ? C.card : "#FFF5F2",
-      borderBottom: `1px solid ${C.border}`,
-    }}>
-      {/* Avatar + icône type */}
-      <div style={{ position: "relative", flexShrink: 0 }}>
+    <div
+      onClick={goToSubject}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "14px 16px",
+        background: n.read ? C.card : "#FFF5F2",
+        borderBottom: `1px solid ${C.border}`,
+        cursor: "pointer",
+      }}
+    >
+      {/* Avatar cliquable → profil de l'expéditeur */}
+      <div onClick={goToProfile} style={{ position: "relative", flexShrink: 0, cursor: "pointer" }}>
         <div style={{
           width: 42, height: 42, borderRadius: "50%",
           background: C.pill, overflow: "hidden",
@@ -75,18 +103,18 @@ function NotifItem({ n }) {
         </div>
       </div>
 
-      {/* Pastille non lu */}
-      {!n.read && (
-        <div style={{
-          width: 8, height: 8, borderRadius: "50%",
-          background: C.accent, flexShrink: 0,
-        }} />
-      )}
+      {/* Flèche + pastille non lu */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        {!n.read && (
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.accent }} />
+        )}
+        <span style={{ fontSize: 14, color: C.ink2 }}>›</span>
+      </div>
     </div>
   );
 }
 
-export default function Notifications({ setPage, user }) {
+export default function Notifications({ setPage, user, setSelectedVoisinId }) {
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -99,7 +127,7 @@ export default function Notifications({ setPage, user }) {
     setLoading(true);
     const { data, error } = await supabase
       .from("notifications")
-      .select("*, from_profile:from_user_id(pseudo, avatar_url)")
+      .select("*, from_profile:from_user_id(id, pseudo, avatar_url)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(60);
@@ -181,13 +209,13 @@ export default function Notifications({ setPage, user }) {
             {today.length > 0 && (
               <>
                 <SectionLabel label="Aujourd'hui" />
-                {today.map(n => <NotifItem key={n.id} n={n} />)}
+                {today.map(n => <NotifItem key={n.id} n={n} setPage={setPage} setSelectedVoisinId={setSelectedVoisinId} />)}
               </>
             )}
             {older.length > 0 && (
               <>
                 <SectionLabel label="Plus tôt" />
-                {older.map(n => <NotifItem key={n.id} n={n} />)}
+                {older.map(n => <NotifItem key={n.id} n={n} setPage={setPage} setSelectedVoisinId={setSelectedVoisinId} />)}
               </>
             )}
           </>

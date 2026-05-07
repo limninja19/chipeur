@@ -444,6 +444,37 @@ function Lightbox({ src, alt, onClose }) {
 // ─── POST CARD RÉEL (Supabase) ───
 function PostCard({ post, setPage, userId, setSelectedVoisinId }) {
   const [lightbox, setLightbox] = useState(false);
+  const [followed, setFollowed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isOwnPost = post.author_id === userId;
+
+  useEffect(() => {
+    if (!userId || isOwnPost || !post.author_id) return;
+    supabase.from("follows")
+      .select("following_id")
+      .eq("follower_id", userId)
+      .eq("following_id", post.author_id)
+      .maybeSingle()
+      .then(({ data }) => setFollowed(!!data));
+  }, [userId, post.author_id]);
+
+  const handleFollow = async (e) => {
+    e.stopPropagation();
+    const prev = followed;
+    setFollowed(!prev);
+    if (prev) {
+      const { error } = await supabase.from("follows").delete()
+        .eq("follower_id", userId).eq("following_id", post.author_id);
+      if (error) setFollowed(prev);
+    } else {
+      const { error } = await supabase.from("follows").insert({ follower_id: userId, following_id: post.author_id });
+      if (error) { setFollowed(prev); return; }
+      supabase.from("notifications").insert({
+        user_id: post.author_id, from_user_id: userId, type: "follow", read: false,
+      }).then(() => {});
+    }
+  };
+
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
     if (diff < 1) return "À l'instant";
@@ -456,38 +487,85 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId }) {
     <>
       {lightbox && post.image_url && <Lightbox src={post.image_url} alt={post.content} onClose={() => setLightbox(false)} />}
       <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
-        {/* Header — clic sur l'auteur */}
-        <div
-          onClick={() => {
-            if (post.author_id === userId) {
-              setPage("profil");
-            } else {
-              setSelectedVoisinId?.(post.author_id);
-              setPage("voisins");
-            }
-          }}
-          style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px", cursor: "pointer" }}
-        >
-          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
-            {post.profiles?.avatar_url
-              ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-              : "😊"}
+        {/* Header — gauche cliquable, droite bouton suivre */}
+        <div style={{ display: "flex", alignItems: "center", padding: "10px 12px 8px" }}>
+          {/* Partie gauche cliquable → profil */}
+          <div
+            onClick={() => {
+              if (post.author_id === userId) {
+                setPage("profil");
+              } else {
+                setSelectedVoisinId?.(post.author_id);
+                setPage("voisins");
+              }
+            }}
+            style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, cursor: "pointer", minWidth: 0 }}
+          >
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
+              {post.profiles?.avatar_url
+                ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                : "😊"}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>{post.profiles?.pseudo || "Voisin·e"}</span>
+                {["magasin", "artisan", "commercant"].includes(post.profiles?.role) && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6,
+                    background: post.profiles.role === "artisan" ? "#F5F3FF" : "#EBF5F0",
+                    color: post.profiles.role === "artisan" ? "#7C3AED" : "#0A3D2E",
+                  }}>
+                    {post.profiles.role === "artisan" ? "🎨 Artisan" : "🏪 Commerçant"}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</div>
+            </div>
           </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>{post.profiles?.pseudo || "Voisin·e"}</span>
-              {["magasin", "artisan", "commercant"].includes(post.profiles?.role) && (
-                <span style={{
-                  fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6,
-                  background: post.profiles.role === "artisan" ? "#F5F3FF" : "#EBF5F0",
-                  color: post.profiles.role === "artisan" ? "#7C3AED" : "#0A3D2E",
-                }}>
-                  {post.profiles.role === "artisan" ? "🎨 Artisan" : "🏪 Commerçant"}
-                </span>
+          {/* Icône profil — uniquement si ce n'est pas notre propre post */}
+          {!isOwnPost && (
+            <div style={{ position: "relative", flexShrink: 0, marginLeft: 8 }}>
+              <button
+                onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
+                style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  border: `1.5px solid ${C.border}`,
+                  background: C.pill, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 15,
+                }}
+              >👤</button>
+              {menuOpen && (
+                <>
+                  {/* Overlay transparent pour fermer */}
+                  <div
+                    onClick={e => { e.stopPropagation(); setMenuOpen(false); }}
+                    style={{ position: "fixed", inset: 0, zIndex: 99 }}
+                  />
+                  <div style={{
+                    position: "absolute", top: 38, right: 0, zIndex: 100,
+                    background: C.card, borderRadius: 14,
+                    border: `1px solid ${C.border}`,
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                    overflow: "hidden", minWidth: 160,
+                  }}>
+                    <div
+                      onClick={e => {
+                        e.stopPropagation(); setMenuOpen(false);
+                        setSelectedVoisinId?.(post.author_id);
+                        setPage("voisins");
+                      }}
+                      style={{ padding: "12px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8 }}
+                    >👁️ Voir le compte</div>
+                    <div
+                      onClick={e => { e.stopPropagation(); setMenuOpen(false); handleFollow(e); }}
+                      style={{ padding: "12px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: followed ? C.ink2 : C.accent, display: "flex", alignItems: "center", gap: 8 }}
+                    >{followed ? "✓ Suivi" : "➕ Suivre le compte"}</div>
+                  </div>
+                </>
               )}
             </div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</div>
-          </div>
+          )}
         </div>
         {/* Image si présente */}
         {post.image_url && (
