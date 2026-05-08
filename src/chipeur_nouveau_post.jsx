@@ -18,12 +18,14 @@ function TagPills({ tags, activeTags, onToggle }) {
         const isActive = activeTags.includes(t.label);
         return (
           <button key={t.label} onClick={() => onToggle(t.label)} style={{
-            fontSize: 11, padding: "5px 12px", borderRadius: 20,
-            border: `1.5px solid ${isActive ? C.ink : C.border}`,
-            background: isActive ? C.ink : C.card,
+            fontSize: 11, padding: "6px 14px", borderRadius: 20,
+            border: "none",
+            background: isActive ? C.accent : C.pill,
             color: isActive ? "#fff" : C.ink2,
+            fontWeight: isActive ? 700 : 500,
             cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-            transition: "all 0.2s",
+            transition: "all 0.15s",
+            boxShadow: isActive ? "0 2px 8px rgba(255,87,51,0.3)" : "none",
           }}>{t.label}</button>
         );
       })}
@@ -44,88 +46,87 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
     if (!file) return;
     setSizeError("");
     setPreviewFailed(false);
-
-    if (file.size > 50 * 1024 * 1024) {
-      setSizeError("Fichier trop grand (max 50 Mo).");
-      return;
-    }
-
-    // Conversion HEIC → JPEG automatique (photos iPhone)
+    if (file.size > 50 * 1024 * 1024) { setSizeError("Fichier trop grand (max 50 Mo)."); return; }
     const isHeic = file.type === "image/heic" || file.type === "image/heif"
       || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
-
     let finalFile = file;
     if (isHeic) {
       try {
         const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
-        // heic2any peut retourner un Blob OU un tableau de Blob (multi-frames)
         const blob = Array.isArray(result) ? result[0] : result;
         finalFile = new File([blob], file.name.replace(/\.hei[cf]$/i, ".jpg"), { type: "image/jpeg" });
-      } catch (err) {
-        console.error("Conversion HEIC échouée:", err);
-      }
+      } catch (err) { console.error("Conversion HEIC échouée:", err); }
     }
-
     const url = URL.createObjectURL(finalFile);
     setPreview(url);
     setFileName(finalFile.name);
     onPhotoSelect && onPhotoSelect(finalFile);
   };
 
+  const removePhoto = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    setPreview(null); setFileName("");
+    onPhotoSelect && onPhotoSelect(null);
+  };
+
   const isVideo = fileName && (fileName.toLowerCase().endsWith(".mp4") || fileName.toLowerCase().endsWith(".mov") || fileName.toLowerCase().endsWith(".avi"));
 
   return (
-    <div style={{ marginBottom: 14 }}>
-      <input
-        type="file"
-        accept="image/*,video/*,.heic,.heif"
-        onChange={handleFile}
-        style={{ display: "none" }}
-        id={inputId}
-      />
+    <div style={{ marginBottom: 16 }}>
+      <input type="file" accept="image/*,video/*,.heic,.heif" onChange={handleFile} style={{ display: "none" }} id={inputId} />
       {sizeError && (
-        <div style={{ background: "#FFF0EE", color: "#C0392B", fontSize: 11, padding: "8px 12px", borderRadius: 10, marginBottom: 8 }}>
-          ⚠️ {sizeError}
-        </div>
+        <div style={{ background: "#FFF0EE", color: "#C0392B", fontSize: 11, padding: "8px 12px", borderRadius: 10, marginBottom: 8 }}>⚠️ {sizeError}</div>
       )}
-      <label htmlFor={inputId} style={{
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        width: "100%", aspectRatio: "4/3",
-        background: C.card,
-        borderRadius: 16, border: (preview && !previewFailed) ? "none" : "2px dashed rgba(26,23,20,0.15)",
-        cursor: "pointer", overflow: "hidden", position: "relative",
-      }}>
-        {preview && !previewFailed && !isVideo ? (
-          <>
-            <img
-              src={preview}
-              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 16 }}
-              onError={() => setPreviewFailed(true)}
-            />
-            <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.6)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>Changer 📷</div>
-          </>
-        ) : preview && isVideo ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: 20 }}>
-            <div style={{ fontSize: 40 }}>🎬</div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>Vidéo sélectionnée ✓</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>{fileName}</div>
-            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.7 }}>Appuie pour changer</div>
-          </div>
-        ) : preview && previewFailed ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: 20 }}>
-            <div style={{ fontSize: 40 }}>📷</div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>Photo sélectionnée ✓</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>Aperçu non disponible — la photo sera quand même envoyée</div>
-            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.7 }}>Appuie pour changer</div>
-          </div>
-        ) : (
-          <>
-            <div style={{ fontSize: 32, marginBottom: 6, opacity: 0.4 }}>📷</div>
-            <div style={{ fontSize: 11, color: C.ink2, fontWeight: 500 }}>Ajouter une photo ou vidéo</div>
-            <div style={{ fontSize: 10, color: C.ink2, opacity: 0.6, marginTop: 3 }}>Appuie ici pour choisir depuis ta galerie</div>
-          </>
+      <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", aspectRatio: "4/3" }}>
+        <label htmlFor={inputId} style={{
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          width: "100%", height: "100%", cursor: "pointer",
+          background: preview && !previewFailed
+            ? "#000"
+            : "linear-gradient(135deg, #1A1714 0%, #2D2520 50%, #1A1714 100%)",
+          position: "relative",
+        }}>
+          {preview && !previewFailed && !isVideo ? (
+            <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setPreviewFailed(true)} />
+          ) : preview && isVideo ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <div style={{ fontSize: 44 }}>🎬</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Vidéo prête ✓</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Appuie pour changer</div>
+            </div>
+          ) : preview && previewFailed ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <div style={{ fontSize: 44 }}>📷</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Photo sélectionnée ✓</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", textAlign: "center", padding: "0 20px" }}>Aperçu indispo — la photo sera envoyée</div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "0 20px", textAlign: "center" }}>
+              {/* Icône cercle */}
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "2px dashed rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📷</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Ajouter une photo</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>Galerie · Appareil photo · Vidéo</div>
+            </div>
+          )}
+
+          {/* Overlay "Changer" si photo présente */}
+          {preview && !previewFailed && (
+            <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "5px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>
+              📷 Changer
+            </div>
+          )}
+        </label>
+
+        {/* Bouton ✕ supprimer */}
+        {preview && (
+          <button onClick={removePhoto} style={{
+            position: "absolute", top: 10, right: 10, width: 30, height: 30,
+            borderRadius: "50%", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
+            border: "none", color: "#fff", fontSize: 14, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>✕</button>
         )}
-      </label>
+      </div>
     </div>
   );
 }
@@ -218,12 +219,13 @@ function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagTog
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} />
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Description</label>
+        <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.5 }}>Description</label>
         <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Raconte ce moment au quartier..." style={{
-          width: "100%", padding: "10px 12px", borderRadius: 12,
-          border: `1.5px solid ${content.trim() ? C.accent + "55" : C.border}`, fontFamily: "'DM Sans', sans-serif",
-          fontSize: 12, color: C.ink, background: C.card, outline: "none",
-          resize: "none", height: 80, lineHeight: 1.5, boxSizing: "border-box",
+          width: "100%", padding: "14px", borderRadius: 14,
+          border: `2px solid ${content.trim() ? C.accent : C.border}`,
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13, color: C.ink, background: C.card, outline: "none",
+          resize: "none", minHeight: 90, lineHeight: 1.6, boxSizing: "border-box",
           transition: "border-color 0.2s",
         }} />
         <div style={{ fontSize: 10, color: content.trim() ? "#16a34a" : C.ink2, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
@@ -674,23 +676,28 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
             {/* Top bar */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "8px 16px 8px", borderBottom: `1px solid ${C.border}`,
+              padding: "12px 16px", borderBottom: `1px solid ${C.border}`,
               background: C.card, flexShrink: 0,
             }}>
-              <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>✕</button>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700 }}>Nouveau post</div>
-              <button onClick={handlePublishClick} disabled={publishing} style={{
-                background: publishing ? "#ccc" : C.accent, color: "#fff", border: "none", borderRadius: 20,
-                padding: "6px 16px", fontSize: 12, fontWeight: 700,
-                fontFamily: "'DM Sans', sans-serif", cursor: publishing ? "not-allowed" : "pointer",
-              }}>{publishing ? "..." : "Publier"}</button>
+              <button onClick={() => setPage("fil")} style={{
+                width: 34, height: 34, borderRadius: "50%", background: C.pill,
+                border: "none", fontSize: 16, cursor: "pointer", color: C.ink2,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>✕</button>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: C.ink }}>
+                Nouveau post
+              </div>
+              {/* Avatar utilisateur */}
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                🧑
+              </div>
             </div>
 
             {publishError && (
               <div style={{ padding: "8px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 12 }}>⚠️ {publishError}</div>
             )}
             {/* Scroll area */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 20px" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 90px" }}>
               {/* Type selection */}
               <div style={{
                 fontSize: 11, fontWeight: 700, color: C.ink2,
@@ -753,6 +760,30 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
 
               {/* Dynamic form */}
               {formMap[selectedType]}
+            </div>
+
+            {/* ── Barre Publier sticky en bas ── */}
+            <div style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              padding: "12px 16px 28px", background: C.card,
+              borderTop: `1px solid ${C.border}`,
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <button
+                onClick={handlePublishClick}
+                disabled={publishing}
+                style={{
+                  flex: 1, border: "none", borderRadius: 16, padding: "14px 0",
+                  fontSize: 14, fontWeight: 800, cursor: publishing ? "not-allowed" : "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  background: publishing ? "#ccc" : `linear-gradient(90deg, ${C.accent}, #FF8C42)`,
+                  color: "#fff",
+                  boxShadow: publishing ? "none" : "0 4px 16px rgba(255,87,51,0.4)",
+                  letterSpacing: 0.2,
+                }}
+              >
+                {publishing ? "Publication…" : "Publier 🚀"}
+              </button>
             </div>
           </>
         )}
