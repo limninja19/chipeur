@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { addXP } from "./chipeur_xp";
+import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -217,39 +218,59 @@ function DetailScreen({ d, user, onBack, onParticipe }) {
       });
   }, [d.id]);
 
+  // Couleur accent selon catégorie du défi
+  const accentColor = d.fill || "#FF5733";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
-      <div style={{
-        padding: "20px 20px 16px",
-        display: "flex", flexDirection: "column", gap: 12,
-        flexShrink: 0, position: "relative", background: d.grad,
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            position: "absolute", top: 14, left: 14,
-            width: 32, height: 32,
-            background: "rgba(255,255,255,0.25)", borderRadius: "50%",
-            border: "none", display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: 16, color: "#fff", cursor: "pointer",
-          }}
-        >‹</button>
-        <div style={{ fontSize: 40, textAlign: "center", marginTop: 8 }}>{d.icon}</div>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", textAlign: "center" }}>
-          {d.title}
-        </div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.82)", textAlign: "center", lineHeight: 1.4 }}>
-          {d.sub}
-        </div>
-        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+
+      {/* ── HERO : photo ou fallback ── */}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <ChallengeMedia
+          photoUrl={d.photo_url || null}
+          merchantName={d.sub || d.title}
+          category={d.fill === "#7C3AED" ? "Resto" : d.fill === "#0F766E" ? "Maison" : "Mode"}
+          height={220}
+        />
+        {/* Bouton retour */}
+        <button onClick={onBack} style={{
+          position: "absolute", top: 14, left: 14,
+          width: 34, height: 34, background: "rgba(0,0,0,0.45)",
+          backdropFilter: "blur(8px)", borderRadius: "50%",
+          border: "none", display: "flex", alignItems: "center",
+          justifyContent: "center", fontSize: 18, color: "#fff", cursor: "pointer",
+        }}>‹</button>
+        {/* Badge récompense */}
+        {d.reward && (
+          <div style={{ position: "absolute", bottom: 14, left: 14 }}>
+            <RewardBadge
+              amount={d.reward.match(/(\d+)\s*€/)?.[1] ? `${d.reward.match(/(\d+)\s*€/)[1]}€` : "🎁"}
+              accentColor={accentColor}
+              size="sm"
+            />
+          </div>
+        )}
+        {/* Timer */}
+        {d.timeLeft && (
+          <div style={{ position: "absolute", bottom: 14, right: 14, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, color: "#fff" }}>
+            ⏱ {d.timeLeft}
+          </div>
+        )}
+      </div>
+
+      {/* ── INFOS TITRE + STATS ── */}
+      <div style={{ background: C.card, padding: "14px 18px 10px", flexShrink: 0, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 4 }}>{d.title}</div>
+        {d.sub && <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.4, marginBottom: 10 }}>{d.sub}</div>}
+        <div style={{ display: "flex", gap: 8 }}>
           {[
             { n: d.participants, l: "participants" },
             { n: d.timeLeft ? d.timeLeft.split(" ")[0] : (d.ended ? "✓" : "—"), l: d.ended ? "terminé" : "restants" },
             { n: d.objectif, l: "objectif" },
           ].map((s, i) => (
-            <div key={i} style={{ background: "rgba(255,255,255,0.2)", borderRadius: 12, padding: "8px 14px", textAlign: "center" }}>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff" }}>{s.n}</div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)" }}>{s.l}</div>
+            <div key={i} style={{ background: C.bg, borderRadius: 12, padding: "8px 14px", textAlign: "center", flex: 1 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>{s.n}</div>
+              <div style={{ fontSize: 9, color: C.ink2 }}>{s.l}</div>
             </div>
           ))}
         </div>
