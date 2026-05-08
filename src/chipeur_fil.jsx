@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { useUnreadNotifs } from "./chipeur_notifications";
 import { useUnreadMessages } from "./chipeur_messages";
 import { addXP } from "./chipeur_xp";
+import AuthGate from "./AuthGate";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -307,7 +308,7 @@ const REACTIONS = [
   { type: "recommande", emoji: "👍", label: "Je recommande" },
 ];
 
-function Reactions({ postId, userId, authorId }) {
+function Reactions({ postId, userId, authorId, user }) {
   const [counts, setCounts] = useState({});
   const [userReactions, setUserReactions] = useState(new Set());
 
@@ -383,8 +384,8 @@ function Reactions({ postId, userId, authorId }) {
         const count = counts[r.type] || 0;
         const active = userReactions.has(r.type);
         return (
+          <AuthGate key={r.type} user={user} onSuccess={() => handleReact(r.type)}>
           <button
-            key={r.type}
             onClick={() => handleReact(r.type)}
             style={{
               padding: "6px 8px", borderRadius: 12,
@@ -404,6 +405,7 @@ function Reactions({ postId, userId, authorId }) {
               <span style={{ fontSize: 9, fontWeight: 700, color: active ? C.accent : C.ink2 }}>{count}</span>
             )}
           </button>
+          </AuthGate>
         );
       })}
     </div>
@@ -442,7 +444,7 @@ function Lightbox({ src, alt, onClose }) {
 }
 
 // ─── POST CARD RÉEL (Supabase) ───
-function PostCard({ post, setPage, userId, setSelectedVoisinId }) {
+function PostCard({ post, setPage, userId, setSelectedVoisinId, user }) {
   const [lightbox, setLightbox] = useState(false);
   const [followed, setFollowed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -585,7 +587,7 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId }) {
         </div>
         {/* Actions */}
         <div style={{ padding: "8px 12px 10px" }}>
-          <Reactions postId={post.id} userId={userId} authorId={post.author_id || post.profiles?.id} />
+          <Reactions postId={post.id} userId={userId} authorId={post.author_id || post.profiles?.id} user={user} />
         </div>
       </div>
     </>
@@ -766,7 +768,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
           </div>
         ) : (
           filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} />
+            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} user={user} />
           ))
         )}
       </div>

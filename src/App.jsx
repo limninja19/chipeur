@@ -105,8 +105,10 @@ export default function App() {
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
 
   if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => setPage("fil")} />;
+  if (page === "connexion")   return <Connexion  setPage={setPage} onAuth={() => setPage("fil")} />;
 
-  if (user === null) return <Connexion setPage={setPage} onAuth={() => setPage("fil")} />;
+  // Accès libre au fil sans compte — la modale s'ouvre à la première action
+  if (user === null) return <Fil setPage={setPage} user={null} profile={null} selectedVoisinId={selectedVoisinId} setSelectedVoisinId={setSelectedVoisinId} conversationWith={conversationWith} setConversationWith={setConversationWith} updateProfile={() => {}} />;
 
   // Props communes passées à toutes les pages
   const sharedProps = { setPage, user, profile, updateProfile, conversationWith, setConversationWith, selectedVoisinId, setSelectedVoisinId };
