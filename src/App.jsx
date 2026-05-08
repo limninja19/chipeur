@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./supabase";
 import { useProfile } from "./useProfile";
+import { Analytics } from "@vercel/analytics/react";
 
 import Fil from "./chipeur_fil";
 import Defis from "./chipeur_defis";
@@ -132,6 +133,7 @@ export default function App() {
 
   return (
     <>
+      <Analytics />
       {/* Modale d'inscription globale déclenchée par requireAuth() */}
       {showSignup && (
         <SignupModal
