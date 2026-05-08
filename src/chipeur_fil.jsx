@@ -444,7 +444,7 @@ function Lightbox({ src, alt, onClose }) {
 }
 
 // ─── POST CARD RÉEL (Supabase) ───
-function PostCard({ post, setPage, userId, setSelectedVoisinId, user }) {
+function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAuth }) {
   const [lightbox, setLightbox] = useState(false);
   const [followed, setFollowed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -497,8 +497,10 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user }) {
               if (post.author_id === userId) {
                 setPage("profil");
               } else {
-                setSelectedVoisinId?.(post.author_id);
-                setPage("voisins");
+                requireAuth?.(() => {
+                  setSelectedVoisinId?.(post.author_id);
+                  setPage("voisins");
+                }) ?? (setSelectedVoisinId?.(post.author_id), setPage("voisins"));
               }
             }}
             style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, cursor: "pointer", minWidth: 0 }}
@@ -554,8 +556,10 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user }) {
                     <div
                       onClick={e => {
                         e.stopPropagation(); setMenuOpen(false);
-                        setSelectedVoisinId?.(post.author_id);
-                        setPage("voisins");
+                        requireAuth?.(() => {
+                          setSelectedVoisinId?.(post.author_id);
+                          setPage("voisins");
+                        }) ?? (setSelectedVoisinId?.(post.author_id), setPage("voisins"));
                       }}
                       style={{ padding: "12px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8 }}
                     >👁️ Voir le compte</div>
@@ -672,7 +676,7 @@ function BottomNav({ active, onNavigate, onFab }) {
   );
 }
 
-export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
+export default function Fil({ setPage, profile, user, setSelectedVoisinId, requireAuth }) {
   const [activeTab, setActiveTab] = useState("Tout");
   const [fabOpen, setFabOpen] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -768,7 +772,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId }) {
           </div>
         ) : (
           filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} user={user} />
+            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} user={user} requireAuth={requireAuth} />
           ))
         )}
       </div>

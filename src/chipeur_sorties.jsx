@@ -844,7 +844,7 @@ function BottomNav({ active, onNavigate, onFab }) {
 }
 
 // ─── MAIN ───
-export default function ChipeurSorties({ setPage, user, profile }) {
+export default function ChipeurSorties({ setPage, user, profile, requireAuth }) {
   const [filter, setFilter]         = useState("Tous");
   const [events, setEvents]         = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -943,7 +943,7 @@ export default function ChipeurSorties({ setPage, user, profile }) {
               Sois le premier à en partager un !
             </div>
             <button
-              onClick={() => setScreen("nouveau")}
+              onClick={() => requireAuth ? requireAuth(() => setScreen("nouveau")) : setScreen("nouveau")}
               style={{
                 background: C.accent, color: "#fff", border: "none",
                 borderRadius: 14, padding: "10px 20px",
@@ -967,7 +967,7 @@ export default function ChipeurSorties({ setPage, user, profile }) {
         )}
       </div>
 
-      <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} onNewEvent={() => setScreen("nouveau")} />
+      <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} onNewEvent={() => requireAuth ? requireAuth(() => setScreen("nouveau")) : setScreen("nouveau")} />
       <BottomNav active="sorties" onNavigate={setPage} onFab={() => setFabOpen(true)} />
     </div>
   );
