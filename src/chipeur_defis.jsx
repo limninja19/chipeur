@@ -715,6 +715,15 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
   const [mode, setMode]             = useState("choix"); // "choix" | "vote"
   const [publishing, setPublishing] = useState(false);
   const [error, setError]           = useState("");
+  const [photoFile, setPhotoFile]   = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
+  function handlePhotoFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  }
 
   const inp = {
     width: "100%", border: `1px solid ${C.border}`, borderRadius: 12,
@@ -728,6 +737,21 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
     if (!title.trim()) { setError("Le titre est obligatoire."); return; }
     if (!endDate)       { setError("La date de fin est obligatoire."); return; }
     setPublishing(true); setError("");
+
+    // Upload photo si présente
+    let photo_url = null;
+    if (photoFile) {
+      const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+      const safeExt = ["jpg","jpeg","png","webp"].includes(ext) ? ext : "jpg";
+      const path = `defis/${user.id}/${Date.now()}.${safeExt}`;
+      const { error: upErr } = await supabase.storage
+        .from("images")
+        .upload(path, photoFile, { contentType: photoFile.type || "image/jpeg", upsert: false });
+      if (upErr) { setError("Upload photo échoué : " + upErr.message); setPublishing(false); return; }
+      const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+      photo_url = urlData.publicUrl;
+    }
+
     const [y, m, jj] = endDate.split("-");
     const { data, error: err } = await supabase.from("defis").insert({
       title:           title.trim(),
@@ -741,9 +765,9 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
       xp:              15,
       ended:           false,
       user_id:         user?.id || null,
+      ...(photo_url ? { photo_url } : {}),
     }).select().single();
     if (err) { setError(err.message); setPublishing(false); return; }
-    // XP pour création d'un défi
     if (user?.id) addXP(user.id, 20, "defi_cree");
     onSuccess(data);
   }
@@ -757,6 +781,42 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 120px" }}>
+
+        {/* ── Photo du défi ── */}
+        <div style={section}>
+          <span style={label}>📸 Photo du défi (optionnel)</span>
+          <input
+            id="defi-cover-input"
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoFile}
+            style={{ display: "none" }}
+          />
+          <div
+            onClick={() => document.getElementById("defi-cover-input").click()}
+            style={{
+              background: photoPreview ? "#000" : C.card,
+              border: photoPreview ? `2px solid ${C.accent}` : "2px dashed rgba(255,87,51,0.35)",
+              borderRadius: 16, height: 140,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              gap: 6, cursor: "pointer", overflow: "hidden", position: "relative",
+            }}
+          >
+            {photoPreview ? (
+              <>
+                <img src={photoPreview} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 8 }}>Changer</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 30 }}>🖼️</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>Ajouter une photo de couverture</div>
+                <div style={{ fontSize: 10, color: C.ink2 }}>Elle s'affichera en haut de la carte défi</div>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* ── Emoji picker ── */}
         <div style={section}>
