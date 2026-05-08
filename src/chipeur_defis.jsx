@@ -3,6 +3,24 @@ import { supabase } from "./supabase";
 import { addXP } from "./chipeur_xp";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 
+// ─── HEIC → JPEG conversion (photos iPhone) ─────────────────────
+async function convertImageFile(file) {
+  if (!file) return file;
+  const name = file.name?.toLowerCase() || "";
+  const isHeic = name.endsWith(".heic") || name.endsWith(".heif")
+    || file.type === "image/heic" || file.type === "image/heif";
+  if (!isHeic) return file;
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+    const out = Array.isArray(blob) ? blob[0] : blob;
+    return new File([out], name.replace(/\.hei[cf]$/i, ".jpg"), { type: "image/jpeg" });
+  } catch (e) {
+    console.warn("HEIC conversion failed:", e);
+    return file;
+  }
+}
+
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
   accent: "#FF5733", pro: "#0A3D2E", proBg: "#EBF5F0",
@@ -191,23 +209,24 @@ function DefiCard({ d, onOpen, onParticipe }) {
       </div>
 
       {/* ── TEXTE ── */}
-      <div style={{ padding: "12px 16px 14px", background: C.card }}>
-        {d.sub && (
+      <div style={{ padding: "11px 14px 13px", background: C.card }}>
+        {/* Badge commerçant */}
+        {d.merchant_name && (
           <div style={{
-            fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
-            textTransform: "uppercase", color: d.fill || C.accent, marginBottom: 2,
+            fontSize: 9, fontWeight: 700, letterSpacing: 1, color: d.fill || C.accent,
+            textTransform: "uppercase", marginBottom: 3,
           }}>
-            {d.icon} {d.sub}
+            🏪 {d.merchant_name}
           </div>
         )}
         <div style={{
-          fontFamily: syne, fontWeight: 800, fontSize: 15,
-          color: C.ink, lineHeight: 1.25, marginBottom: 4,
+          fontFamily: syne, fontWeight: 700, fontSize: 13,
+          color: C.ink, lineHeight: 1.3, marginBottom: 3,
         }}>
           {d.title}
         </div>
         {d.reward && (
-          <div style={{ fontSize: 11, color: C.ink2, marginBottom: 8 }}>
+          <div style={{ fontSize: 10, color: C.ink2, marginBottom: 7 }}>
             🎁 {d.reward}
           </div>
         )}
@@ -460,9 +479,10 @@ function ParticipeScreen({ d, user, profile, onBack, onPublishSuccess }) {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
 
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  async function handleFile(e) {
+    const raw = e.target.files[0];
+    if (!raw) return;
+    const file = await convertImageFile(raw);
     setImgFile(file);
     setImgPreview(URL.createObjectURL(file));
   }
@@ -718,9 +738,10 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
   const [photoFile, setPhotoFile]   = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
-  function handlePhotoFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  async function handlePhotoFile(e) {
+    const raw = e.target.files[0];
+    if (!raw) return;
+    const file = await convertImageFile(raw);
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
   }
@@ -815,34 +836,6 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
                 <div style={{ fontSize: 10, color: C.ink2 }}>Elle s'affichera en haut de la carte défi</div>
               </>
             )}
-          </div>
-        </div>
-
-        {/* ── Emoji picker ── */}
-        <div style={section}>
-          <span style={label}>Icône du défi</span>
-          <div style={{ background: C.card, borderRadius: 16, padding: 14, border: `1px solid ${C.border}` }}>
-            {/* Sélection actuelle */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 16, background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>{emoji}</div>
-              <div style={{ fontSize: 12, color: C.ink2 }}>Choisis l'emoji qui représente le mieux ton défi</div>
-            </div>
-            {/* Grille par catégorie */}
-            {EMOJI_OPTIONS.map(cat => (
-              <div key={cat.cat} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 6 }}>{cat.cat}</div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {cat.emojis.map(e => (
-                    <button key={e} onClick={() => setEmoji(e)} style={{
-                      width: 38, height: 38, borderRadius: 10, fontSize: 20,
-                      border: emoji === e ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
-                      background: emoji === e ? "#FFF0EB" : C.bg,
-                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>{e}</button>
-                  ))}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 
@@ -966,7 +959,7 @@ export default function ChipeurDefis({ setPage, user, profile }) {
       // 1. Charger les défis
       const { data: defisData, error } = await supabase
         .from("defis")
-        .select("*")
+        .select("*, profiles:user_id(pseudo)")
         .order("created_at", { ascending: false });
 
       if (error || !defisData || defisData.length === 0) {
@@ -1019,6 +1012,7 @@ export default function ChipeurDefis({ setPage, user, profile }) {
           grad: d.grad || palette.grad,
           fill: d.fill || palette.fill,
           reward: d.reward || null,
+          merchant_name: d.profiles?.pseudo || null,
           selection_mode: d.selection_mode || "choix",
         };
       });
