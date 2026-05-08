@@ -121,78 +121,124 @@ function StatBox({ n, l }) {
   );
 }
 
-// ─── DEFI CARD ──────────────────────────────────────────────────
+// ─── DEFI CARD ── split design : photo haut / texte bas ─────────
+const EMOJI_TO_CAT = {
+  "👗":"Mode","👠":"Mode","💄":"Beauté","🍕":"Resto","🥖":"Resto",
+  "🎨":"Loisirs","⚽":"Loisirs","🏠":"Maison","🛍️":"Mode","🏺":"Maison",
+  "☕":"Resto","🧁":"Resto","🍷":"Resto","🎯":"Loisirs","🌿":"Maison",
+};
+
 function DefiCard({ d, onOpen, onParticipe }) {
   const pct = Math.min(d.pct || 0, 100);
+  const PHOTO_H = 150;
+
+  const category = EMOJI_TO_CAT[d.icon]
+    || (d.fill === "#7C3AED" ? "Resto" : d.fill === "#0F766E" ? "Maison" : "Mode");
+
+  const rewardAmount = d.reward?.match(/(\d+)\s*€/)?.[1]
+    ? `${d.reward.match(/(\d+)\s*€/)[1]}€`
+    : d.reward?.split(" ").slice(0, 2).join(" ");
+
+  const daysNum = parseInt(d.timeLeft?.match(/^(\d+)/)?.[1] || "99");
+  const isHot = !d.ended && (daysNum < 7 || pct > 80);
+
   return (
     <div
       onClick={() => onOpen(d.id)}
       style={{
-        background: C.card, borderRadius: 20, marginBottom: 12,
-        overflow: "hidden", border: `1px solid ${C.border}`, cursor: "pointer",
+        background: C.card, borderRadius: 20, marginBottom: 14,
+        overflow: "hidden", border: `1px solid ${C.border}`,
+        boxShadow: isHot
+          ? "0 6px 22px rgba(255,107,53,0.28)"
+          : "0 4px 16px rgba(0,0,0,0.07)",
+        cursor: "pointer",
+        ...(isHot ? { border: "2px solid #FF6B35" } : {}),
       }}
     >
-      <div style={{ padding: "16px 16px 14px", background: d.grad }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ fontSize: 32, lineHeight: 1 }}>{d.icon}</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: "#fff", lineHeight: 1.2 }}>
-              {d.title}
-            </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 3 }}>{d.sub}</div>
-            {d.timeLeft && (
-              <div style={{
-                background: "rgba(255,255,255,0.22)", borderRadius: 8,
-                padding: "3px 8px", fontSize: 10, color: "#fff", fontWeight: 600,
-                marginTop: 6, display: "inline-block",
-              }}>
-                {d.ended ? "✅" : "⏳"} {d.timeLeft}
-              </div>
-            )}
+      {/* ── PHOTO ── */}
+      <div style={{ position: "relative", height: PHOTO_H, flexShrink: 0 }}>
+        <ChallengeMedia
+          photoUrl={d.photo_url || null}
+          merchantName={d.sub || d.title}
+          category={category}
+          height={PHOTO_H}
+        />
+        {/* Badge récompense */}
+        {rewardAmount && (
+          <div style={{ position: "absolute", top: 10, left: 10 }}>
+            <RewardBadge amount={rewardAmount} accentColor={d.fill || "#E94B2C"} size="sm" />
           </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <StatBox n={d.participants === 0 ? "🎯" : d.participants} l={d.participants === 0 ? "Sois 1er !" : "participants"} />
-          <StatBox n={d.objectif} l="objectif" />
-          <StatBox n={pct + "%"} l="complété" />
-        </div>
+        )}
+        {/* Timer */}
+        {d.timeLeft && (
+          <div style={{
+            position: "absolute", top: 10, right: 10,
+            background: "rgba(0,0,0,0.52)", backdropFilter: "blur(8px)",
+            padding: "4px 9px", borderRadius: 999,
+            fontSize: 10, fontWeight: 700, color: "#FFF",
+          }}>
+            {d.ended ? "✅" : "⏱"} {d.timeLeft}
+          </div>
+        )}
+        {/* Badge HOT */}
+        {isHot && (
+          <div style={{
+            position: "absolute", bottom: 10, left: 10,
+            background: "#FF6B35", borderRadius: 8, padding: "3px 9px",
+            fontSize: 9, fontWeight: 900, color: "#fff", letterSpacing: 1,
+          }}>🔥 HOT DROP</div>
+        )}
       </div>
-      {/* Récompense */}
-      {d.reward && (
+
+      {/* ── TEXTE ── */}
+      <div style={{ padding: "12px 16px 14px", background: C.card }}>
+        {d.sub && (
+          <div style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
+            textTransform: "uppercase", color: d.fill || C.accent, marginBottom: 2,
+          }}>
+            {d.icon} {d.sub}
+          </div>
+        )}
         <div style={{
-          padding: "6px 14px 0",
-          display: "flex", alignItems: "center", gap: 6,
+          fontFamily: syne, fontWeight: 800, fontSize: 15,
+          color: C.ink, lineHeight: 1.25, marginBottom: 4,
         }}>
-          <span style={{ fontSize: 13 }}>🎁</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: C.pro }}>À gagner :</span>
-          <span style={{ fontSize: 11, color: C.ink, fontWeight: 600 }}>{d.reward}</span>
+          {d.title}
         </div>
-      )}
-      <div style={{
-        padding: d.reward ? "8px 14px 12px" : "10px 14px 12px",
-        display: "flex", alignItems: "center",
-        justifyContent: "space-between", gap: 10,
-      }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.ink2, marginBottom: 4 }}>
-            <span>{d.participants === 0 ? "✨ Sois le premier !" : `${d.participants} participants`}</span>
-            <span>max {d.objectif}{d.ended ? " ✓" : ""}</span>
+        {d.reward && (
+          <div style={{ fontSize: 11, color: C.ink2, marginBottom: 8 }}>
+            🎁 {d.reward}
           </div>
-          <div style={{ height: 5, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 3, width: `${pct}%`, background: d.fill }} />
+        )}
+
+        {/* Barre progression + bouton */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              fontSize: 10, color: C.ink2, marginBottom: 3,
+            }}>
+              <span>👥 {d.participants === 0 ? "Sois le 1er !" : `${d.participants} participants`}</span>
+              <span>/ {d.objectif}</span>
+            </div>
+            <div style={{ height: 4, background: C.pill, borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 2, width: `${pct}%`, background: d.fill || C.accent }} />
+            </div>
           </div>
+          <button
+            onClick={e => { e.stopPropagation(); if (!d.ended) onParticipe(d.id); }}
+            style={{
+              border: "none", borderRadius: 12, padding: "8px 14px",
+              fontSize: 11, fontWeight: 800, cursor: "pointer",
+              fontFamily: dm, whiteSpace: "nowrap", flexShrink: 0,
+              color: "#fff",
+              background: d.ended ? C.ink2 : (d.isFull ? "#6B6560" : (d.fill || C.accent)),
+            }}
+          >
+            {d.isFull ? "🔒 Complet" : d.ended ? "Voir" : d.participants === 0 ? "✨ 1er !" : "Participer →"}
+          </button>
         </div>
-        <button
-          onClick={e => { e.stopPropagation(); if (!d.ended) onParticipe(d.id); }}
-          style={{
-            border: "none", borderRadius: 12, padding: "7px 14px",
-            fontSize: 12, fontWeight: 600, cursor: "pointer",
-            fontFamily: dm, whiteSpace: "nowrap",
-            color: "#fff", background: d.ended ? C.ink2 : d.fill,
-          }}
-        >
-          {d.isFull ? "🔒 Complet" : d.ended ? "Voir les posts" : d.participants === 0 ? "✨ Relever le défi" : "+ Participer"}
-        </button>
       </div>
     </div>
   );
