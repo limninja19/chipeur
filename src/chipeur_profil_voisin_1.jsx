@@ -351,7 +351,7 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
 }
 
 // ─── PARTIE SCROLLABLE : bannière + avatar + stats + réductions ───
-function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, univers }) {
+function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, univers, rank }) {
   return (
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
@@ -428,7 +428,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
         {[
           { n: String(postCount), l: "publications" },
           { n: "0", l: "abonnés" },
-          { n: "#—", l: "classement", color: C.gold },
+          { n: rank ? `#${rank}` : "#—", l: "classement", color: C.gold },
           { n: String(profile?.xp || 0), l: "XP total", color: C.accent },
         ].map((s, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
@@ -552,26 +552,83 @@ function TabEvenements({ sorties, onDelete, loading }) {
   );
 }
 
-const DEFI_COLORS = [
-  { bg: "#FFF0EB", border: "rgba(255,87,51,0.35)", accent: "#FF5733" },
-  { bg: "#E8F4FD", border: "rgba(21,101,192,0.3)", accent: "#1565C0" },
-  { bg: "#EBF5F0", border: "rgba(10,61,46,0.3)", accent: "#0A3D2E" },
-  { bg: "#F5F0FF", border: "rgba(124,58,237,0.3)", accent: "#7C3AED" },
-  { bg: "#FFF8E8", border: "rgba(180,83,9,0.3)", accent: "#B45309" },
-  { bg: "#F0FDF9", border: "rgba(15,118,110,0.3)", accent: "#0F766E" },
+// Palettes par index — dégradés modernes
+const CARD_GRADIENTS = [
+  { from: "#FF6B35", to: "#E94B2C" },
+  { from: "#7C3AED", to: "#A855F7" },
+  { from: "#059669", to: "#34D399" },
+  { from: "#1D4ED8", to: "#60A5FA" },
+  { from: "#D97706", to: "#FBBF24" },
+  { from: "#0F766E", to: "#2DD4BF" },
 ];
-const DONE_COLOR = { bg: "#EBF5F0", border: "rgba(10,61,46,0.4)", accent: "#0A3D2E" };
+
+function MiniDefiCard({ it, idx, onOpen }) {
+  const grad = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
+
+  // ── FAIT avec photo ──────────────────────────────────────────
+  if (it.done && it.photoUrl) {
+    return (
+      <div onClick={() => onOpen(it.id)} style={{ borderRadius: 18, overflow: "hidden", cursor: "pointer", position: "relative", aspectRatio: "1", boxShadow: "0 4px 14px rgba(0,0,0,0.13)" }}>
+        <img src={it.photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.75) 100%)" }} />
+        {/* Badge complété */}
+        <div style={{ position: "absolute", top: 8, right: 8, background: "#059669", borderRadius: 8, padding: "2px 7px", fontSize: 8, fontWeight: 800, color: "#fff", letterSpacing: 0.5 }}>✓ FAIT</div>
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 10px" }}>
+          <div style={{ fontSize: 8, color: "rgba(255,255,255,0.7)", marginBottom: 1 }}>{it.emoji} {it.q}</div>
+          {it.a && <div style={{ fontSize: 10, fontWeight: 700, color: "#fff", lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{it.a}</div>}
+          <div style={{ fontSize: 8, fontWeight: 700, color: "#4ADE80", marginTop: 2 }}>⚡ {it.xp || 5} XP</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── FAIT sans photo ──────────────────────────────────────────
+  if (it.done) {
+    return (
+      <div onClick={() => onOpen(it.id)} style={{ borderRadius: 18, overflow: "hidden", cursor: "pointer", aspectRatio: "1", background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12, boxShadow: "0 4px 14px rgba(0,0,0,0.13)" }}>
+        {/* Checkmark badge */}
+        <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, alignSelf: "flex-end" }}>✓</div>
+        <div>
+          <div style={{ fontSize: 8, color: "rgba(255,255,255,0.75)", marginBottom: 3, lineHeight: 1.3 }}>{it.emoji} {it.q}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#fff", lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{it.a}</div>
+          <div style={{ fontSize: 8, fontWeight: 800, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>⚡ {it.xp || 5} XP gagnés</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── PAS ENCORE FAIT ──────────────────────────────────────────
+  return (
+    <div onClick={() => onOpen(it.id)} style={{ borderRadius: 18, overflow: "hidden", cursor: "pointer", aspectRatio: "1", background: "#FFF", border: "1.5px solid rgba(26,23,20,0.09)", position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 0, boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}>
+      {/* Barre couleur en haut */}
+      <div style={{ height: 4, background: `linear-gradient(90deg, ${grad.from}, ${grad.to})`, flexShrink: 0 }} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "10px 10px 0", textAlign: "center", gap: 4 }}>
+        <div style={{ fontSize: 28 }}>{it.emoji}</div>
+        <div style={{ fontSize: 9, color: C.ink2, lineHeight: 1.35, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{it.q}</div>
+      </div>
+      {/* CTA bas */}
+      <div style={{ padding: "8px 10px 10px" }}>
+        <div style={{ background: `linear-gradient(90deg, ${grad.from}, ${grad.to})`, borderRadius: 10, padding: "5px 0", textAlign: "center", fontSize: 9, fontWeight: 800, color: "#fff", letterSpacing: 0.3 }}>
+          Répondre · +5/10 XP
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function TabUnivers({ items, onOpen }) {
   const [activeTheme, setActiveTheme] = useState(THEMES[0].id);
   const themeItems = items.filter(it => it.theme === activeTheme);
+  const doneCount = themeItems.filter(it => it.done).length;
 
   return (
     <>
-      {/* Titre + XP */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>Mon univers</div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, background: "#FFF0EB", padding: "3px 10px", borderRadius: 8 }}>+5 à +10 XP</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, background: "#FFF0EB", padding: "3px 10px", borderRadius: 8 }}>
+          {doneCount}/{themeItems.length} complétés
+        </div>
       </div>
 
       {/* Sous-onglets thèmes */}
@@ -581,19 +638,15 @@ function TabUnivers({ items, onOpen }) {
           const total = t.defis.length;
           const active = activeTheme === t.id;
           return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTheme(t.id)}
-              style={{
-                flexShrink: 0, padding: "7px 12px", borderRadius: 20,
-                border: "none", cursor: "pointer", fontFamily: dm,
-                fontSize: 11, fontWeight: active ? 700 : 500,
-                background: active ? C.ink : C.pill,
-                color: active ? "#fff" : C.ink2,
-                display: "flex", alignItems: "center", gap: 5,
-                transition: "all 0.15s",
-              }}
-            >
+            <button key={t.id} onClick={() => setActiveTheme(t.id)} style={{
+              flexShrink: 0, padding: "7px 12px", borderRadius: 20,
+              border: "none", cursor: "pointer", fontFamily: dm,
+              fontSize: 11, fontWeight: active ? 700 : 500,
+              background: active ? C.ink : C.pill,
+              color: active ? "#fff" : C.ink2,
+              display: "flex", alignItems: "center", gap: 5,
+              transition: "all 0.15s",
+            }}>
               {t.label}
               <span style={{
                 background: active ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)",
@@ -605,40 +658,11 @@ function TabUnivers({ items, onOpen }) {
         })}
       </div>
 
-      {/* Grille défis du thème actif */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {themeItems.map((it, i) => {
-          const col = it.done ? DONE_COLOR : DEFI_COLORS[i % DEFI_COLORS.length];
-          return (
-            <div key={it.id} onClick={() => onOpen(it.id)} style={{ background: col.bg, borderRadius: 16, overflow: "hidden", cursor: "pointer", border: `1.5px solid ${col.border}`, padding: 0 }}>
-              {it.photoUrl ? (
-                <>
-                  <div style={{ width: "100%", aspectRatio: "1", overflow: "hidden" }}>
-                    <img src={it.photoUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  </div>
-                  <div style={{ padding: "8px 10px" }}>
-                    <div style={{ fontSize: 9, color: C.ink2 }}>{it.q}</div>
-                    {it.a && <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{it.a}</div>}
-                    <div style={{ fontSize: 9, fontWeight: 700, marginTop: 3, color: col.accent }}>✓ {it.xp || 5} XP</div>
-                  </div>
-                </>
-              ) : (
-                <div style={{ padding: 12 }}>
-                  <div style={{ fontSize: 24, marginBottom: 6 }}>{it.emoji}</div>
-                  <div style={{ fontSize: 9, color: C.ink2, marginBottom: 4 }}>{it.q}</div>
-                  {it.done ? (
-                    <>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink, lineHeight: 1.3 }}>{it.a}</div>
-                      <div style={{ fontSize: 9, fontWeight: 700, marginTop: 4, color: col.accent }}>✓ {it.xp || 5} XP</div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 11, fontWeight: 700, color: col.accent }}>+ Répondre · +5/10 XP</div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* Grille */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {themeItems.map((it, i) => (
+          <MiniDefiCard key={it.id} it={it} idx={i} onOpen={onOpen} />
+        ))}
       </div>
     </>
   );
@@ -835,6 +859,21 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
   const [miniDefiId, setMiniDefiId] = useState(null);
   const [univers, setUnivers] = useState(miniDefisAll);
   const [posts, setPosts] = useState([]);
+  const [rank, setRank] = useState(null);
+
+  // Calcul du classement XP parmi tous les profils
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("profiles")
+      .select("id, xp")
+      .order("xp", { ascending: false })
+      .then(({ data }) => {
+        if (!data) return;
+        const idx = data.findIndex(p => p.id === user.id);
+        if (idx !== -1) setRank(idx + 1);
+      });
+  }, [user?.id, profile?.xp]);
 
   // Charger l'univers sauvegardé depuis le profil (format objet keyed par ID)
   useEffect(() => {
@@ -903,7 +942,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         <>
           {/* Zone scroll : bannière + avatar + stats + réductions + onglets sticky + contenu */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} />
+            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} rank={rank} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
