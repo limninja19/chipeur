@@ -127,14 +127,81 @@ function useParticipation(sortieId, userId) {
   return { going, count, loading, toggle };
 }
 
+// ─── MODALE PARTICIPANTS ───────────────────────────────────────
+function ParticipantsModal({ sortieId, onClose }) {
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("sorties_participations")
+      .select("profiles:user_id(pseudo, avatar_url)")
+      .eq("sortie_id", sortieId)
+      .then(({ data }) => {
+        setList((data || []).map(r => r.profiles).filter(Boolean));
+        setLoading(false);
+      });
+  }, [sortieId]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+        backdropFilter: "blur(4px)", zIndex: 200,
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.card, borderRadius: "20px 20px 0 0",
+          width: "100%", maxWidth: 480, padding: "20px 20px 40px",
+          maxHeight: "60vh", display: "flex", flexDirection: "column",
+        }}
+      >
+        {/* Poignée */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.pill, margin: "0 auto 16px" }} />
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 14 }}>
+          👥 {loading ? "…" : list.length} {list.length === 1 ? "voisin y va" : "voisins y vont"}
+        </div>
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 12 }}>Chargement…</div>
+          ) : list.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 12 }}>Personne encore — sois le premier !</div>
+          ) : list.map((p, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < list.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.pill, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : "🧑"}
+              </div>
+              <div style={{ fontFamily: syne, fontWeight: 600, fontSize: 13, color: C.ink }}>{p.pseudo || "Voisin"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── GOING BUTTON ───
-function GoingBtn({ going, count, onToggle, disabled }) {
+function GoingBtn({ going, count, onToggle, onShowParticipants, disabled }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       {count > 0 && (
-        <span style={{ fontSize: 10, color: C.ink2, fontFamily: dm }}>
+        <button
+          onClick={e => { e.stopPropagation(); onShowParticipants?.(); }}
+          style={{
+            fontSize: 10, color: C.ink2, fontFamily: dm,
+            background: "none", border: "none", cursor: "pointer",
+            padding: "4px 6px", borderRadius: 8,
+            textDecoration: "underline", textUnderlineOffset: 2,
+          }}
+        >
           👥 {count}
-        </span>
+        </button>
       )}
       <button
         onClick={e => { e.stopPropagation(); !disabled && onToggle && onToggle(); }}
@@ -156,6 +223,7 @@ function GoingBtn({ going, count, onToggle, disabled }) {
 // ─── EVENT CARD (in list) ───
 function EventCard({ s, idx, onClick, user, onDelete }) {
   const { going, count, loading, toggle } = useParticipation(s.id, user?.id);
+  const [showParticipants, setShowParticipants] = useState(false);
   const col = DATE_COLORS[idx % DATE_COLORS.length];
   const d = parseDate(s.date_text);
   const day = d ? d.getDate() : "—";
@@ -233,8 +301,16 @@ function EventCard({ s, idx, onClick, user, onDelete }) {
             >🗑️</button>
           )}
         </div>
-        <GoingBtn going={going} count={count} onToggle={toggle} disabled={loading || !user} />
+        <GoingBtn
+          going={going} count={count}
+          onToggle={toggle}
+          onShowParticipants={() => setShowParticipants(true)}
+          disabled={loading || !user}
+        />
       </div>
+      {showParticipants && (
+        <ParticipantsModal sortieId={s.id} onClose={() => setShowParticipants(false)} />
+      )}
     </div>
   );
 }
