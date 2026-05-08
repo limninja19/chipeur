@@ -4,6 +4,7 @@ import { useUnreadNotifs } from "./chipeur_notifications";
 import { useUnreadMessages } from "./chipeur_messages";
 import { addXP } from "./chipeur_xp";
 import AuthGate from "./AuthGate";
+import { ChallengeCard } from "./ChallengeUI";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -199,91 +200,25 @@ function VilleSelect({ zone, setZone }) {
   );
 }
 
-// ─── BANDEAU DÉFIS ───
-function DefiCard({ d, setPage }) {
-  const pct = Math.round((d.current / d.total) * 100);
-  return (
-    <div style={{
-      flexShrink: 0, width: 190, borderRadius: 18, overflow: "hidden",
-      cursor: "pointer", background: d.grad, position: "relative",
-    }}>
-      {/* Fond décoratif emoji géant */}
-      <div style={{
-        position: "absolute", right: -8, top: -6,
-        fontSize: 64, opacity: 0.15, lineHeight: 1,
-        pointerEvents: "none", userSelect: "none",
-      }}>{d.icon}</div>
+// ─── BANDEAU DÉFIS ───────────────────────────────────────────────
+const EMOJI_TO_CATEGORY = {
+  "👗":"Mode","👠":"Mode","👜":"Mode","🛍️":"Mode","🧥":"Mode","✂️":"Beauté",
+  "💄":"Beauté","🧖":"Beauté","💅":"Beauté",
+  "🍕":"Resto","🥗":"Resto","🍷":"Resto","☕":"Resto","🧁":"Resto","🍽️":"Resto",
+  "🏠":"Maison","🪵":"Maison","🏺":"Maison","🛋️":"Maison",
+  "🎭":"Loisirs","🏃":"Loisirs","⚽":"Loisirs","📸":"Loisirs","🎨":"Loisirs",
+};
 
-      <div style={{ padding: "12px 12px 10px", position: "relative" }}>
-        {/* Ligne haute : XP badge + timer */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{
-            background: "rgba(255,255,255,0.22)", backdropFilter: "blur(4px)",
-            borderRadius: 8, padding: "2px 8px",
-            fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: 0.3,
-          }}>⚡ +{d.xp} XP</div>
-          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)", fontWeight: 500 }}>⏱ {d.timeLeft}</div>
-        </div>
-
-        {/* Titre */}
-        <div style={{
-          fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700,
-          color: "#fff", lineHeight: 1.2, marginBottom: 10,
-        }}>{d.title}</div>
-
-        {/* Barre de progression */}
-        <div style={{ marginBottom: 6 }}>
-          <div style={{
-            height: 5, borderRadius: 3,
-            background: "rgba(255,255,255,0.25)", overflow: "hidden",
-          }}>
-            <div style={{
-              height: "100%", borderRadius: 3,
-              width: `${pct}%`,
-              background: "rgba(255,255,255,0.85)",
-              transition: "width 0.6s ease",
-            }} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>
-              👥 {d.current} participants
-            </div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)" }}>
-              objectif {d.total}
-            </div>
-          </div>
-        </div>
-
-        {/* Bouton participer */}
-        <button onClick={() => setPage("defis")} style={{
-          width: "100%", marginTop: 4,
-          padding: "7px 0", borderRadius: 10,
-          background: "rgba(255,255,255,0.95)",
-          color: d.btnColor, border: "none",
-          fontSize: 11, fontWeight: 700,
-          fontFamily: "'DM Sans', sans-serif",
-          cursor: "pointer", letterSpacing: 0.2,
-        }}>Participer →</button>
-      </div>
-    </div>
-  );
+function daysRemaining(ends_at) {
+  if (!ends_at) return 30;
+  const diff = new Date(ends_at) - new Date();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-const DEFI_GRADS = [
-  { grad: "linear-gradient(135deg,#FF5733 0%,#FF8C42 100%)", btnColor: "#FF5733" },
-  { grad: "linear-gradient(135deg,#7C3AED 0%,#A855F7 100%)", btnColor: "#7C3AED" },
-  { grad: "linear-gradient(135deg,#0F766E 0%,#14B8A6 100%)", btnColor: "#0F766E" },
-  { grad: "linear-gradient(135deg,#1D4ED8 0%,#3B82F6 100%)", btnColor: "#1D4ED8" },
-];
-
-function computeTimeLeftFil(ends_at, ended) {
-  if (ended) return "Terminé";
-  if (!ends_at) return "En cours";
-  const diff = new Date(ends_at) - new Date();
-  if (diff <= 0) return "Terminé";
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  if (days === 1) return "Dernier jour !";
-  return `${days} jours`;
+function extractRewardAmount(reward) {
+  if (!reward) return "🎁";
+  const m = reward.match(/(\d+)\s*€/);
+  return m ? `${m[1]}€` : reward.split(" ").slice(0, 2).join(" ");
 }
 
 function BandeauDefis({ setPage }) {
@@ -296,7 +231,6 @@ function BandeauDefis({ setPage }) {
         if (!defisData || defisData.length === 0) return;
         const { data: countsData } = await supabase
           .from("posts").select("defi_id, author_id").not("defi_id", "is", null);
-        // Participants uniques par défi
         const seen = {};
         (countsData || []).forEach(r => {
           if (!seen[r.defi_id]) seen[r.defi_id] = new Set();
@@ -304,17 +238,22 @@ function BandeauDefis({ setPage }) {
         });
         const counts = {};
         Object.keys(seen).forEach(id => { counts[id] = seen[id].size; });
-        const mapped = defisData.map((d, i) => {
-          const current = counts[d.id] || 0;
-          const total = d.total_target || 100;
-          const g = DEFI_GRADS[i % DEFI_GRADS.length];
-          return {
-            id: d.id, icon: d.emoji || "🏆", title: d.title,
-            current, total, xp: d.xp || 10,
-            timeLeft: computeTimeLeftFil(d.ends_at, d.ended),
-            ...g,
-          };
-        });
+
+        const mapped = defisData.map((d) => ({
+          id:                  d.id,
+          title:               d.title,
+          merchant_name:       d.description || "",
+          category:            EMOJI_TO_CATEGORY[d.emoji] || "Mode",
+          city:                "Saint-Dié",
+          photo_url:           d.photo_url || null,
+          days_remaining:      daysRemaining(d.ends_at),
+          participants_count:  counts[d.id] || 0,
+          target_count:        d.total_target || 100,
+          reward_amount:       extractRewardAmount(d.reward),
+          reward_description:  d.reward || "Récompense surprise",
+          top_reactions:       [],
+          reactions_total:     0,
+        }));
         setDefis(mapped);
       });
   }, []);
@@ -330,8 +269,10 @@ function BandeauDefis({ setPage }) {
         🏆 Défis en cours
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-        {defis.map((d, i) => <DefiCard key={d.id || i} d={d} setPage={setPage} />)}
+      <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6 }}>
+        {defis.map(d => (
+          <ChallengeCard key={d.id} challenge={d} onClick={() => setPage("defis")} />
+        ))}
       </div>
     </div>
   );
