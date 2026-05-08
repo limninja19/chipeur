@@ -113,7 +113,8 @@ function MiniDefiScreen({ defi, onBack, onSave, user }) {
   const handleSave = async () => {
     if (!hasText && !hasPhoto) return;
     setSaving(true);
-    let photoUrl = photoPreview;
+    // Si photo supprimée, on passe null
+    let photoUrl = photoPreview || null;
     // Upload photo to Supabase if new file selected
     if (photoFile && user?.id) {
       const ext = photoFile.name.split(".").pop() || "jpg";
@@ -166,6 +167,18 @@ function MiniDefiScreen({ defi, onBack, onSave, user }) {
                 <img src={photoPreview} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.6)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8 }}>Changer 📷</div>
                 <div style={{ position: "absolute", top: 8, left: 8, background: C.accent, color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 8 }}>+5 XP ✓</div>
+                {/* Bouton supprimer la photo */}
+                <button
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); setPhotoPreview(null); setPhotoFile(null); }}
+                  style={{
+                    position: "absolute", top: 8, right: 8,
+                    width: 28, height: 28, borderRadius: "50%",
+                    background: "rgba(0,0,0,0.6)", border: "none",
+                    color: "#fff", fontSize: 14, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    lineHeight: 1,
+                  }}
+                >✕</button>
               </div>
             ) : (
               <div style={{ width: "100%", aspectRatio: "4/3", background: C.pill, borderRadius: 16, border: "2px dashed rgba(255,87,51,0.3)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
