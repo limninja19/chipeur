@@ -12,23 +12,81 @@ const C = {
 
 // ─── TAG PILLS ───
 function TagPills({ tags, activeTags, onToggle }) {
+  const [customInput, setCustomInput] = useState("");
+
+  // Tags custom = ceux dans activeTags mais pas dans les suggestions
+  const predefinedLabels = tags.map(t => t.label);
+  const customTags = activeTags.filter(t => !predefinedLabels.includes(t));
+
+  const handleAddCustom = () => {
+    const val = customInput.trim().replace(/^#+/, ""); // retire les # en trop
+    if (!val || activeTags.includes(val)) { setCustomInput(""); return; }
+    onToggle(val); // toggle = ajouter si absent
+    setCustomInput("");
+  };
+
   return (
-    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-      {tags.map(t => {
-        const isActive = activeTags.includes(t.label);
-        return (
-          <button key={t.label} onClick={() => onToggle(t.label)} style={{
-            fontSize: 11, padding: "6px 14px", borderRadius: 20,
-            border: "none",
-            background: isActive ? C.accent : C.pill,
-            color: isActive ? "#fff" : C.ink2,
-            fontWeight: isActive ? 700 : 500,
+    <div style={{ marginTop: 6 }}>
+      {/* Suggestions + tags custom */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+        {tags.map(t => {
+          const isActive = activeTags.includes(t.label);
+          return (
+            <button key={t.label} onClick={() => onToggle(t.label)} style={{
+              fontSize: 11, padding: "6px 14px", borderRadius: 20, border: "none",
+              background: isActive ? C.accent : C.pill,
+              color: isActive ? "#fff" : C.ink2,
+              fontWeight: isActive ? 700 : 500,
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              transition: "all 0.15s",
+              boxShadow: isActive ? "0 2px 8px rgba(255,87,51,0.3)" : "none",
+            }}>{t.label}</button>
+          );
+        })}
+        {/* Tags custom ajoutés par l'utilisateur */}
+        {customTags.map(t => (
+          <button key={t} onClick={() => onToggle(t)} style={{
+            fontSize: 11, padding: "6px 12px 6px 14px", borderRadius: 20, border: "none",
+            background: C.accent, color: "#fff", fontWeight: 700,
             cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-            transition: "all 0.15s",
-            boxShadow: isActive ? "0 2px 8px rgba(255,87,51,0.3)" : "none",
-          }}>{t.label}</button>
-        );
-      })}
+            display: "flex", alignItems: "center", gap: 5,
+            boxShadow: "0 2px 8px rgba(255,87,51,0.3)",
+          }}>
+            {t}
+            <span style={{ fontSize: 9, opacity: 0.8 }}>✕</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Champ saisie libre */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          value={customInput}
+          onChange={e => setCustomInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCustom(); } }}
+          placeholder="Ajouter une étiquette…"
+          maxLength={30}
+          style={{
+            flex: 1, padding: "8px 12px", borderRadius: 20,
+            border: `1.5px solid ${customInput.trim() ? C.accent : C.border}`,
+            fontSize: 11, fontFamily: "'DM Sans', sans-serif",
+            color: C.ink, background: C.card, outline: "none",
+            transition: "border-color 0.2s",
+          }}
+        />
+        <button
+          onClick={handleAddCustom}
+          disabled={!customInput.trim()}
+          style={{
+            width: 32, height: 32, borderRadius: "50%", border: "none",
+            background: customInput.trim() ? C.accent : C.pill,
+            color: customInput.trim() ? "#fff" : C.ink2,
+            fontSize: 18, cursor: customInput.trim() ? "pointer" : "default",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 700, transition: "all 0.15s", flexShrink: 0,
+          }}
+        >+</button>
+      </div>
     </div>
   );
 }
