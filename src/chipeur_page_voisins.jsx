@@ -349,7 +349,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
 
 const BG_COLORS = ["#FEF3E0","#F7EEF7","#E8F4FD","#EBF5F0","#FFF3E0","#F0E8FF"];
 
-export default function ChipeurPageVoisins({ setPage, user, profile, setConversationWith, selectedVoisinId, setSelectedVoisinId }) {
+export default function ChipeurPageVoisins({ setPage, user, profile, setConversationWith, selectedVoisinId, setSelectedVoisinId, requireAuth }) {
   const [screen, setScreen] = useState("list");
   const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState("Tous");
@@ -430,7 +430,14 @@ export default function ChipeurPageVoisins({ setPage, user, profile, setConversa
       }).then(() => {});
     }
   };
-  const openVoisin = (id) => { setSelectedId(id); setScreen("profile"); };
+  const openVoisin = (id) => {
+    if (!user) {
+      requireAuth?.(() => { setSelectedId(id); setScreen("profile"); });
+      return;
+    }
+    setSelectedId(id);
+    setScreen("profile");
+  };
 
   // Si on arrive depuis un post (clic auteur), ouvrir directement ce voisin
   useEffect(() => {

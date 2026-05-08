@@ -19,7 +19,6 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
 
   const voisins = [
     { emoji: "👩", bg: "#FEF3E0" },
-    { emoji: "👩‍🦰", bg: "#F7EEF7" },
     { emoji: "🧑", bg: "#E8F4FD" },
   ];
 
@@ -488,6 +487,7 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
 
   const handleFollow = async (e) => {
     e.stopPropagation();
+    if (!user) { requireAuth?.(() => {}); return; }
     const prev = followed;
     setFollowed(!prev);
     if (prev) {
@@ -582,10 +582,15 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
                     <div
                       onClick={e => {
                         e.stopPropagation(); setMenuOpen(false);
-                        requireAuth?.(() => {
+                        if (user) {
                           setSelectedVoisinId?.(post.author_id);
                           setPage("voisins");
-                        }) ?? (setSelectedVoisinId?.(post.author_id), setPage("voisins"));
+                        } else {
+                          requireAuth?.(() => {
+                            setSelectedVoisinId?.(post.author_id);
+                            setPage("voisins");
+                          });
+                        }
                       }}
                       style={{ padding: "12px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 8 }}
                     >👁️ Voir le compte</div>
