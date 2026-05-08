@@ -28,11 +28,11 @@ const REGLEMENT_ARTICLES = [
   },
   {
     titre: "Article 6 — Droits sur les contenus",
-    texte: "En participant, le participant autorise l'Organisateur et Chipeur à utiliser son contenu publié à des fins de communication liées au Défi, sous réserve de mentionner son pseudonyme. Le participant reste titulaire de ses droits d'auteur et peut révoquer cette autorisation en contactant contact@chipeur.fr.",
+    texte: "En participant, le participant autorise l'Organisateur et Chipeur à utiliser son contenu publié à des fins de communication liées au Défi, sous réserve de mentionner son pseudonyme. Le participant reste titulaire de ses droits d'auteur et peut révoquer cette autorisation en contactant jennytassotto@gmail.com.",
   },
   {
     titre: "Article 7 — Protection des données (RGPD)",
-    texte: "Les données collectées (pseudonyme, contenu) sont traitées par Chipeur conformément au RGPD. Elles sont utilisées uniquement pour la gestion des Défis et conservées 12 mois après clôture. Tout utilisateur dispose d'un droit d'accès, rectification et suppression en contactant : contact@chipeur.fr.",
+    texte: "Les données collectées (pseudonyme, contenu) sont traitées par Chipeur conformément au RGPD. Elles sont utilisées uniquement pour la gestion des Défis et conservées 12 mois après clôture. Tout utilisateur dispose d'un droit d'accès, rectification et suppression en contactant : jennytassotto@gmail.com.",
   },
   {
     titre: "Article 8 — Responsabilité",
@@ -107,7 +107,7 @@ export function ReglementScreen({ setPage }) {
         <div style={{ textAlign: "center", padding: "16px 0 0" }}>
           <div style={{ fontSize: 11, color: "#6B6560", lineHeight: 1.8 }}>
             Pour toute question relative à ce règlement :<br />
-            <a href="mailto:contact@chipeur.fr" style={{ color: "#FF5733", fontWeight: 600 }}>contact@chipeur.fr</a>
+            <a href="mailto:jennytassotto@gmail.com" style={{ color: "#FF5733", fontWeight: 600 }}>jennytassotto@gmail.com</a>
           </div>
         </div>
       </div>
@@ -243,7 +243,7 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
           icon="📧"
           label="Exercer mes droits RGPD"
           sublabel="Accès, rectification, portabilité…"
-          href="mailto:privacy@chipeur.app?subject=Droits RGPD"
+          href="mailto:jennytassotto@gmail.com?subject=Droits RGPD"
           chevron={false}
         />
 
@@ -253,8 +253,8 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
         <Row
           icon="💬"
           label="Nous contacter"
-          sublabel="contact@chipeur.app"
-          href="mailto:contact@chipeur.app"
+          sublabel="jennytassotto@gmail.com"
+          href="mailto:jennytassotto@gmail.com"
           chevron={false}
         />
 
@@ -287,7 +287,7 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
 
         <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", marginTop: 20, lineHeight: 1.6 }}>
           Chipeur · Pilote communautaire Saint-Dié-des-Vosges<br />
-          Pour toute demande : <a href="mailto:contact@chipeur.app" style={{ color: C.accent }}>contact@chipeur.app</a>
+          Pour toute demande : <a href="mailto:jennytassotto@gmail.com" style={{ color: C.accent }}>jennytassotto@gmail.com</a>
         </div>
       </div>
     </>

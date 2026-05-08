@@ -163,7 +163,7 @@ function ScreenAge({ onNext }) {
           <div style={{ fontSize: 13, color: COLORS.ink2, lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif", marginBottom: 10 }}>
             Chipeur est réservé aux personnes de 15 ans et plus. Si tu as moins de 15 ans, un de tes parents doit s'inscrire à ta place et autoriser ton utilisation.
           </div>
-          <a href="mailto:contact@chipeur.fr?subject=Inscription mineur" style={{ fontSize: 12, color: COLORS.accent, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+          <a href="mailto:jennytassotto@gmail.com?subject=Inscription mineur" style={{ fontSize: 12, color: COLORS.accent, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
             📧 Contacter Chipeur pour une demande parentale
           </a>
         </div>
