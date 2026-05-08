@@ -366,7 +366,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
             </div>
             {/* Voir mes voisins */}
             <button onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 5, background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "5px 10px", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)", marginTop: 8 }}>
-              <span style={{ fontSize: 13 }}>👩👩‍🦰🧑</span>
+              <span style={{ fontSize: 15 }}>🫣</span>
               <span style={{ fontSize: 10, fontWeight: 600, color: C.ink2, fontFamily: dm }}>Mes voisins</span>
             </button>
           </div>
