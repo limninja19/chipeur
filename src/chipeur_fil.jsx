@@ -51,19 +51,9 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
       {/* Droite : avatars voisins + icônes */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {/* Avatars voisins actifs — cliquable → page voisins */}
-        <div onClick={() => setPage("voisins")} style={{ display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", gap: 1 }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            {voisins.map((v, i) => (
-              <div key={i} style={{
-                width: 28, height: 28, borderRadius: "50%",
-                background: v.bg, border: `2px solid ${C.bg}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 14, marginLeft: i === 0 ? 0 : -8,
-                position: "relative", zIndex: 3 - i,
-              }}>{v.emoji}</div>
-            ))}
-          </div>
-          <div style={{ fontSize: 9, color: C.ink2, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, letterSpacing: 0.2 }}>🫣 Voisins</div>
+        <div onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: C.pill, borderRadius: 20, padding: "5px 10px" }}>
+          <span style={{ fontSize: 16 }}>🫣</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: C.ink2, fontFamily: "'DM Sans', sans-serif" }}>Voisins</span>
         </div>
 
         {/* Si non connecté → bouton Rejoindre */}
