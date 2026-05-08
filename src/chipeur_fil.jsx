@@ -608,7 +608,10 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
         )}
         {/* Contenu */}
         <div style={{ padding: "10px 12px 6px" }}>
-          <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>{post.content}</div>
+          {post.content
+            ? <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>{post.content}</div>
+            : post.image_url && <div style={{ fontSize: 11, color: C.ink2, fontStyle: "italic", marginBottom: 6 }}>📷 Photo sans description</div>
+          }
           {post.tags?.length > 0 && (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
               {post.tags.map(t => <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>)}

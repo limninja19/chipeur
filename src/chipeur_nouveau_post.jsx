@@ -220,10 +220,15 @@ function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagTog
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Description</label>
         <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Raconte ce moment au quartier..." style={{
           width: "100%", padding: "10px 12px", borderRadius: 12,
-          border: `1.5px solid ${C.border}`, fontFamily: "'DM Sans', sans-serif",
+          border: `1.5px solid ${content.trim() ? C.accent + "55" : C.border}`, fontFamily: "'DM Sans', sans-serif",
           fontSize: 12, color: C.ink, background: C.card, outline: "none",
           resize: "none", height: 80, lineHeight: 1.5, boxSizing: "border-box",
+          transition: "border-color 0.2s",
         }} />
+        <div style={{ fontSize: 10, color: content.trim() ? "#16a34a" : C.ink2, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+          {content.trim() ? "✅ Super, les voisins vont adorer !" : "💡 Une description = plus de réactions"}
+          <span style={{ marginLeft: "auto", color: C.ink2 }}>{content.length}/300</span>
+        </div>
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>

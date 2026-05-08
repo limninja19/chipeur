@@ -151,7 +151,7 @@ function DefiCard({ d, onOpen, onParticipe }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <StatBox n={d.participants} l="participants" />
+          <StatBox n={d.participants === 0 ? "🎯" : d.participants} l={d.participants === 0 ? "Sois 1er !" : "participants"} />
           <StatBox n={d.objectif} l="objectif" />
           <StatBox n={pct + "%"} l="complété" />
         </div>
@@ -174,7 +174,7 @@ function DefiCard({ d, onOpen, onParticipe }) {
       }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.ink2, marginBottom: 4 }}>
-            <span>{d.participants} participants</span>
+            <span>{d.participants === 0 ? "✨ Sois le premier !" : `${d.participants} participants`}</span>
             <span>max {d.objectif}{d.ended ? " ✓" : ""}</span>
           </div>
           <div style={{ height: 5, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
@@ -190,7 +190,7 @@ function DefiCard({ d, onOpen, onParticipe }) {
             color: "#fff", background: d.ended ? C.ink2 : d.fill,
           }}
         >
-          {d.isFull ? "🔒 Complet" : d.ended ? "Voir les posts" : "+ Participer"}
+          {d.isFull ? "🔒 Complet" : d.ended ? "Voir les posts" : d.participants === 0 ? "✨ Relever le défi" : "+ Participer"}
         </button>
       </div>
     </div>
