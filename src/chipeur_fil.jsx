@@ -41,7 +41,7 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
           <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
-          <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 7, letterSpacing: 2, color: C.accent, textTransform: "uppercase", lineHeight: 1.2 }}>
+          <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 7, letterSpacing: 2, color: C.accent, textTransform: "uppercase", lineHeight: 1, marginTop: -1 }}>
             Découvre · Chope · Partage
           </div>
           {profile?.pseudo && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.ink2, marginTop: 1 }}>Bonjour {profile.pseudo} 👋</div>}
@@ -133,7 +133,7 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
 function FilTabs({ active, onSelect, setPage }) {
   const tabs = [
     { id: "Tout", label: "Tout" },
-    { id: "Trouvailles", label: "Trouvailles" },
+    { id: "Chopes", label: "Chopes" },
     { id: "Lieux", label: "Lieux" },
     { id: "Bons plans", label: "Bons plans" },
     { id: "Défis", label: "Défis" },
@@ -157,31 +157,51 @@ function FilTabs({ active, onSelect, setPage }) {
   );
 }
 
-// ─── FILTRE VILLE TOGGLE ───
-function VilleToggle({ filtreVille, setFiltreVille, quartier }) {
-  if (!quartier) return null;
+// ─── VILLES DU BASSIN DÉODATIEN ────────────────────────────────
+const BASIN_CITIES = [
+  "Saint-Dié-des-Vosges", "Saint-Dié",
+  "Senones", "Raon-l'Étape", "Étival-Clairefontaine",
+  "Fraize", "Bruyères", "Ban-de-Laveline", "La Bresse",
+  "Gérardmer", "Corcieux", "Moyenmoutier",
+];
+
+const ZONE_OPTIONS = [
+  { id: "tout",     label: "🌍 Tout le fil" },
+  { id: "bassin",   label: "📍 Saint-Dié et alentours" },
+  { id: "saint-die",label: "🏙️ Saint-Dié-des-Vosges" },
+  { id: "senones",  label: "Senones" },
+  { id: "raon",     label: "Raon-l'Étape" },
+  { id: "etival",   label: "Étival-Clairefontaine" },
+  { id: "fraize",   label: "Fraize" },
+  { id: "bruyeres", label: "Bruyères" },
+  { id: "ban",      label: "Ban-de-Laveline" },
+  { id: "gérardmer",label: "Gérardmer" },
+];
+
+// ─── FILTRE ZONE ────────────────────────────────────────────────
+function VilleSelect({ zone, setZone }) {
+  const isFiltered = zone !== "tout";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px 10px", flexShrink: 0 }}>
-      <button
-        onClick={() => setFiltreVille(false)}
+    <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
+      <select
+        value={zone}
+        onChange={e => setZone(e.target.value)}
         style={{
-          fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
-          border: "none", cursor: "pointer", whiteSpace: "nowrap",
-          background: !filtreVille ? C.accent : C.pill,
-          color: !filtreVille ? "#fff" : C.ink2,
-          fontFamily: "'DM Sans', sans-serif",
-          transition: "all 0.15s",
-        }}>🌍 Tout le fil</button>
-      <button
-        onClick={() => setFiltreVille(true)}
-        style={{
-          fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
-          border: "none", cursor: "pointer", whiteSpace: "nowrap",
-          background: filtreVille ? C.accent : C.pill,
-          color: filtreVille ? "#fff" : C.ink2,
-          fontFamily: "'DM Sans', sans-serif",
-          transition: "all 0.15s",
-        }}>📍 {quartier}</button>
+          width: "100%", padding: "7px 14px", borderRadius: 20,
+          border: `1.5px solid ${isFiltered ? C.accent : C.border}`,
+          fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+          color: isFiltered ? C.accent : C.ink2,
+          background: isFiltered ? "#FFF3F0" : C.card,
+          outline: "none", cursor: "pointer", appearance: "none",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B6560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center",
+          paddingRight: 34,
+        }}
+      >
+        {ZONE_OPTIONS.map(o => (
+          <option key={o.id} value={o.id}>{o.label}</option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -716,7 +736,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [filtreVille, setFiltreVille] = useState(false);
+  const [zone, setZone] = useState("tout");
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef(null);
   const touchStartY = useRef(null);
@@ -739,7 +759,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
 
   // Mapping onglet → valeur post_type en base
   const TAB_TO_POST_TYPE = {
-    "Trouvailles": "decouverte",
+    "Chopes": "decouverte",
     "Lieux": "lieu",
     "Bons plans": "bonplan",
   };
@@ -750,8 +770,13 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       .from("posts")
       .select("*, profiles(id, pseudo, avatar_url, role)")
       .order("created_at", { ascending: false });
-    if (filtreVille && profile?.quartier) {
-      q = q.eq("location", profile.quartier);
+    if (zone === "bassin") {
+      q = q.in("location", BASIN_CITIES);
+    } else if (zone === "saint-die") {
+      q = q.in("location", ["Saint-Dié-des-Vosges", "Saint-Dié"]);
+    } else if (zone !== "tout") {
+      const cityLabel = ZONE_OPTIONS.find(o => o.id === zone)?.label.replace(/^[^\s]+ /, "");
+      if (cityLabel) q = q.eq("location", cityLabel);
     }
     q.then(({ data, error }) => {
       if (error) { setFetchError(error.message); console.error("Posts error:", error); }
@@ -760,7 +785,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     });
   };
 
-  useEffect(() => { loadPosts(); }, [filtreVille]);
+  useEffect(() => { loadPosts(); }, [zone]);
 
   // Filtrage client-side selon l'onglet actif
   const filteredPosts = activeTab === "Tout" || !TAB_TO_POST_TYPE[activeTab]
@@ -776,7 +801,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     }}>
       <AppHeader setPage={setPage} profile={profile} user={user} requireAuth={requireAuth} />
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
-      <VilleToggle filtreVille={filtreVille} setFiltreVille={setFiltreVille} quartier={profile?.quartier} />
+      <VilleSelect zone={zone} setZone={setZone} />
       <div
         ref={scrollRef}
         onTouchStart={handleTouchStart}
@@ -798,7 +823,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
           <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>Chargement du fil…</div>
         ) : filteredPosts.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 16px" }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>🏘️</div>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>🫣</div>
             <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 6 }}>
               {activeTab === "Tout" ? "Le fil est vide pour l'instant" : `Aucun post "${activeTab}" pour l'instant`}
             </div>

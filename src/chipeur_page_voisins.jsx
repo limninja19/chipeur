@@ -465,7 +465,7 @@ export default function ChipeurPageVoisins({ setPage, user, profile, setConversa
           <div style={{ padding: "14px 18px 0", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
               <button onClick={() => setPage("profil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2 }}>←</button>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Voisins 🏘️</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Voisins 🫣</div>
             </div>
             <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10 }}>
               {loading ? "Chargement…" : `${voisins.length} voisin${voisins.length > 1 ? "s" : ""} inscrit${voisins.length > 1 ? "s" : ""}`}
@@ -493,7 +493,7 @@ export default function ChipeurPageVoisins({ setPage, user, profile, setConversa
               <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2 }}>Chargement des voisins…</div>
             ) : filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 16px" }}>
-                <div style={{ fontSize: 36, marginBottom: 10 }}>🏘️</div>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>🫣</div>
                 <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun voisin trouvé</div>
                 <div style={{ fontSize: 12, color: C.ink2 }}>Invite des amis à rejoindre Chipeur !</div>
               </div>
