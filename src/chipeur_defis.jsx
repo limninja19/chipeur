@@ -786,6 +786,7 @@ function CreerDefiScreen({ user, profile, onBack, onSuccess }) {
       xp:              15,
       ended:           false,
       user_id:         user?.id || null,
+      merchant_name:   profile?.pseudo || profile?.nom || null,
       ...(photo_url ? { photo_url } : {}),
     }).select().single();
     if (err) { setError(err.message); setPublishing(false); return; }
@@ -959,7 +960,7 @@ export default function ChipeurDefis({ setPage, user, profile }) {
       // 1. Charger les défis
       const { data: defisData, error } = await supabase
         .from("defis")
-        .select("*, profiles:user_id(pseudo)")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error || !defisData || defisData.length === 0) {
@@ -1012,7 +1013,7 @@ export default function ChipeurDefis({ setPage, user, profile }) {
           grad: d.grad || palette.grad,
           fill: d.fill || palette.fill,
           reward: d.reward || null,
-          merchant_name: d.profiles?.pseudo || null,
+          merchant_name: d.merchant_name || null,
           selection_mode: d.selection_mode || "choix",
         };
       });

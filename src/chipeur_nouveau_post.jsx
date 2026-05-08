@@ -57,11 +57,12 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
     let finalFile = file;
     if (isHeic) {
       try {
-        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
-        finalFile = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+        const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+        // heic2any peut retourner un Blob OU un tableau de Blob (multi-frames)
+        const blob = Array.isArray(result) ? result[0] : result;
+        finalFile = new File([blob], file.name.replace(/\.hei[cf]$/i, ".jpg"), { type: "image/jpeg" });
       } catch (err) {
         console.error("Conversion HEIC échouée:", err);
-        // On continue avec le fichier original, ça peut quand même marcher
       }
     }
 
@@ -77,7 +78,7 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
     <div style={{ marginBottom: 14 }}>
       <input
         type="file"
-        accept="image/*,video/*"
+        accept="image/*,video/*,.heic,.heif"
         onChange={handleFile}
         style={{ display: "none" }}
         id={inputId}
