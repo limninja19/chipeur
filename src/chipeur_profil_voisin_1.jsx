@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 import { getLevel, getNextLevel, getLevelProgress } from "./chipeur_xp";
 import { THEMES, miniDefisAll } from "./chipeur_univers_data";
+import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
 async function compressImage(file, maxPx = 1200, quality = 0.82) {
@@ -668,29 +669,71 @@ function TabDefis({ setPage }) {
     </div>
   );
 
+  const EMOJI_TO_CAT = {
+    "👗":"Mode","👠":"Mode","💄":"Beauté","🍕":"Resto","🥖":"Resto",
+    "🎨":"Loisirs","⚽":"Loisirs","🏠":"Maison","🛍️":"Mode","🏺":"Maison",
+    "☕":"Resto","🧁":"Resto","🍷":"Resto","🎯":"Loisirs","🌿":"Maison",
+  };
+
   return (
     <div>
-      {defis.map(d => (
-        <div
-          key={d.id}
-          onClick={() => setPage("defis")}
-          style={{
-            background: C.card, borderRadius: 18, border: `1px solid ${C.border}`,
-            padding: "12px 14px", marginBottom: 10, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 12,
-          }}
-        >
-          <div style={{ fontSize: 34, flexShrink: 0 }}>{d.emoji || "🏆"}</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 4, lineHeight: 1.2 }}>{d.title}</div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: C.accent, fontWeight: 700, background: "#FFF0EB", padding: "2px 8px", borderRadius: 8 }}>+{d.xp || 10} XP</span>
-              {d.ends_at && <span style={{ fontSize: 10, color: C.ink2 }}>⏱ {computeTimeLeftProfil(d.ends_at, d.ended)}</span>}
+      {defis.map(d => {
+        const category = EMOJI_TO_CAT[d.emoji] || "Mode";
+        const rewardAmount = d.reward?.match(/(\d+)\s*€/)?.[1]
+          ? `${d.reward.match(/(\d+)\s*€/)[1]}€`
+          : d.reward?.split(" ").slice(0, 2).join(" ");
+        const timeLeft = computeTimeLeftProfil(d.ends_at, d.ended);
+
+        return (
+          <div
+            key={d.id}
+            onClick={() => setPage("defis")}
+            style={{
+              background: C.card, borderRadius: 18, border: `1px solid ${C.border}`,
+              overflow: "hidden", marginBottom: 12, cursor: "pointer",
+              boxShadow: "0 3px 12px rgba(0,0,0,0.07)",
+            }}
+          >
+            {/* Photo */}
+            <div style={{ position: "relative", height: 120 }}>
+              <ChallengeMedia
+                photoUrl={d.photo_url || null}
+                merchantName={d.merchant_name || d.title}
+                category={category}
+                height={120}
+              />
+              {rewardAmount && (
+                <div style={{ position: "absolute", top: 8, left: 8 }}>
+                  <RewardBadge amount={rewardAmount} size="sm" />
+                </div>
+              )}
+              <div style={{
+                position: "absolute", top: 8, right: 8,
+                background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)",
+                padding: "3px 8px", borderRadius: 999,
+                fontSize: 9, fontWeight: 700, color: "#fff",
+              }}>⏱ {timeLeft}</div>
+            </div>
+            {/* Texte */}
+            <div style={{ padding: "10px 12px 12px" }}>
+              {d.merchant_name && (
+                <div style={{ fontSize: 9, fontWeight: 700, color: C.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>
+                  🏪 {d.merchant_name}
+                </div>
+              )}
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, lineHeight: 1.25, marginBottom: 4 }}>
+                {d.title}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 10, color: C.accent, fontWeight: 700, background: "#FFF0EB", padding: "2px 8px", borderRadius: 8 }}>
+                  +{d.xp || 10} XP
+                </span>
+                <span style={{ fontSize: 11, color: C.ink2, fontWeight: 600 }}>Participer →</span>
+              </div>
             </div>
           </div>
-          <div style={{ fontSize: 18, color: C.ink2 }}>→</div>
-        </div>
-      ))}
+        );
+      })}
       <button
         onClick={() => setPage("defis")}
         style={{
