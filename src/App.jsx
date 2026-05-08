@@ -17,6 +17,7 @@ import { ReglementScreen } from "./chipeur_settings";
 import { checkDailyLogin } from "./chipeur_xp";
 import Notifications from "./chipeur_notifications";
 import Messages from "./chipeur_messages";
+import SignupModal from "./SignupModal";
 
 function SplashScreen() {
   return (
@@ -102,36 +103,64 @@ export default function App() {
     }
   }, [user, profile]);
 
+  const [showSignup, setShowSignup] = useState(false);
+
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
 
   if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => setPage("fil")} />;
-  if (page === "connexion")   return <Connexion  setPage={setPage} onAuth={() => setPage("fil")} />;
+  if (page === "connexion")   return <Connexion   setPage={setPage} onAuth={() => setPage("fil")} />;
 
-  // Accès libre au fil sans compte — la modale s'ouvre à la première action
-  if (user === null) return <Fil setPage={setPage} user={null} profile={null} selectedVoisinId={selectedVoisinId} setSelectedVoisinId={setSelectedVoisinId} conversationWith={conversationWith} setConversationWith={setConversationWith} updateProfile={() => {}} />;
+  // Props communes — user peut être null (visiteur libre)
+  const sharedProps = {
+    setPage, user, profile, updateProfile,
+    conversationWith, setConversationWith,
+    selectedVoisinId, setSelectedVoisinId,
+    // Permet à n'importe quelle page d'ouvrir la modale d'inscription
+    requireAuth: (callback) => {
+      if (user) { callback?.(); return true; }
+      setShowSignup(true);
+      return false;
+    },
+  };
 
-  // Props communes passées à toutes les pages
-  const sharedProps = { setPage, user, profile, updateProfile, conversationWith, setConversationWith, selectedVoisinId, setSelectedVoisinId };
-
-  if (page === "defis") return <Defis {...sharedProps} />;
-  if (page === "sorties") return <Sorties {...sharedProps} />;
-  if (page === "nouveau") return <NouveauPost {...sharedProps} />;
-  if (page === "commerces") return <Commerces {...sharedProps} />;
-  if (page === "profil") {
-    // On vérifie le rôle dans la table profiles ET dans les métadonnées Auth Supabase
-    // (au cas où le trigger n'a pas encore copié le rôle dans profiles)
-    const roleProfil = profile?.role;
-    const roleMeta = user?.user_metadata?.role;
-    const isMarchand = ["magasin", "artisan", "commercant"].includes(roleProfil) || ["magasin", "artisan", "commercant"].includes(roleMeta);
-    if (isMarchand) return <ProfilMagasin {...sharedProps} />;
-    return <ProfilVoisin {...sharedProps} />;
+  // Pages protégées — redirige vers la modale si non connecté
+  const protectedPages = ["nouveau", "profil", "notifications", "messages", "reductions"];
+  if (!user && protectedPages.includes(page)) {
+    setShowSignup(true);
+    setPageRaw("fil");
   }
-  if (page === "reductions") return <MesReductions {...sharedProps} />;
-  if (page === "reglement") return <ReglementScreen {...sharedProps} />;
-  if (page === "profilMagasin") return <ProfilMagasin {...sharedProps} />;
-  if (page === "voisins") return <PageVoisins {...sharedProps} />;
-  if (page === "notifications") return <Notifications {...sharedProps} />;
-  if (page === "messages") return <Messages {...sharedProps} />;
 
-  return <Fil {...sharedProps} />;
+  return (
+    <>
+      {/* Modale d'inscription globale déclenchée par requireAuth() */}
+      {showSignup && (
+        <SignupModal
+          onClose={() => setShowSignup(false)}
+          onSuccess={() => { setShowSignup(false); }}
+        />
+      )}
+
+      {page === "defis"        && <Defis        {...sharedProps} />}
+      {page === "sorties"      && <Sorties       {...sharedProps} />}
+      {page === "nouveau"      && user && <NouveauPost {...sharedProps} />}
+      {page === "commerces"    && <Commerces     {...sharedProps} />}
+      {page === "reductions"   && user && <MesReductions {...sharedProps} />}
+      {page === "reglement"    && <ReglementScreen {...sharedProps} />}
+      {page === "profilMagasin"&& <ProfilMagasin {...sharedProps} />}
+      {page === "voisins"      && <PageVoisins   {...sharedProps} />}
+      {page === "notifications"&& user && <Notifications {...sharedProps} />}
+      {page === "messages"     && user && <Messages     {...sharedProps} />}
+      {page === "profil" && (() => {
+        if (!user) return null;
+        const roleProfil = profile?.role;
+        const roleMeta   = user?.user_metadata?.role;
+        const isMarchand = ["magasin","artisan","commercant"].includes(roleProfil) || ["magasin","artisan","commercant"].includes(roleMeta);
+        return isMarchand ? <ProfilMagasin {...sharedProps} /> : <ProfilVoisin {...sharedProps} />;
+      })()}
+      {/* Fil = page par défaut, visible aussi sans compte */}
+      {!["defis","sorties","nouveau","commerces","reductions","reglement","profilMagasin","voisins","notifications","messages","profil"].includes(page) && (
+        <Fil {...sharedProps} />
+      )}
+    </>
+  );
 }
