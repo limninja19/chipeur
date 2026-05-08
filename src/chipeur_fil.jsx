@@ -41,7 +41,7 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
           <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
-          <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 7, letterSpacing: 2, color: C.accent, textTransform: "uppercase", lineHeight: 1, marginTop: -1 }}>
+          <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 9, letterSpacing: 0.5, color: C.accent, textTransform: "uppercase", lineHeight: 1, marginTop: -1 }}>
             Découvre · Chope · Partage
           </div>
           {profile?.pseudo && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.ink2, marginTop: 1 }}>Bonjour {profile.pseudo} 👋</div>}
