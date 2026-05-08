@@ -13,7 +13,7 @@ const C = {
 
 
 // ─── APP HEADER ───
-function AppHeader({ setPage, profile, user }) {
+function AppHeader({ setPage, profile, user, requireAuth }) {
   const unreadNotifs = useUnreadNotifs(user?.id);
   const unreadMessages = useUnreadMessages(user?.id);
 
@@ -64,41 +64,67 @@ function AppHeader({ setPage, profile, user }) {
           ))}
         </div>
 
-        {/* Cloche notifications avec badge */}
-        <div
-          onClick={() => setPage("notifications")}
-          style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
-        >
-          🔔
-          {unreadNotifs > 0 && (
-            <div style={{
-              position: "absolute", top: -4, right: -6,
-              background: C.accent, color: "#fff",
-              borderRadius: "50%", width: 16, height: 16,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
-              border: "1.5px solid #fff",
-            }}>{unreadNotifs > 9 ? "9+" : unreadNotifs}</div>
-          )}
-        </div>
+        {/* Si non connecté → bouton Rejoindre */}
+        {!user ? (
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => setPage("connexion")}
+              style={{
+                background: "transparent", border: `1.5px solid ${C.border}`,
+                borderRadius: 20, padding: "6px 12px",
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif", color: C.ink2,
+              }}
+            >Se connecter</button>
+            <button
+              onClick={() => requireAuth?.(() => {})}
+              style={{
+                background: C.accent, border: "none",
+                borderRadius: 20, padding: "6px 12px",
+                fontSize: 12, fontWeight: 700, cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif", color: "#fff",
+              }}
+            >Rejoindre 🔥</button>
+          </div>
+        ) : (
+          <>
+            {/* Cloche notifications avec badge */}
+            <div
+              onClick={() => setPage("notifications")}
+              style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
+            >
+              🔔
+              {unreadNotifs > 0 && (
+                <div style={{
+                  position: "absolute", top: -4, right: -6,
+                  background: C.accent, color: "#fff",
+                  borderRadius: "50%", width: 16, height: 16,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
+                  border: "1.5px solid #fff",
+                }}>{unreadNotifs > 9 ? "9+" : unreadNotifs}</div>
+              )}
+            </div>
 
-        {/* Bulle messages avec badge */}
-        <div
-          onClick={() => setPage("messages")}
-          style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
-        >
-          💬
-          {unreadMessages > 0 && (
-            <div style={{
-              position: "absolute", top: -4, right: -6,
-              background: C.accent, color: "#fff",
-              borderRadius: "50%", width: 16, height: 16,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
-              border: "1.5px solid #fff",
-            }}>{unreadMessages > 9 ? "9+" : unreadMessages}</div>
-          )}
-        </div>
+            {/* Bulle messages avec badge */}
+            <div
+              onClick={() => setPage("messages")}
+              style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
+            >
+              💬
+              {unreadMessages > 0 && (
+                <div style={{
+                  position: "absolute", top: -4, right: -6,
+                  background: C.accent, color: "#fff",
+                  borderRadius: "50%", width: 16, height: 16,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
+                  border: "1.5px solid #fff",
+                }}>{unreadMessages > 9 ? "9+" : unreadMessages}</div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -740,7 +766,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       fontFamily: "'DM Sans', sans-serif", color: C.ink,
       display: "flex", flexDirection: "column",
     }}>
-      <AppHeader setPage={setPage} profile={profile} user={user} />
+      <AppHeader setPage={setPage} profile={profile} user={user} requireAuth={requireAuth} />
       <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
       <VilleToggle filtreVille={filtreVille} setFiltreVille={setFiltreVille} quartier={profile?.quartier} />
       <div
