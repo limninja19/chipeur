@@ -874,12 +874,13 @@ export default function ChipeurCommerces({ setPage, user }) {
   const [realMerchants, setRealMerchants] = useState([]);
   const [loadingMerchants, setLoadingMerchants] = useState(true);
 
-  // Charger les vrais commerçants depuis Supabase (categorie non nulle = marchand)
+  // Charger les vrais commerçants depuis Supabase
+  // Filtre : role = "magasin" (set par le trigger auth) OU categorie non nulle (anciens comptes)
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires")
-      .not("categorie", "is", null)
+      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role")
+      .or("role.eq.magasin,categorie.not.is.null")
       .not("pseudo", "is", null)
       .then(async ({ data: profiles }) => {
         if (!profiles || profiles.length === 0) {

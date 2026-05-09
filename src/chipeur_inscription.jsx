@@ -733,6 +733,10 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     }
 
     // 1. Créer le compte Supabase Auth
+    // On inclut toutes les infos dans les métadonnées pour que le trigger Supabase les copie
+    // dans le profil même si l'upsert manuel échoue ensuite (ex: vérification email requise)
+    const catFinal = cat || "Autre";
+    const metierFinal = metier.trim() || cat || "Commerce";
     const { data, error } = await supabase.auth.signUp({
       email: creds.email,
       password: creds.mdp,
@@ -740,6 +744,10 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         data: {
           pseudo: nom,
           role: "magasin",
+          categorie: catFinal,
+          metier: metierFinal,
+          quartier: adr || "",
+          bio: desc || "",
         },
       },
     });
@@ -750,18 +758,19 @@ export default function ChipeurInscription({ setPage, onAuth }) {
       return;
     }
 
-    // 2. Mettre à jour le profil avec les infos du magasin
+    // 2. Mettre à jour le profil avec les infos du magasin (complète le trigger auth)
     if (data?.user) {
-      await supabase.from("profiles").upsert({
+      const { error: upsertErr } = await supabase.from("profiles").upsert({
         id: data.user.id,
         pseudo: nom,
         bio: desc || "",
         quartier: adr || "",
-        categorie: cat || "Autre",
-        metier: metier || cat || "Commerce",
+        categorie: catFinal,
+        metier: metierFinal,
         age_range: ageRange,
         role: "magasin",
       });
+      if (upsertErr) console.warn("Upsert profil magasin:", upsertErr.message);
     }
 
     setLoadingSignup(false);
