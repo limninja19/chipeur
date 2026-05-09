@@ -92,12 +92,16 @@ function TagPills({ tags, activeTags, onToggle }) {
 }
 
 // ─── PHOTO ZONE ───
-function PhotoZone({ onPhotoSelect, zoneId }) {
-  const [preview, setPreview] = useState(null);
+// externalPreview : URL contrôlée depuis le parent — source de vérité principale
+function PhotoZone({ onPhotoSelect, zoneId, externalPreview }) {
+  const [internalPreview, setInternalPreview] = useState(null);
   const [fileName, setFileName] = useState("");
   const [previewFailed, setPreviewFailed] = useState(false);
   const [sizeError, setSizeError] = useState("");
   const inputId = zoneId || "photo-input-main";
+
+  // On utilise externalPreview si fourni, sinon preview interne (sécurité)
+  const preview = externalPreview !== undefined ? externalPreview : internalPreview;
 
   const handleFile = async (e) => {
     const file = e.target.files[0];
@@ -116,15 +120,15 @@ function PhotoZone({ onPhotoSelect, zoneId }) {
       } catch (err) { console.error("Conversion HEIC échouée:", err); }
     }
     const url = URL.createObjectURL(finalFile);
-    setPreview(url);
+    setInternalPreview(url);
     setFileName(finalFile.name);
-    onPhotoSelect && onPhotoSelect(finalFile);
+    onPhotoSelect && onPhotoSelect(finalFile, url); // on passe aussi l'URL au parent
   };
 
   const removePhoto = (e) => {
     e.preventDefault(); e.stopPropagation();
-    setPreview(null); setFileName("");
-    onPhotoSelect && onPhotoSelect(null);
+    setInternalPreview(null); setFileName("");
+    onPhotoSelect && onPhotoSelect(null, null);
   };
 
   const isVideo = fileName && (fileName.toLowerCase().endsWith(".mp4") || fileName.toLowerCase().endsWith(".mov") || fileName.toLowerCase().endsWith(".avi"));
@@ -272,10 +276,10 @@ function PepiteToggle({ on, onChange }) {
 }
 
 // ─── FORM: TROUVAILLE ───
-function FormDecouverte({ content, onChange, onPhotoSelect, activeTags, onTagToggle, pepiteOn, onPepiteChange, magasinId, onMagasinSelect }) {
+function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, pepiteOn, onPepiteChange, magasinId, onMagasinSelect }) {
   return (
     <>
-      <PhotoZone onPhotoSelect={onPhotoSelect} />
+      <PhotoZone onPhotoSelect={onPhotoSelect} externalPreview={photoPreview} />
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.5 }}>Description</label>
         <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Raconte ce moment au quartier..." style={{
@@ -401,10 +405,10 @@ function FormSortie({ fields, onChange }) {
 }
 
 // ─── FORM: BON PLAN ───
-function FormBonPlan({ content, onChange, onPhotoSelect, activeTags, onTagToggle, magasinId, onMagasinSelect }) {
+function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, magasinId, onMagasinSelect }) {
   return (
     <>
-      <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-bonplan" />
+      <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-bonplan" externalPreview={photoPreview} />
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Ton conseil ou adresse *</label>
         <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="Partage ton bon plan avec les voisins..." style={{
@@ -542,7 +546,14 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null); // URL blob pour affichage contrôlé
   const [publishing, setPublishing] = useState(false);
+
+  // Callback centralisé pour la sélection/suppression photo (chope + bon plan)
+  const handlePhotoSelect = (file, url) => {
+    setPhotoFile(file || null);
+    setPhotoPreview(url || null);
+  };
   const [publishError, setPublishError] = useState("");
   const [showDroitImage, setShowDroitImage] = useState(false);
   // Tags (partagé entre trouvaille et bon plan)
@@ -702,7 +713,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
 
   const formMap = {
     decouverte: <FormDecouverte
-      content={content} onChange={setContent} onPhotoSelect={setPhotoFile}
+      content={content} onChange={setContent}
+      onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
       pepiteOn={pepiteOn} onPepiteChange={setPepiteOn}
       magasinId={magasinId} onMagasinSelect={setMagasinId}
@@ -710,12 +722,14 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
     lieu: <FormLieu fields={lieuFields} onChange={updateLieuField} onPhotoSelect={setLieuPhotoFile} />,
     sortie: <FormSortie fields={sortieFields} onChange={updateSortieField} />,
     bonplan: <FormBonPlan
-      content={content} onChange={setContent} onPhotoSelect={setPhotoFile}
+      content={content} onChange={setContent}
+      onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
       magasinId={magasinId} onMagasinSelect={setMagasinId}
     />,
     promo: <FormBonPlan
-      content={content} onChange={setContent} onPhotoSelect={setPhotoFile}
+      content={content} onChange={setContent}
+      onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
       magasinId={magasinId} onMagasinSelect={setMagasinId}
     />,
@@ -773,6 +787,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
                         return;
                       }
                       setSelectedType(t.id); setActiveTags([]);
+                      setPhotoFile(null); setPhotoPreview(null); // reset photo à chaque changement de type
                     }} style={{
                       borderRadius: 20, cursor: "pointer", overflow: "hidden",
                       border: `2px solid ${isSelected ? "transparent" : C.border}`,
