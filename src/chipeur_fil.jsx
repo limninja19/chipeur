@@ -503,7 +503,18 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</span>
+                {post.post_type === "decouverte" && (
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#FFF0EC", color: "#C83E1A" }}>🛍️ Chope</span>
+                )}
+                {post.post_type === "lieu" && (
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#EBF5F0", color: "#0A5C36" }}>📍 Lieu</span>
+                )}
+                {post.post_type === "bonplan" && (
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#F5F3FF", color: "#5B21B6" }}>💸 Bon plan</span>
+                )}
+              </div>
             </div>
           </div>
           {/* Icône profil — uniquement si ce n'est pas notre propre post */}
