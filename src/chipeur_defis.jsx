@@ -263,10 +263,272 @@ function DefiCard({ d, onOpen, onParticipe }) {
   );
 }
 
+// ─── SWIPE VOTE MODAL ───────────────────────────────────────────
+function SwipeVoteModal({ d, user, onClose }) {
+  const [photos, setPhotos]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [index, setIndex]       = useState(0);
+  const [votes, setVotes]       = useState({});      // post_id → "like"|"pass"
+  const [done, setDone]         = useState(false);
+  const [swipeDir, setSwipeDir] = useState(null);    // "left"|"right" pour animation
+  const [alreadyVoted, setAlreadyVoted] = useState(new Set());
+
+  // Touch swipe
+  const touchStartX = useState(null);
+  const touchRef    = { x: null };
+
+  useEffect(() => {
+    if (!d?.id) return;
+    setLoading(true);
+    supabase
+      .from("posts")
+      .select("id, content, image_url, author_id, profiles:author_id(pseudo, avatar_url)")
+      .eq("defi_id", d.id)
+      .not("image_url", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(80)
+      .then(async ({ data }) => {
+        const list = (data || []).filter(p => p.image_url);
+        setPhotos(list);
+
+        // Récupère les votes existants de cet user pour ce défi
+        if (user?.id && list.length > 0) {
+          const { data: existing } = await supabase
+            .from("defi_votes")
+            .select("post_id, vote")
+            .eq("defi_id", d.id)
+            .eq("voter_id", user.id);
+          if (existing?.length > 0) {
+            const seen = new Set(existing.map(v => v.post_id));
+            const map  = {};
+            existing.forEach(v => { map[v.post_id] = v.vote; });
+            setAlreadyVoted(seen);
+            setVotes(map);
+            // Sauter les photos déjà votées
+            const firstUnvoted = list.findIndex(p => !seen.has(p.id));
+            setIndex(firstUnvoted === -1 ? list.length : firstUnvoted);
+            if (firstUnvoted === -1) setDone(true);
+          }
+        }
+        setLoading(false);
+      });
+  }, [d?.id, user?.id]);
+
+  const currentPhoto = photos[index];
+
+  async function castVote(postId, vote) {
+    if (!user?.id) return;
+    setVotes(v => ({ ...v, [postId]: vote }));
+    // Upsert en base
+    await supabase.from("defi_votes").upsert({
+      defi_id:  d.id,
+      post_id:  postId,
+      voter_id: user.id,
+      vote,
+    }, { onConflict: "post_id,voter_id" });
+  }
+
+  async function handleVote(dir) {
+    if (!currentPhoto || swipeDir) return;
+    const vote = dir === "right" ? "like" : "pass";
+    setSwipeDir(dir);
+    await castVote(currentPhoto.id, vote);
+    setTimeout(() => {
+      setSwipeDir(null);
+      const next = index + 1;
+      if (next >= photos.length) setDone(true);
+      else setIndex(next);
+    }, 320);
+  }
+
+  // Comptage des likes
+  const likeCount = Object.values(votes).filter(v => v === "like").length;
+  const topPhotos = photos
+    .filter(p => votes[p.id] === "like")
+    .slice(0, 6);
+
+  const cardStyle = {
+    position: "absolute", inset: 0,
+    borderRadius: 24, overflow: "hidden",
+    transition: swipeDir ? "transform 0.3s ease, opacity 0.3s ease" : "none",
+    transform: swipeDir === "right"
+      ? "translateX(120%) rotate(18deg)"
+      : swipeDir === "left"
+        ? "translateX(-120%) rotate(-18deg)"
+        : "none",
+    opacity: swipeDir ? 0 : 1,
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 200,
+      background: "rgba(10,8,6,0.88)", backdropFilter: "blur(8px)",
+      display: "flex", flexDirection: "column", alignItems: "center",
+    }}>
+      {/* Header */}
+      <div style={{
+        width: "100%", padding: "14px 20px", display: "flex",
+        alignItems: "center", justifyContent: "space-between", flexShrink: 0,
+      }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: "#fff" }}>
+          🗳️ Voter — {d.title}
+        </div>
+        <button onClick={onClose} style={{
+          background: "rgba(255,255,255,0.12)", border: "none",
+          borderRadius: "50%", width: 34, height: 34, color: "#fff",
+          fontSize: 18, cursor: "pointer", display: "flex",
+          alignItems: "center", justifyContent: "center",
+        }}>✕</button>
+      </div>
+
+      {loading ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.6)", fontSize: 14 }}>
+          Chargement des photos…
+        </div>
+      ) : photos.length === 0 ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          <div style={{ fontSize: 40 }}>📷</div>
+          <div style={{ color: "#fff", fontSize: 14, textAlign: "center", padding: "0 32px" }}>
+            Pas encore de photos dans ce défi. Sois la première à participer !
+          </div>
+        </div>
+      ) : done ? (
+        /* ── ÉCRAN RÉSULTATS ── */
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column",
+          alignItems: "center", padding: "0 20px 20px", overflowY: "auto", width: "100%",
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: "#fff", marginBottom: 4 }}>
+            Vote terminé !
+          </div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginBottom: 20, textAlign: "center" }}>
+            Tu as liké <strong style={{ color: "#FF5733" }}>{likeCount} photo{likeCount > 1 ? "s" : ""}</strong> sur {photos.length}
+          </div>
+          {topPhotos.length > 0 && (
+            <>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,0.85)", marginBottom: 12, alignSelf: "flex-start" }}>
+                ❤️ Tes coups de cœur
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, width: "100%", marginBottom: 24 }}>
+                {topPhotos.map(p => (
+                  <div key={p.id} style={{ aspectRatio: "3/4", borderRadius: 14, overflow: "hidden", position: "relative" }}>
+                    <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div style={{ position: "absolute", top: 6, right: 6, fontSize: 14 }}>❤️</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          <button onClick={onClose} style={{
+            background: "#FF5733", color: "#fff", border: "none",
+            borderRadius: 16, padding: "14px 32px",
+            fontSize: 15, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+          }}>Fermer ✓</button>
+        </div>
+      ) : (
+        /* ── CARTE SWIPE ── */
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "0 20px" }}>
+          {/* Compteur */}
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 12 }}>
+            {index + 1} / {photos.length}
+          </div>
+
+          {/* Carte photo */}
+          <div
+            style={{ position: "relative", width: "100%", maxWidth: 380, flex: 1, maxHeight: 460, marginBottom: 20 }}
+            onTouchStart={e => { touchRef.x = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              if (touchRef.x === null) return;
+              const dx = e.changedTouches[0].clientX - touchRef.x;
+              touchRef.x = null;
+              if (Math.abs(dx) > 60) handleVote(dx > 0 ? "right" : "left");
+            }}
+          >
+            <div style={cardStyle}>
+              <img
+                src={currentPhoto.image_url}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+              {/* Overlay infos */}
+              <div style={{
+                position: "absolute", bottom: 0, left: 0, right: 0,
+                background: "linear-gradient(transparent, rgba(0,0,0,0.75))",
+                padding: "40px 16px 16px",
+              }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 3 }}>
+                  {currentPhoto.profiles?.pseudo || "Voisine"}
+                </div>
+                {currentPhoto.content && (
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.4 }}>
+                    {currentPhoto.content.slice(0, 80)}{currentPhoto.content.length > 80 ? "…" : ""}
+                  </div>
+                )}
+              </div>
+
+              {/* Indicateurs swipe en live */}
+              {swipeDir === "right" && (
+                <div style={{
+                  position: "absolute", top: 24, left: 20,
+                  background: "#22c55e", color: "#fff",
+                  fontFamily: syne, fontWeight: 900, fontSize: 22,
+                  padding: "6px 18px", borderRadius: 10, border: "3px solid #fff",
+                  transform: "rotate(-18deg)",
+                }}>❤️ LIKE</div>
+              )}
+              {swipeDir === "left" && (
+                <div style={{
+                  position: "absolute", top: 24, right: 20,
+                  background: "#ef4444", color: "#fff",
+                  fontFamily: syne, fontWeight: 900, fontSize: 22,
+                  padding: "6px 18px", borderRadius: 10, border: "3px solid #fff",
+                  transform: "rotate(18deg)",
+                }}>✕ PASS</div>
+              )}
+            </div>
+          </div>
+
+          {/* Hint swipe */}
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 14, textAlign: "center" }}>
+            ← Glisse à gauche pour passer · à droite pour liker →
+          </div>
+
+          {/* Boutons */}
+          <div style={{ display: "flex", gap: 28, alignItems: "center", marginBottom: 20 }}>
+            <button
+              onClick={() => handleVote("left")}
+              style={{
+                width: 62, height: 62, borderRadius: "50%",
+                background: "rgba(239,68,68,0.18)", border: "2px solid #ef4444",
+                fontSize: 26, cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center",
+                transition: "transform 0.15s",
+              }}
+            >✕</button>
+            <button
+              onClick={() => handleVote("right")}
+              style={{
+                width: 72, height: 72, borderRadius: "50%",
+                background: "rgba(34,197,94,0.18)", border: "2.5px solid #22c55e",
+                fontSize: 30, cursor: "pointer", display: "flex",
+                alignItems: "center", justifyContent: "center",
+                transition: "transform 0.15s",
+              }}
+            >❤️</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── DETAIL SCREEN ──────────────────────────────────────────────
 function DetailScreen({ d, user, onBack, onParticipe }) {
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [showSwipe, setShowSwipe] = useState(false);
+  const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
     if (!isUUID(d.id)) return;
@@ -281,6 +543,14 @@ function DetailScreen({ d, user, onBack, onParticipe }) {
         setPosts(data || []);
         setLoadingPosts(false);
       });
+
+    // Comptage total photos avec image
+    supabase
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("defi_id", d.id)
+      .not("image_url", "is", null)
+      .then(({ count }) => setPhotoCount(count || 0));
   }, [d.id]);
 
   // Couleur accent selon catégorie du défi
@@ -288,6 +558,11 @@ function DetailScreen({ d, user, onBack, onParticipe }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+
+      {/* ── MODALE SWIPE VOTE ── */}
+      {showSwipe && (
+        <SwipeVoteModal d={d} user={user} onClose={() => setShowSwipe(false)} />
+      )}
 
       {/* ── HERO : photo ou fallback ── */}
       <div style={{ position: "relative", flexShrink: 0 }}>
@@ -399,6 +674,30 @@ function DetailScreen({ d, user, onBack, onParticipe }) {
                 background: C.pill, color: C.ink2, fontFamily: dm,
               }}>{t}</div>
             ))}
+          </div>
+        )}
+
+        {/* ── Bouton voter sur les photos ── */}
+        {photoCount > 0 && (
+          <div
+            onClick={() => setShowSwipe(true)}
+            style={{
+              background: "linear-gradient(135deg,#FF5733,#F7A72D)",
+              borderRadius: 18, padding: "16px 20px", marginBottom: 16,
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 14,
+              boxShadow: "0 6px 20px rgba(255,87,51,0.35)",
+            }}
+          >
+            <div style={{ fontSize: 34 }}>🗳️</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 2 }}>
+                Voter sur les photos
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)" }}>
+                {photoCount} photo{photoCount > 1 ? "s" : ""} · Swipe ← pass · → like
+              </div>
+            </div>
+            <div style={{ fontSize: 22, color: "#fff" }}>›</div>
           </div>
         )}
 
