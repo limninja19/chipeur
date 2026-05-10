@@ -5,6 +5,7 @@ import { useUnreadMessages } from "./chipeur_messages";
 import { addXP } from "./chipeur_xp";
 import AuthGate from "./AuthGate";
 import { ChallengeCard } from "./ChallengeUI";
+import SwipeVoteModal from "./SwipeVoteModal";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -221,8 +222,9 @@ function extractRewardAmount(reward) {
   return m ? `${m[1]}€` : reward.split(" ").slice(0, 2).join(" ");
 }
 
-function BandeauDefis({ setPage }) {
-  const [defis, setDefis] = useState([]);
+function BandeauDefis({ setPage, user }) {
+  const [defis, setDefis]       = useState([]);
+  const [voteDefi, setVoteDefi] = useState(null); // défi en cours de vote
 
   useEffect(() => {
     supabase.from("defis").select("*").eq("ended", false)
@@ -262,6 +264,11 @@ function BandeauDefis({ setPage }) {
 
   return (
     <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
+      {/* Modale swipe vote */}
+      {voteDefi && (
+        <SwipeVoteModal d={voteDefi} user={user} onClose={() => setVoteDefi(null)} />
+      )}
+
       <div style={{
         fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
         letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
@@ -271,7 +278,19 @@ function BandeauDefis({ setPage }) {
       </div>
       <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6 }}>
         {defis.map(d => (
-          <ChallengeCard key={d.id} challenge={d} onClick={() => setPage("defis")} />
+          <div key={d.id} style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+            <ChallengeCard challenge={d} onClick={() => setPage("defis")} />
+            <button
+              onClick={() => setVoteDefi(d)}
+              style={{
+                background: "linear-gradient(135deg,#FF5733,#F7A72D)",
+                border: "none", borderRadius: 12, padding: "8px 0",
+                fontSize: 12, fontWeight: 700, color: "#fff",
+                cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                width: "100%", letterSpacing: 0.3,
+              }}
+            >🗳️ Voter sur les photos</button>
+          </div>
         ))}
       </div>
     </div>
@@ -759,7 +778,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
             ↻ Actualisation…
           </div>
         )}
-        <BandeauDefis setPage={setPage} />
+        <BandeauDefis setPage={setPage} user={user} />
 {fetchError && (
           <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 12, padding: "12px 14px", margin: "8px 0", fontSize: 12, color: "#C0392B" }}>
             ⚠️ Erreur : {fetchError}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { addXP } from "./chipeur_xp";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
+import SwipeVoteModal from "./SwipeVoteModal";
 
 // ─── HEIC → JPEG conversion (photos iPhone) ─────────────────────
 async function convertImageFile(file) {
@@ -263,8 +264,8 @@ function DefiCard({ d, onOpen, onParticipe }) {
   );
 }
 
-// ─── SWIPE VOTE MODAL ───────────────────────────────────────────
-function SwipeVoteModal({ d, user, onClose }) {
+// SwipeVoteModal est maintenant dans SwipeVoteModal.jsx
+function _SwipeVoteModalPlaceholder({ d, user, onClose }) {
   const [photos, setPhotos]     = useState([]);
   const [loading, setLoading]   = useState(true);
   const [index, setIndex]       = useState(0);
