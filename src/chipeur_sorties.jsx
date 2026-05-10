@@ -502,7 +502,7 @@ function EventDetailScreen({ event, user, onBack }) {
   const ts = TYPE_STYLES[event.type] || TYPE_STYLES["Autre"];
   const todayIsEvent = event.date_text ? isToday(event.date_text) : false;
   const withinSevenDays = event.date_text ? isWithinSevenDays(event.date_text) : false;
-  const canAddPhoto = !!user && going && withinSevenDays;
+  const canAddPhoto = !!user && withinSevenDays;
 
   useEffect(() => {
     if (!event?.id) { setLoadingPhotos(false); return; }
@@ -637,7 +637,7 @@ function EventDetailScreen({ event, user, onBack }) {
                 {canAddPhoto
                   ? "Partage tes photos avec les voisins !"
                   : withinSevenDays
-                    ? "Participe à l'événement pour ajouter tes photos."
+                    ? "Connecte-toi pour ajouter tes photos !"
                     : "Les voisins pourront partager leurs photos le jour de l'événement."}
               </div>
               {canAddPhoto && (
