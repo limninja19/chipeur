@@ -505,15 +505,15 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</span>
-                {post.post_type === "decouverte" && (
+                {post.defi_id ? (
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#FFF8E8", color: "#B45309" }}>🏆 Défi</span>
+                ) : post.post_type === "decouverte" ? (
                   <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#FFF0EC", color: "#C83E1A" }}>🛍️ Chope</span>
-                )}
-                {post.post_type === "lieu" && (
+                ) : post.post_type === "lieu" ? (
                   <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#EBF5F0", color: "#0A5C36" }}>📍 Lieu</span>
-                )}
-                {post.post_type === "bonplan" && (
+                ) : post.post_type === "bonplan" ? (
                   <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#F5F3FF", color: "#5B21B6" }}>💸 Bon plan</span>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -714,6 +714,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     let q = supabase
       .from("posts")
       .select("*, profiles(id, pseudo, avatar_url, role)")
+      .neq("post_type", "defi_photo")
       .order("created_at", { ascending: false });
     if (zone === "bassin") {
       q = q.in("location", BASIN_CITIES);
