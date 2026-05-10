@@ -297,6 +297,105 @@ function BandeauDefis({ setPage, user }) {
   );
 }
 
+// ─── BANDEAU SORTIES PHOTOS ───
+function BandeauSortiesPhotos({ setPage }) {
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    // Charger les événements des 7 derniers jours + aujourd'hui qui ont des photos
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    supabase
+      .from("posts")
+      .select("id, image_url, evenement_id, sorties:evenement_id(id, title, date_text, type)")
+      .not("evenement_id", "is", null)
+      .not("image_url", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        // Grouper les photos par événement
+        const byEvent = {};
+        data.forEach(post => {
+          if (!post.sorties) return;
+          const ev = post.sorties;
+          // Vérifier que l'événement est dans les 7 derniers jours
+          if (!ev.date_text) return;
+          const parts = ev.date_text.split("/");
+          if (parts.length !== 3) return;
+          const evDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          evDate.setHours(0, 0, 0, 0);
+          const diff = Math.floor((today - evDate) / (1000 * 60 * 60 * 24));
+          if (diff < 0 || diff > 7) return;
+
+          if (!byEvent[ev.id]) byEvent[ev.id] = { ev, photos: [] };
+          byEvent[ev.id].photos.push(post);
+        });
+        const result = Object.values(byEvent).filter(e => e.photos.length > 0);
+        setEvents(result);
+      });
+  }, []);
+
+  if (events.length === 0) return null;
+
+  return (
+    <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
+      <div style={{
+        fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
+        letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
+      }}>
+        📸 Souvenirs de sorties
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {events.map(({ ev, photos }) => (
+          <div
+            key={ev.id}
+            onClick={() => setPage("sorties")}
+            style={{
+              background: C.card, borderRadius: 16, padding: "10px 12px",
+              border: `1px solid ${C.border}`, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 10,
+            }}
+          >
+            {/* 2 preview photos */}
+            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+              {photos.slice(0, 2).map(p => (
+                <div key={p.id} style={{ width: 52, height: 52, borderRadius: 10, overflow: "hidden", background: C.pill }}>
+                  <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </div>
+              ))}
+              {photos.length > 2 && (
+                <div style={{
+                  width: 52, height: 52, borderRadius: 10,
+                  background: "linear-gradient(135deg,#FF5733,#F7A72D)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontWeight: 700, fontSize: 15,
+                }}>
+                  +{photos.length - 2}
+                </div>
+              )}
+            </div>
+            {/* Texte */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {ev.title}
+              </div>
+              <div style={{ fontSize: 11, color: C.ink2 }}>
+                {photos.length} photo{photos.length > 1 ? "s" : ""} partagée{photos.length > 1 ? "s" : ""}
+              </div>
+            </div>
+            <div style={{ fontSize: 16, color: C.ink2, flexShrink: 0 }}>›</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── REACTIONS ───
 const REACTIONS = [
   { type: "aime",       emoji: "❤️", label: "J'aime" },
@@ -779,6 +878,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
           </div>
         )}
         <BandeauDefis setPage={setPage} user={user} />
+        <BandeauSortiesPhotos setPage={setPage} />
 {fetchError && (
           <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 12, padding: "12px 14px", margin: "8px 0", fontSize: 12, color: "#C0392B" }}>
             ⚠️ Erreur : {fetchError}

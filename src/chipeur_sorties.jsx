@@ -36,6 +36,16 @@ function isToday(dateText) {
     d.getDate() === now.getDate();
 }
 
+// Vrai si l'événement a eu lieu il y a 0 à 7 jours (inclus aujourd'hui)
+function isWithinSevenDays(dateText) {
+  const d = parseDate(dateText);
+  if (!d) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const evDay = new Date(d); evDay.setHours(0,0,0,0);
+  const diff = Math.floor((today - evDay) / (1000 * 60 * 60 * 24));
+  return diff >= 0 && diff <= 7;
+}
+
 function timeAgo(createdAt) {
   const diff = Date.now() - new Date(createdAt).getTime();
   const m = Math.floor(diff / 60000);
@@ -491,6 +501,8 @@ function EventDetailScreen({ event, user, onBack }) {
   const month = d ? d.toLocaleDateString("fr-FR", { month: "short" }) : "";
   const ts = TYPE_STYLES[event.type] || TYPE_STYLES["Autre"];
   const todayIsEvent = event.date_text ? isToday(event.date_text) : false;
+  const withinSevenDays = event.date_text ? isWithinSevenDays(event.date_text) : false;
+  const canAddPhoto = !!user && going && withinSevenDays;
 
   useEffect(() => {
     if (!event?.id) { setLoadingPhotos(false); return; }
@@ -554,7 +566,7 @@ function EventDetailScreen({ event, user, onBack }) {
             fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: 8,
           }}>
             <span>🔴 C'est aujourd'hui !</span>
-            {user && (
+            {canAddPhoto && (
               <button
                 onClick={() => setShowUpload(true)}
                 style={{
@@ -564,6 +576,27 @@ function EventDetailScreen({ event, user, onBack }) {
                 }}
               >
                 📸 Partager une photo
+              </button>
+            )}
+          </div>
+        )}
+        {/* Bannière "souvenir" pour les 7 jours après l'événement */}
+        {!todayIsEvent && withinSevenDays && (
+          <div style={{
+            background: "linear-gradient(135deg,#F7A72D,#FF5733)", padding: "8px 16px", fontSize: 11,
+            fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span>📸 Tu peux encore partager tes souvenirs !</span>
+            {canAddPhoto && (
+              <button
+                onClick={() => setShowUpload(true)}
+                style={{
+                  marginLeft: "auto", background: "#fff", color: "#FF5733",
+                  border: "none", borderRadius: 10, padding: "4px 12px",
+                  fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: dm,
+                }}
+              >
+                Partager
               </button>
             )}
           </div>
@@ -598,14 +631,16 @@ function EventDetailScreen({ event, user, onBack }) {
             <div style={{ textAlign: "center", padding: "40px 16px" }}>
               <div style={{ fontSize: 44, marginBottom: 12 }}>📸</div>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>
-                {todayIsEvent ? "Sois le premier à partager !" : "Aucune photo pour l'instant"}
+                {canAddPhoto ? "Sois le premier à partager !" : "Aucune photo pour l'instant"}
               </div>
               <div style={{ fontSize: 12, color: C.ink2, marginBottom: 18, lineHeight: 1.5 }}>
-                {todayIsEvent
-                  ? "Tu y es ? Partage ton moment avec les voisins !"
-                  : "Les voisins pourront partager leurs photos le jour de l'événement."}
+                {canAddPhoto
+                  ? "Partage tes photos avec les voisins !"
+                  : withinSevenDays
+                    ? "Participe à l'événement pour ajouter tes photos."
+                    : "Les voisins pourront partager leurs photos le jour de l'événement."}
               </div>
-              {user && todayIsEvent && (
+              {canAddPhoto && (
                 <button
                   onClick={() => setShowUpload(true)}
                   style={{
@@ -620,7 +655,7 @@ function EventDetailScreen({ event, user, onBack }) {
             </div>
           ) : (
             <>
-              {user && (
+              {canAddPhoto && (
                 <button
                   onClick={() => setShowUpload(true)}
                   style={{
