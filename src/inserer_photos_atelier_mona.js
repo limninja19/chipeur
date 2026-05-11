@@ -5,8 +5,14 @@
  */
 
 // Pas de dépendance — utilise fetch natif de Node 18+
-const SUPABASE_URL = "https://cekvgoyowxjwfgvjarmo.supabase.co";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNla3Znb3lvd3hqd2Zndmphcm1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0MjYxMDcsImV4cCI6MjA1OTAwMjEwN30.pWbtc6UMpLHmMqQlcCKuMacBTEHoAadbQ8v3XnPKTJI";
+// Les clés sont lues depuis les variables d'environnement (fichier .env.local)
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "";
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || "";
+
+if (!SUPABASE_URL || !ANON_KEY) {
+  console.error("❌ Variables d'environnement manquantes : VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sont requises.");
+  process.exit(1);
+}
 
 const HEADERS = {
   "apikey": ANON_KEY,

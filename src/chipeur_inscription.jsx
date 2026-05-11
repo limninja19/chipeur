@@ -233,7 +233,7 @@ function ScreenInscription({ onNext, ageRange }) {
       <StepDots current={0} />
       <Field label="PRÉNOM" placeholder="Comment tu t'appelles ?" value={prenom} onChange={setPrenom} />
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
-      <Field label="MOT DE PASSE" type="password" placeholder="Ex : Chipeur2024" value={mdp} onChange={setMdp} />
+      <Field label="MOT DE PASSE" type="password" placeholder="8 caractères minimum" value={mdp} onChange={setMdp} />
       <div style={{ marginBottom: 14, marginTop: -6, display: "flex", flexDirection: "column", gap: 4 }}>
         {[
           { ok: pwdHas8,   label: "8 caractères minimum" },
@@ -694,7 +694,7 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         options: { data: { pseudo: creds.prenom, age_range: ageRange } },
       });
       if (!error && data?.user) {
-        const refId = localStorage.getItem("chipeur_ref");
+        const refId = sessionStorage.getItem("chipeur_ref");
         await supabase.from("profiles").upsert({
           id: data.user.id,
           pseudo: creds.prenom,
@@ -705,7 +705,7 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         // Récompense l'invitant (+20 XP)
         if (refId && refId !== data.user.id) {
           await addXP(refId, 20, "invitation_acceptee");
-          localStorage.removeItem("chipeur_ref");
+          sessionStorage.removeItem("chipeur_ref");
         }
       }
       setLoadingSignup(false);

@@ -35,10 +35,11 @@ function SplashScreen() {
 }
 
 export default function App() {
-  // Capture le code de parrainage depuis l'URL (?ref=UUID) et le garde en localStorage
+  // Capture le code de parrainage depuis l'URL (?ref=UUID) et le garde en sessionStorage
+  // (sessionStorage est plus sûr : les données sont effacées à la fermeture de l'onglet)
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get("ref");
-    if (ref) localStorage.setItem("chipeur_ref", ref);
+    if (ref) sessionStorage.setItem("chipeur_ref", ref);
   }, []);
 
   const [page, setPageRaw] = useState("fil");

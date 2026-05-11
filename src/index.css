@@ -1,3 +1,13 @@
+/* Animations Chipeur (déplacées depuis ChallengeUI.jsx) */
+@keyframes chipeur-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.15); }
+}
+@keyframes chipeur-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;

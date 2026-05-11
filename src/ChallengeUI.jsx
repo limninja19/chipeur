@@ -20,17 +20,8 @@ export const isHotDrop = (challenge) => {
   return (challenge.days_remaining || 0) < HOT_DROP_DAYS_THRESHOLD || fillRatio > HOT_DROP_FILL_THRESHOLD;
 };
 
-const PULSE_CSS = `
-@keyframes chipeur-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.15); }
-}
-@keyframes chipeur-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}`;
-
-const InjectAnimations = () => <style dangerouslySetInnerHTML={{ __html: PULSE_CSS }} />;
+// Les animations sont définies dans index.css — plus besoin d'injection HTML
+const InjectAnimations = () => null;
 
 // ── ChallengeMedia ───────────────────────────────────────────────
 export const ChallengeMedia = ({ photoUrl, merchantName, category, height = 160 }) => {

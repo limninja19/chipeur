@@ -89,7 +89,7 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
 
     if (data?.user) {
       const ageVal = getAge(parseInt(birthYear));
-      const refId  = localStorage.getItem("chipeur_ref");
+      const refId  = sessionStorage.getItem("chipeur_ref");
 
       await supabase.from("profiles").upsert({
         id:           data.user.id,
@@ -104,7 +104,7 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
 
       if (refId && refId !== data.user.id) {
         await addXP(refId, 20, "invitation_acceptee");
-        localStorage.removeItem("chipeur_ref");
+        sessionStorage.removeItem("chipeur_ref");
       }
     }
 
@@ -205,7 +205,7 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
             {[
               { label: "PSEUDO", val: pseudo, set: setPseudo, placeholder: "Ton pseudo dans le quartier", type: "text" },
               { label: "EMAIL",  val: email,  set: setEmail,  placeholder: "ton@email.fr", type: "email" },
-              { label: "MOT DE PASSE", val: mdp, set: setMdp, placeholder: "Ex : Chipeur2024", type: "password" },
+              { label: "MOT DE PASSE", val: mdp, set: setMdp, placeholder: "8 caractères minimum", type: "password" },
             ].map(f => (
               <div key={f.label} style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 5 }}>{f.label}</label>
