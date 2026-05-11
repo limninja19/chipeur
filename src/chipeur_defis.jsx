@@ -524,8 +524,196 @@ function _SwipeVoteModalPlaceholder({ d, user, onClose }) {
   );
 }
 
+// ─── VOTE RESULTS SCREEN ────────────────────────────────────────
+function VoteResultsScreen({ d, onBack }) {
+  const [results, setResults] = useState([]);
+  const [totalVoters, setTotalVoters] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isUUID(d.id)) return;
+    async function load() {
+      setLoading(true);
+
+      // 1. Charger tous les votes du défi
+      const { data: votes } = await supabase
+        .from("defi_votes")
+        .select("post_id, voter_id, vote")
+        .eq("defi_id", d.id);
+
+      // 2. Charger les photos participantes
+      const { data: photos } = await supabase
+        .from("posts")
+        .select("id, image_url, content, author_id, profiles:author_id(pseudo, avatar_url)")
+        .eq("defi_id", d.id)
+        .not("image_url", "is", null);
+
+      if (!votes || !photos) { setLoading(false); return; }
+
+      // 3. Agréger les votes par post
+      const voteMap = {};
+      const voterSet = new Set();
+      votes.forEach(v => {
+        voterSet.add(v.voter_id);
+        if (!voteMap[v.post_id]) voteMap[v.post_id] = { likes: 0, passes: 0 };
+        if (v.vote === "like") voteMap[v.post_id].likes++;
+        else voteMap[v.post_id].passes++;
+      });
+
+      // 4. Enrichir les photos et trier par likes
+      const enriched = photos.map(p => ({
+        ...p,
+        likes:  voteMap[p.id]?.likes  || 0,
+        passes: voteMap[p.id]?.passes || 0,
+      })).sort((a, b) => b.likes - a.likes);
+
+      setResults(enriched);
+      setTotalVoters(voterSet.size);
+      setLoading(false);
+    }
+    load();
+  }, [d.id]);
+
+  const podiumColors = ["#F7A72D", "#A8A9AD", "#C07D3E"];
+  const podiumEmojis = ["🥇", "🥈", "🥉"];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", background: C.bg }}>
+      {/* Header */}
+      <div style={{
+        background: C.card, borderBottom: `1px solid ${C.border}`,
+        padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0,
+      }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, background: C.bg, borderRadius: "50%",
+          border: "none", display: "flex", alignItems: "center",
+          justifyContent: "center", fontSize: 18, cursor: "pointer", color: C.ink2,
+        }}>‹</button>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>📊 Résultats des votes</div>
+          <div style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>{d.title}</div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.ink2, fontSize: 13 }}>
+          Chargement des résultats…
+        </div>
+      ) : results.length === 0 ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: 24 }}>
+          <div style={{ fontSize: 42 }}>🗳️</div>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>Aucun vote pour l'instant</div>
+          <div style={{ fontSize: 12, color: C.ink2, textAlign: "center" }}>
+            Les résultats apparaîtront ici dès que des voisins auront voté sur les photos du défi.
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 100px" }}>
+
+          {/* Résumé global */}
+          <div style={{
+            background: "linear-gradient(135deg,#1A1714,#2D2926)",
+            borderRadius: 18, padding: "16px 18px", marginBottom: 18,
+            display: "flex", gap: 10,
+          }}>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff" }}>{totalVoters}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>votants uniques</div>
+            </div>
+            <div style={{ width: 1, background: "rgba(255,255,255,0.12)" }} />
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff" }}>{results.length}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>photos soumises</div>
+            </div>
+            <div style={{ width: 1, background: "rgba(255,255,255,0.12)" }} />
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#F7A72D" }}>
+                {results[0]?.likes || 0}
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>meilleur score</div>
+            </div>
+          </div>
+
+          {/* Classement */}
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 12 }}>
+            🏆 Classement des photos
+          </div>
+
+          {results.map((p, i) => {
+            const total = p.likes + p.passes;
+            const pct = total > 0 ? Math.round((p.likes / total) * 100) : 0;
+            const isPodium = i < 3;
+            const rankColor = podiumColors[i] || C.ink2;
+
+            return (
+              <div key={p.id} style={{
+                background: C.card,
+                border: isPodium ? `2px solid ${rankColor}` : `1px solid ${C.border}`,
+                borderRadius: 18, marginBottom: 12, overflow: "hidden",
+                boxShadow: isPodium ? `0 4px 16px ${rankColor}30` : "0 2px 8px rgba(0,0,0,0.05)",
+              }}>
+                <div style={{ display: "flex", gap: 0 }}>
+                  {/* Photo */}
+                  <div style={{ width: 110, height: 110, flexShrink: 0, position: "relative" }}>
+                    <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    {/* Rang */}
+                    <div style={{
+                      position: "absolute", top: 6, left: 6,
+                      background: isPodium ? rankColor : "rgba(0,0,0,0.5)",
+                      borderRadius: 8, padding: "2px 7px",
+                      fontSize: isPodium ? 14 : 11,
+                      fontWeight: 700, color: "#fff",
+                      fontFamily: syne,
+                    }}>
+                      {isPodium ? podiumEmojis[i] : `#${i + 1}`}
+                    </div>
+                  </div>
+
+                  {/* Infos */}
+                  <div style={{ flex: 1, padding: "12px 14px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2 }}>
+                        {p.profiles?.pseudo || "Voisin·e"}
+                      </div>
+                      {p.content && (
+                        <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.4, marginBottom: 8 }}>
+                          {p.content.slice(0, 60)}{p.content.length > 60 ? "…" : ""}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Barre score */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                        <span style={{ color: "#22c55e", fontWeight: 700 }}>❤️ {p.likes} likes</span>
+                        <span style={{ color: C.ink2 }}>✕ {p.passes} pass</span>
+                      </div>
+                      <div style={{ height: 6, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{
+                          height: "100%", borderRadius: 3, width: `${pct}%`,
+                          background: isPodium
+                            ? `linear-gradient(90deg, ${rankColor}, #22c55e)`
+                            : "#22c55e",
+                          transition: "width 0.5s ease",
+                        }} />
+                      </div>
+                      <div style={{ fontSize: 10, color: C.ink2, marginTop: 3, textAlign: "right" }}>
+                        {pct}% d'approbation · {total} votes
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── DETAIL SCREEN ──────────────────────────────────────────────
-function DetailScreen({ d, user, onBack, onParticipe }) {
+function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [showSwipe, setShowSwipe] = useState(false);
@@ -678,27 +866,44 @@ function DetailScreen({ d, user, onBack, onParticipe }) {
           </div>
         )}
 
-        {/* ── Bouton voter sur les photos ── */}
+        {/* ── Boutons voter + résultats ── */}
         {photoCount > 0 && (
-          <div
-            onClick={() => setShowSwipe(true)}
-            style={{
-              background: "linear-gradient(135deg,#FF5733,#F7A72D)",
-              borderRadius: 18, padding: "16px 20px", marginBottom: 16,
-              cursor: "pointer", display: "flex", alignItems: "center", gap: 14,
-              boxShadow: "0 6px 20px rgba(255,87,51,0.35)",
-            }}
-          >
-            <div style={{ fontSize: 34 }}>🗳️</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 2 }}>
-                Voter sur les photos
+          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+            {/* Voter */}
+            <div
+              onClick={() => setShowSwipe(true)}
+              style={{
+                flex: 1, background: "linear-gradient(135deg,#FF5733,#F7A72D)",
+                borderRadius: 18, padding: "14px 16px",
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                boxShadow: "0 6px 20px rgba(255,87,51,0.35)",
+              }}
+            >
+              <div style={{ fontSize: 28 }}>🗳️</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "#fff", marginBottom: 1 }}>
+                  Voter
+                </div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>
+                  {photoCount} photo{photoCount > 1 ? "s" : ""}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)" }}>
-                {photoCount} photo{photoCount > 1 ? "s" : ""} · Swipe ← pass · → like
-              </div>
+              <div style={{ fontSize: 18, color: "#fff" }}>›</div>
             </div>
-            <div style={{ fontSize: 22, color: "#fff" }}>›</div>
+            {/* Résultats */}
+            <div
+              onClick={onShowResults}
+              style={{
+                background: C.card, border: `1.5px solid ${C.border}`,
+                borderRadius: 18, padding: "14px 16px",
+                cursor: "pointer", display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 4,
+                minWidth: 80,
+              }}
+            >
+              <div style={{ fontSize: 24 }}>📊</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.ink, fontFamily: syne }}>Résultats</div>
+            </div>
           </div>
         )}
 
@@ -1417,6 +1622,15 @@ export default function ChipeurDefis({ setPage, user, profile }) {
           user={user}
           onBack={() => setScreen("list")}
           onParticipe={() => setScreen("participe")}
+          onShowResults={() => setScreen("resultats")}
+        />
+      )}
+
+      {/* ── RÉSULTATS VOTES ── */}
+      {screen === "resultats" && selected && (
+        <VoteResultsScreen
+          d={selected}
+          onBack={() => setScreen("detail")}
         />
       )}
 

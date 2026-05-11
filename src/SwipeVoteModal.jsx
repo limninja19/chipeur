@@ -11,6 +11,7 @@ export default function SwipeVoteModal({ d, user, onClose }) {
   const [votes, setVotes]       = useState({});
   const [done, setDone]         = useState(false);
   const [swipeDir, setSwipeDir] = useState(null);
+  const [voteError, setVoteError] = useState(null);
 
   const touchRef = { x: null };
 
@@ -52,10 +53,15 @@ export default function SwipeVoteModal({ d, user, onClose }) {
   async function castVote(postId, vote) {
     if (!user?.id) return;
     setVotes(v => ({ ...v, [postId]: vote }));
-    await supabase.from("defi_votes").upsert(
+    setVoteError(null);
+    const { error } = await supabase.from("defi_votes").upsert(
       { defi_id: d.id, post_id: postId, voter_id: user.id, vote },
       { onConflict: "post_id,voter_id" }
     );
+    if (error) {
+      console.error("❌ Erreur vote Supabase:", error.code, error.message, error.details);
+      setVoteError(`Erreur : ${error.message}`);
+    }
   }
 
   async function handleVote(dir) {
@@ -180,6 +186,15 @@ export default function SwipeVoteModal({ d, user, onClose }) {
               )}
             </div>
           </div>
+          {voteError && (
+            <div style={{
+              background: "rgba(239,68,68,0.18)", border: "1px solid #ef4444",
+              borderRadius: 10, padding: "8px 14px", marginBottom: 8,
+              fontSize: 11, color: "#fca5a5", textAlign: "center", width: "100%",
+            }}>
+              ⚠️ {voteError}
+            </div>
+          )}
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 14, textAlign: "center" }}>
             ← Glisse à gauche pour passer · à droite pour liker →
           </div>
