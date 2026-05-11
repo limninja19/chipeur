@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 import { getLevel, getNextLevel, getLevelProgress } from "./chipeur_xp";
@@ -477,9 +477,76 @@ function StickyTabs({ activeTab, onTabChange }) {
   );
 }
 
-function PhotoThumb({ p, onDelete }) {
+// ─── LIGHTBOX PROFIL ───
+function ProfileLightbox({ photos, startIndex, onClose }) {
+  const [index, setIndex] = useState(startIndex);
+  const touchX = useRef(null);
+  const photo = photos[index];
+
+  const prev = () => setIndex(i => Math.max(0, i - 1));
+  const next = () => setIndex(i => Math.min(photos.length - 1, i + 1));
+
   return (
-    <div style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "pointer", background: C.pill }}>
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.97)", display: "flex", flexDirection: "column" }}
+      onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
+      onTouchEnd={e => {
+        if (touchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        touchX.current = null;
+        if (dx > 60) prev();
+        else if (dx < -60) next();
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", flexShrink: 0 }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff" }}>
+          {index + 1} / {photos.length}
+        </div>
+        <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+      </div>
+
+      {/* Photo */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+        {index > 0 && (
+          <button onClick={prev} style={{ position: "absolute", left: 12, zIndex: 10, background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
+        )}
+        {photo.image_url ? (
+          <img key={photo.id} src={photo.image_url} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" }} />
+        ) : (
+          <div style={{ padding: 24, textAlign: "center" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📝</div>
+            <div style={{ fontSize: 14, color: "#fff", lineHeight: 1.6 }}>{photo.content}</div>
+          </div>
+        )}
+        {index < photos.length - 1 && (
+          <button onClick={next} style={{ position: "absolute", right: 12, zIndex: 10, background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>
+        )}
+      </div>
+
+      {/* Légende + dots */}
+      <div style={{ padding: "14px 16px 32px", flexShrink: 0 }}>
+        {photo.content && (
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, marginBottom: 10 }}>{photo.content}</div>
+        )}
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: photos.length > 1 ? 12 : 0 }}>
+          {new Date(photo.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+        </div>
+        {photos.length > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", gap: 5 }}>
+            {photos.map((_, i) => (
+              <div key={i} onClick={() => setIndex(i)} style={{ width: i === index ? 18 : 6, height: 6, borderRadius: 3, cursor: "pointer", background: i === index ? C.accent : "rgba(255,255,255,0.3)", transition: "all 0.2s" }} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PhotoThumb({ p, onDelete, onOpen }) {
+  return (
+    <div style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "zoom-in", background: C.pill }} onClick={onOpen}>
       {p.image_url ? (
         <img src={p.image_url} alt={p.content} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       ) : (
@@ -500,15 +567,16 @@ function PhotoThumb({ p, onDelete }) {
 
 function PostGroup({ icon, label, posts, onDelete }) {
   const [open, setOpen] = useState(true);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   if (posts.length === 0) return null;
   return (
     <div style={{ marginBottom: 20 }}>
+      {lightboxIndex !== null && (
+        <ProfileLightbox photos={posts} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
       <div
         onClick={() => setOpen(o => !o)}
-        style={{
-          display: "flex", alignItems: "center", gap: 8,
-          marginBottom: open ? 10 : 0, cursor: "pointer",
-        }}
+        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: open ? 10 : 0, cursor: "pointer" }}
       >
         <span style={{ fontSize: 16 }}>{icon}</span>
         <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>{label}</span>
@@ -519,7 +587,9 @@ function PostGroup({ icon, label, posts, onDelete }) {
       </div>
       {open && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-          {posts.map(p => <PhotoThumb key={p.id} p={p} onDelete={onDelete} />)}
+          {posts.map((p, i) => (
+            <PhotoThumb key={p.id} p={p} onDelete={onDelete} onOpen={() => setLightboxIndex(i)} />
+          ))}
         </div>
       )}
     </div>
