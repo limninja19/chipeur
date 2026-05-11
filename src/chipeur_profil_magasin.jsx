@@ -1106,6 +1106,10 @@ function TabMesDefis({ userId }) {
   const [voteData, setVoteData]         = useState({});     // id → { photos, totalVoters }
   const [winnerPicker, setWinnerPicker] = useState(null);   // défi pour lequel on choisit
   const [confirmClose, setConfirmClose] = useState(null);   // défi à clôturer
+  const [confirmDelete, setConfirmDelete] = useState(null); // défi à supprimer
+  const [editDefi, setEditDefi]         = useState(null);   // défi en cours d'édition
+  const [editForm, setEditForm]         = useState({});     // valeurs du formulaire d'édition
+  const [saving, setSaving]             = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -1158,6 +1162,40 @@ function TabMesDefis({ userId }) {
     setWinnerPicker(null);
   }
 
+  async function deleteDefi(id) {
+    await supabase.from("defi_votes").delete().eq("defi_id", id);
+    await supabase.from("defis").delete().eq("id", id);
+    setDefis(prev => prev.filter(d => d.id !== id));
+    setConfirmDelete(null);
+  }
+
+  function openEdit(d) {
+    setEditForm({
+      title:       d.title       || "",
+      description: d.description || "",
+      reward:      d.reward      || "",
+      ends_at:     d.ends_at     ? d.ends_at.slice(0, 10) : "",
+    });
+    setEditDefi(d);
+  }
+
+  async function saveEditDefi() {
+    if (!editDefi) return;
+    setSaving(true);
+    const updates = {
+      title:       editForm.title.trim(),
+      description: editForm.description.trim(),
+      reward:      editForm.reward.trim() || null,
+      ends_at:     editForm.ends_at       || null,
+    };
+    const { error } = await supabase.from("defis").update(updates).eq("id", editDefi.id);
+    if (!error) {
+      setDefis(prev => prev.map(d => d.id === editDefi.id ? { ...d, ...updates } : d));
+    }
+    setSaving(false);
+    setEditDefi(null);
+  }
+
   const podiumColors = ["#F7A72D", "#A8A9AD", "#C07D3E"];
   const podiumEmojis = ["🥇", "🥈", "🥉"];
 
@@ -1184,6 +1222,55 @@ function TabMesDefis({ userId }) {
             <div style={{ fontSize: 12, color: C.ink2, marginBottom: 18 }}>Les participants ne pourront plus poster. Les votes restent visibles.</div>
             <button onClick={() => closeDefi(confirmClose)} style={{ width: "100%", background: C.ink, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", marginBottom: 8 }}>Clôturer définitivement</button>
             <button onClick={() => setConfirmClose(null)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM SUPPRESSION ── */}
+      {confirmDelete && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.55)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+          <div style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "20px 20px 40px", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: "#DC2626", marginBottom: 6 }}>🗑️ Supprimer ce défi ?</div>
+            <div style={{ fontSize: 12, color: C.ink2, marginBottom: 18 }}>Cette action est irréversible. Le défi et tous ses votes seront définitivement supprimés.</div>
+            <button onClick={() => deleteDefi(confirmDelete)} style={{ width: "100%", background: "#DC2626", color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", marginBottom: 8 }}>Supprimer définitivement</button>
+            <button onClick={() => setConfirmDelete(null)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── ÉDITION DÉFI ── */}
+      {editDefi && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.65)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+          <div style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "20px 20px 40px", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 16 }}>✏️ Modifier le défi</div>
+            {[
+              { key: "title",       label: "Titre",       placeholder: "Ex: Photo du meilleur plat" },
+              { key: "description", label: "Description", placeholder: "Décris le défi…" },
+              { key: "reward",      label: "Récompense",  placeholder: "Ex: Bon d'achat 20 €" },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key} style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>{label}</div>
+                <input
+                  value={editForm[key]}
+                  onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  style={{ width: "100%", boxSizing: "border-box", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13, fontFamily: dm, color: C.ink, outline: "none" }}
+                />
+              </div>
+            ))}
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>Date de fin</div>
+              <input
+                type="date"
+                value={editForm.ends_at}
+                onChange={e => setEditForm(f => ({ ...f, ends_at: e.target.value }))}
+                style={{ width: "100%", boxSizing: "border-box", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13, fontFamily: dm, color: C.ink, outline: "none" }}
+              />
+            </div>
+            <button onClick={saveEditDefi} disabled={saving} style={{ width: "100%", background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: saving ? "not-allowed" : "pointer", marginBottom: 8, opacity: saving ? 0.7 : 1 }}>
+              {saving ? "Enregistrement…" : "Enregistrer ✓"}
+            </button>
+            <button onClick={() => setEditDefi(null)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
           </div>
         </div>
       )}
@@ -1239,9 +1326,15 @@ function TabMesDefis({ userId }) {
                   {d.reward ? ` · 🎁 ${d.reward}` : ""}
                 </div>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: isEnded ? C.pill : "#EBF5F0", color: isEnded ? C.ink2 : C.pro }}>
-                {isEnded ? "Terminé" : "En cours"}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: isEnded ? C.pill : "#EBF5F0", color: isEnded ? C.ink2 : C.pro }}>
+                  {isEnded ? "Terminé" : "En cours"}
+                </span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => openEdit(d)} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "4px 8px", fontSize: 11, cursor: "pointer", color: C.ink }}>✏️</button>
+                  <button onClick={() => setConfirmDelete(d.id)} style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "4px 8px", fontSize: 11, cursor: "pointer", color: "#DC2626" }}>🗑️</button>
+                </div>
+              </div>
             </div>
 
             {/* ── Stats rapides ── */}
