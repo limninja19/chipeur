@@ -119,46 +119,90 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
   );
 }
 
-// ─── FIL CHIPS (multi-sélection) ───
+// ─── FIL DROPDOWN FILTRE (multi-sélection) ───
 const CHIPS = [
-  { id: "all",        label: "Tout le fil",    nav: null,       type: null,        zone: null        },
-  { id: "nearby",     label: "📍 Autour de moi", nav: null,     type: null,        zone: "bassin"    },
-  { id: "chope",      label: "Chope",           nav: null,       type: "decouverte",zone: null        },
-  { id: "lieux",      label: "Lieux",           nav: null,       type: "lieu",      zone: null        },
-  { id: "bons_plans", label: "Bons plans",      nav: null,       type: "bonplan",   zone: null        },
-  { id: "defis",      label: "🏆 Défis",        nav: "defis",    type: null,        zone: null        },
-  { id: "evenements", label: "📅 Événements",   nav: "sorties",  type: null,        zone: null        },
+  { id: "all",        label: "Tout le fil",      nav: null      },
+  { id: "nearby",     label: "📍 Autour de moi", nav: null      },
+  { id: "chope",      label: "Chope",             nav: null      },
+  { id: "lieux",      label: "Lieux",             nav: null      },
+  { id: "bons_plans", label: "Bons plans",        nav: null      },
+  { id: "defis",      label: "🏆 Défis",          nav: "defis"   },
+  { id: "evenements", label: "📅 Événements",     nav: "sorties" },
 ];
 
-function FilChips({ active, onToggle, setPage }) {
+function FilDropdown({ active, onToggle, setPage }) {
+  const [open, setOpen] = useState(false);
+
+  // Libellé du bouton : liste les filtres actifs
+  const activeChips = CHIPS.filter(c => active.has(c.id));
+  const label = activeChips.map(c => c.label).join(", ") || "Tout le fil";
+
   return (
-    <div style={{
-      display: "flex", gap: 6,
-      padding: "4px 12px 10px",
-      overflowX: "auto", flexShrink: 0,
-      scrollbarWidth: "none",
-      msOverflowStyle: "none",
-    }}>
-      {CHIPS.map(chip => {
-        const isOn = active.has(chip.id);
-        return (
-          <button
-            key={chip.id}
-            onClick={() => chip.nav ? setPage(chip.nav) : onToggle(chip.id)}
-            style={{
-              fontSize: 12, fontWeight: 600, padding: "7px 15px", borderRadius: 20,
-              border: chip.nav ? `1.5px solid ${C.accent}` : "none",
-              cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-              background: isOn ? C.ink : (chip.nav ? "transparent" : C.pill),
-              color: isOn ? "#fff" : (chip.nav ? C.accent : C.ink2),
-              fontFamily: "'DM Sans', sans-serif",
-              transition: "all 0.15s",
-            }}
-          >
-            {chip.label}
-          </button>
-        );
-      })}
+    <div style={{ padding: "2px 12px 10px", flexShrink: 0, position: "relative" }}>
+
+      {/* Bouton dérouleur */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: active.has("all") ? C.pill : C.ink,
+          color: active.has("all") ? C.ink2 : "#fff",
+          border: "none", borderRadius: 20,
+          padding: "8px 14px",
+          fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
+          cursor: "pointer", maxWidth: "100%",
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+          {label}
+        </span>
+        <span style={{ fontSize: 10, flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" }}>▾</span>
+      </button>
+
+      {/* Panneau déroulé */}
+      {open && (
+        <>
+          {/* Overlay transparent pour fermer au clic extérieur */}
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 50 }}
+          />
+          <div style={{
+            position: "absolute", top: "calc(100% + 4px)", left: 12, right: 12,
+            background: C.card,
+            border: `1px solid ${C.border}`,
+            borderRadius: 18,
+            padding: "12px 12px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            zIndex: 51,
+            display: "flex", flexWrap: "wrap", gap: 8,
+          }}>
+            {CHIPS.map(chip => {
+              const isOn = active.has(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => {
+                    if (chip.nav) { setOpen(false); setPage(chip.nav); }
+                    else onToggle(chip.id);
+                  }}
+                  style={{
+                    fontSize: 12, fontWeight: 600, padding: "8px 16px", borderRadius: 20,
+                    border: chip.nav ? `1.5px solid ${C.accent}` : "none",
+                    cursor: "pointer", whiteSpace: "nowrap",
+                    background: isOn ? C.ink : (chip.nav ? "transparent" : C.pill),
+                    color: isOn ? "#fff" : (chip.nav ? C.accent : C.ink2),
+                    fontFamily: "'DM Sans', sans-serif",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1074,7 +1118,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       display: "flex", flexDirection: "column",
     }}>
       <AppHeader setPage={setPage} profile={profile} user={user} requireAuth={requireAuth} />
-      <FilChips active={activeFilters} onToggle={toggleChip} setPage={setPage} />
+      <FilDropdown active={activeFilters} onToggle={toggleChip} setPage={setPage} />
       <div
         ref={scrollRef}
         onTouchStart={handleTouchStart}
