@@ -706,7 +706,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
     }
 
     // ── CAS POST (trouvaille, bon plan) ──
-    if (!content.trim()) { setPublishing(false); setPublishError("Écris quelque chose avant de publier !"); return; }
+    if (!content.trim() && !photoFile) { setPublishing(false); setPublishError("Ajoute une photo ou écris quelque chose !"); return; }
 
     let image_url = null;
     if (photoFile) {
