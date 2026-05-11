@@ -278,8 +278,42 @@ function BandeauDefis({ setPage, user }) {
       </div>
       <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6 }}>
         {defis.map(d => (
-          <div key={d.id} style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
-            <ChallengeCard challenge={d} onClick={() => setPage("defis")} />
+          <div key={d.id} style={{ flexShrink: 0, width: 160, display: "flex", flexDirection: "column", gap: 6 }}>
+            {/* Carte compacte */}
+            <div
+              onClick={() => setPage("defis")}
+              style={{ borderRadius: 16, overflow: "hidden", cursor: "pointer", background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 3px 10px rgba(0,0,0,0.08)" }}
+            >
+              {/* Photo */}
+              <div style={{ position: "relative", height: 120 }}>
+                {d.photo_url ? (
+                  <img src={d.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ height: 120, background: "linear-gradient(135deg,#FF5733,#E94B2C)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 52, fontWeight: 900, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
+                      {(d.title || "C").charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                {/* Badge prix */}
+                {d.reward_amount && (
+                  <div style={{ position: "absolute", top: 8, left: 8, background: "#fff", borderRadius: 8, padding: "4px 8px", boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>
+                    <div style={{ fontSize: 7, fontWeight: 800, color: "#E94B2C", letterSpacing: 1 }}>À GAGNER</div>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: "#1A1714", lineHeight: 1 }}>{d.reward_amount}</div>
+                  </div>
+                )}
+                {/* Jours restants */}
+                <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", borderRadius: 20, padding: "3px 7px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
+                  ⏱ {d.days_remaining}j
+                </div>
+              </div>
+              {/* Bas de carte : participants + bouton */}
+              <div style={{ padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                <span style={{ fontSize: 10, color: C.ink2, fontWeight: 600 }}>👥 {d.participants_count}/{d.target_count}</span>
+                <span style={{ background: C.accent, color: "#fff", borderRadius: 20, padding: "5px 10px", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap" }}>Participer →</span>
+              </div>
+            </div>
+            {/* Bouton Voter */}
             <button
               onClick={() => setVoteDefi(d)}
               style={{
@@ -287,9 +321,9 @@ function BandeauDefis({ setPage, user }) {
                 border: "none", borderRadius: 12, padding: "8px 0",
                 fontSize: 12, fontWeight: 700, color: "#fff",
                 cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-                width: "100%", letterSpacing: 0.3,
+                width: "100%",
               }}
-            >🗳️ Voter sur les photos</button>
+            >🗳️ Voter</button>
           </div>
         ))}
       </div>
