@@ -94,6 +94,62 @@ function Field({ label, type = "text", placeholder, value, onChange }) {
   );
 }
 
+// ─── CHAMP MOT DE PASSE AVEC ŒIL ───
+function PasswordField({ label, placeholder, value, onChange, error }) {
+  const [focused, setFocused] = useState(false);
+  const [show, setShow] = useState(false);
+  const borderColor = error ? "#E53935" : focused ? COLORS.borderFocus : COLORS.border;
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{
+        fontSize: 12, fontWeight: 600, color: COLORS.ink2,
+        marginBottom: 5, letterSpacing: 0.2,
+        fontFamily: "'DM Sans', sans-serif",
+      }}>{label}</div>
+      <div style={{ position: "relative" }}>
+        <input
+          type={show ? "text" : "password"}
+          placeholder={placeholder}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            width: "100%",
+            background: COLORS.card,
+            border: `1.5px solid ${borderColor}`,
+            borderRadius: 14,
+            padding: "13px 48px 13px 16px",
+            fontSize: 15,
+            fontFamily: "'DM Sans', sans-serif",
+            color: COLORS.ink,
+            outline: "none",
+            transition: "border-color 0.2s",
+            boxSizing: "border-box",
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => setShow(s => !s)}
+          style={{
+            position: "absolute", right: 14, top: "50%",
+            transform: "translateY(-50%)",
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 18, color: COLORS.ink2, padding: 4, lineHeight: 1,
+          }}
+        >
+          {show ? "🙈" : "👁️"}
+        </button>
+      </div>
+      {error && (
+        <div style={{ fontSize: 11, color: "#E53935", marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── SCREEN 0 : VÉRIFICATION D'ÂGE ───
 function ScreenAge({ onNext }) {
   const [age, setAge] = useState(null); // null | "moins15" | "15-17" | "18plus"
@@ -205,13 +261,16 @@ function ScreenInscription({ onNext, ageRange }) {
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
+  const [mdpConfirm, setMdpConfirm] = useState("");
   const [acceptCGU, setAcceptCGU] = useState(false);
   const [acceptRGPD, setAcceptRGPD] = useState(false);
   const pwdHas8    = mdp.length >= 8;
   const pwdHasMaj  = /[A-Z]/.test(mdp);
   const pwdHasNum  = /[0-9]/.test(mdp);
   const pwdOk      = pwdHas8 && pwdHasMaj && pwdHasNum;
-  const canProceed = prenom.trim() && email.trim() && pwdOk && acceptCGU && acceptRGPD;
+  const pwdMatch   = mdpConfirm.length > 0 && mdp === mdpConfirm;
+  const pwdMismatch = mdpConfirm.length > 0 && mdp !== mdpConfirm;
+  const canProceed = prenom.trim() && email.trim() && pwdOk && pwdMatch && acceptCGU && acceptRGPD;
 
   return (
     <div style={{
@@ -233,7 +292,12 @@ function ScreenInscription({ onNext, ageRange }) {
       <StepDots current={0} />
       <Field label="PRÉNOM" placeholder="Comment tu t'appelles ?" value={prenom} onChange={setPrenom} />
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
-      <Field label="MOT DE PASSE" type="password" placeholder="8 caractères minimum" value={mdp} onChange={setMdp} />
+      <PasswordField
+        label="MOT DE PASSE"
+        placeholder="8 caractères minimum"
+        value={mdp}
+        onChange={setMdp}
+      />
       <div style={{ marginBottom: 14, marginTop: -6, display: "flex", flexDirection: "column", gap: 4 }}>
         {[
           { ok: pwdHas8,   label: "8 caractères minimum" },
@@ -246,6 +310,18 @@ function ScreenInscription({ onNext, ageRange }) {
           </div>
         ))}
       </div>
+      <PasswordField
+        label="CONFIRMER LE MOT DE PASSE"
+        placeholder="Répète ton mot de passe"
+        value={mdpConfirm}
+        onChange={setMdpConfirm}
+        error={pwdMismatch ? "Les mots de passe ne correspondent pas." : null}
+      />
+      {pwdMatch && (
+        <div style={{ fontSize: 11, color: "#16a34a", marginTop: -12, marginBottom: 14, fontFamily: "'DM Sans', sans-serif" }}>
+          ✅ Les mots de passe correspondent !
+        </div>
+      )}
 
       {ageRange === "15-17" && (
         <div style={{ background: "#FFFBEA", border: "1.5px solid rgba(247,167,45,0.4)", borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 11, color: "#B45309", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
