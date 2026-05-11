@@ -955,7 +955,7 @@ function BottomNav({ active, onNavigate, onFab }) {
 }
 
 // ─── MAIN ───
-export default function ChipeurSorties({ setPage, user, profile, requireAuth }) {
+export default function ChipeurSorties({ setPage, user, profile, requireAuth, selectedSortieId, setSelectedSortieId }) {
   const [filter, setFilter]         = useState("Tous");
   const [events, setEvents]         = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -988,6 +988,17 @@ export default function ChipeurSorties({ setPage, user, profile, requireAuth }) 
   };
 
   useEffect(() => { loadEvents(); }, []);
+
+  // Ouvrir directement la sortie demandée depuis le fil
+  useEffect(() => {
+    if (!selectedSortieId || events.length === 0) return;
+    const ev = events.find(e => e.id === selectedSortieId);
+    if (ev) {
+      setSelectedEvent(ev);
+      setScreen("detail");
+      setSelectedSortieId?.(null); // reset pour la prochaine visite
+    }
+  }, [selectedSortieId, events]);
 
   const filtered = (() => {
     if (filter === "Tous") return events;

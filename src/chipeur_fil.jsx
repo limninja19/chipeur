@@ -298,7 +298,7 @@ function BandeauDefis({ setPage, user }) {
 }
 
 // ─── BANDEAU SORTIES PHOTOS ───
-function BandeauSortiesPhotos({ setPage }) {
+function BandeauSortiesPhotos({ setPage, setSelectedSortieId }) {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
@@ -354,7 +354,7 @@ function BandeauSortiesPhotos({ setPage }) {
         {events.map(({ ev, photos }) => (
           <div
             key={ev.id}
-            onClick={() => setPage("sorties")}
+            onClick={() => { setSelectedSortieId(ev.id); setPage("sorties"); }}
             style={{
               background: C.card, borderRadius: 16, padding: "10px 12px",
               border: `1px solid ${C.border}`, cursor: "pointer",
@@ -793,7 +793,7 @@ function BottomNav({ active, onNavigate, onFab }) {
   );
 }
 
-export default function Fil({ setPage, profile, user, setSelectedVoisinId, requireAuth }) {
+export default function Fil({ setPage, profile, user, setSelectedVoisinId, requireAuth, setSelectedSortieId }) {
   const [activeTab, setActiveTab] = useState("Tout");
   const [fabOpen, setFabOpen] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -833,6 +833,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       .from("posts")
       .select("*, profiles(id, pseudo, avatar_url, role)")
       .neq("post_type", "defi_photo")
+      .is("evenement_id", null)
       .order("created_at", { ascending: false });
     if (zone === "bassin") {
       q = q.in("location", BASIN_CITIES);
@@ -878,7 +879,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
           </div>
         )}
         <BandeauDefis setPage={setPage} user={user} />
-        <BandeauSortiesPhotos setPage={setPage} />
+        <BandeauSortiesPhotos setPage={setPage} setSelectedSortieId={setSelectedSortieId} />
 {fetchError && (
           <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 12, padding: "12px 14px", margin: "8px 0", fontSize: 12, color: "#C0392B" }}>
             ⚠️ Erreur : {fetchError}
