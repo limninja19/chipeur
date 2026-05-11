@@ -50,15 +50,10 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
         </div>
       </div>
 
-      {/* Droite : avatars voisins + icônes */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {/* Avatars voisins actifs — cliquable → page voisins */}
-        <div onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: C.pill, borderRadius: 20, padding: "5px 10px" }}>
-          <span style={{ fontSize: 16 }}>🫣</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: C.ink2, fontFamily: "'DM Sans', sans-serif" }}>Voisins</span>
-        </div>
+      {/* Droite : icônes + voisins en dessous */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
 
-        {/* Si non connecté → bouton Rejoindre */}
+        {/* Ligne 1 : boutons auth ou cloche + messages */}
         {!user ? (
           <div style={{ display: "flex", gap: 6 }}>
             <button
@@ -81,12 +76,9 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
             >Rejoindre 🔥</button>
           </div>
         ) : (
-          <>
-            {/* Cloche notifications avec badge */}
-            <div
-              onClick={() => setPage("notifications")}
-              style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
-            >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Cloche notifications */}
+            <div onClick={() => setPage("notifications")} style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>
               🔔
               {unreadNotifs > 0 && (
                 <div style={{
@@ -99,12 +91,8 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
                 }}>{unreadNotifs > 9 ? "9+" : unreadNotifs}</div>
               )}
             </div>
-
-            {/* Bulle messages avec badge */}
-            <div
-              onClick={() => setPage("messages")}
-              style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
-            >
+            {/* Messages */}
+            <div onClick={() => setPage("messages")} style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>
               💬
               {unreadMessages > 0 && (
                 <div style={{
@@ -117,37 +105,60 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
                 }}>{unreadMessages > 9 ? "9+" : unreadMessages}</div>
               )}
             </div>
-          </>
+          </div>
         )}
+
+        {/* Ligne 2 : bouton Voisins (toujours visible) */}
+        <div onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: C.pill, borderRadius: 20, padding: "4px 10px" }}>
+          <span style={{ fontSize: 14 }}>🫣</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.ink2, fontFamily: "'DM Sans', sans-serif" }}>Voisins</span>
+        </div>
+
       </div>
     </div>
   );
 }
 
-// ─── FIL TABS ───
-function FilTabs({ active, onSelect, setPage }) {
-  const tabs = [
-    { id: "Tout", label: "Tout" },
-    { id: "Chopes", label: "Chopes" },
-    { id: "Lieux", label: "Lieux" },
-    { id: "Bons plans", label: "Bons plans" },
-    { id: "Défis", label: "Défis" },
-  ];
+// ─── FIL CHIPS (multi-sélection) ───
+const CHIPS = [
+  { id: "all",        label: "Tout le fil",    nav: null,       type: null,        zone: null        },
+  { id: "nearby",     label: "📍 Autour de moi", nav: null,     type: null,        zone: "bassin"    },
+  { id: "chope",      label: "Chope",           nav: null,       type: "decouverte",zone: null        },
+  { id: "lieux",      label: "Lieux",           nav: null,       type: "lieu",      zone: null        },
+  { id: "bons_plans", label: "Bons plans",      nav: null,       type: "bonplan",   zone: null        },
+  { id: "defis",      label: "🏆 Défis",        nav: "defis",    type: null,        zone: null        },
+  { id: "evenements", label: "📅 Événements",   nav: "sorties",  type: null,        zone: null        },
+];
+
+function FilChips({ active, onToggle, setPage }) {
   return (
-    <div style={{ display: "flex", gap: 6, padding: "4px 12px 10px", overflowX: "auto", flexShrink: 0, scrollbarWidth: "none" }}>
-      {tabs.map(t => (
-        <button
-          key={t.id}
-          onClick={() => t.id === "Défis" ? setPage("defis") : onSelect(t.id)}
-          style={{
-            fontSize: 12, fontWeight: 600, padding: "7px 16px", borderRadius: 20,
-            border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-            background: active === t.id ? C.ink : C.pill,
-            color: active === t.id ? "#fff" : C.ink2,
-            fontFamily: "'DM Sans', sans-serif",
-            transition: "all 0.15s",
-          }}>{t.label}</button>
-      ))}
+    <div style={{
+      display: "flex", gap: 6,
+      padding: "4px 12px 10px",
+      overflowX: "auto", flexShrink: 0,
+      scrollbarWidth: "none",
+      msOverflowStyle: "none",
+    }}>
+      {CHIPS.map(chip => {
+        const isOn = active.has(chip.id);
+        return (
+          <button
+            key={chip.id}
+            onClick={() => chip.nav ? setPage(chip.nav) : onToggle(chip.id)}
+            style={{
+              fontSize: 12, fontWeight: 600, padding: "7px 15px", borderRadius: 20,
+              border: chip.nav ? `1.5px solid ${C.accent}` : "none",
+              cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+              background: isOn ? C.ink : (chip.nav ? "transparent" : C.pill),
+              color: isOn ? "#fff" : (chip.nav ? C.accent : C.ink2),
+              fontFamily: "'DM Sans', sans-serif",
+              transition: "all 0.15s",
+            }}
+          >
+            {chip.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -985,13 +996,28 @@ function BottomNav({ active, onNavigate, onFab }) {
 }
 
 export default function Fil({ setPage, profile, user, setSelectedVoisinId, requireAuth, setSelectedSortieId }) {
-  const [activeTab, setActiveTab] = useState("Tout");
+  const [activeFilters, setActiveFilters] = useState(new Set(["all"]));
   const [fabOpen, setFabOpen] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [zone, setZone] = useState("tout");
   const [refreshing, setRefreshing] = useState(false);
+
+  // Toggle chip : "all" remet à zéro, les autres excluent "all"
+  const toggleChip = (id) => {
+    setActiveFilters(prev => {
+      if (id === "all") return new Set(["all"]);
+      const next = new Set(prev);
+      next.delete("all");
+      if (next.has(id)) {
+        next.delete(id);
+        if (next.size === 0) next.add("all"); // si tout décoché → retour "Tout le fil"
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
   const scrollRef = useRef(null);
   const touchStartY = useRef(null);
 
@@ -1011,29 +1037,17 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     }
   };
 
-  // Mapping onglet → valeur post_type en base
-  const TAB_TO_POST_TYPE = {
-    "Chopes": "decouverte",
-    "Lieux": "lieu",
-    "Bons plans": "bonplan",
-  };
-
   const loadPosts = () => {
     setLoading(true);
+    // Zone géographique selon les chips actifs
+    const nearbyOn = activeFilters.has("nearby");
     let q = supabase
       .from("posts")
       .select("*, profiles(id, pseudo, avatar_url, role), link_url")
       .neq("post_type", "defi_photo")
       .is("evenement_id", null)
       .order("created_at", { ascending: false });
-    if (zone === "bassin") {
-      q = q.in("location", BASIN_CITIES);
-    } else if (zone === "saint-die") {
-      q = q.in("location", ["Saint-Dié-des-Vosges", "Saint-Dié"]);
-    } else if (zone !== "tout") {
-      const cityLabel = ZONE_OPTIONS.find(o => o.id === zone)?.label.replace(/^[^\s]+ /, "");
-      if (cityLabel) q = q.eq("location", cityLabel);
-    }
+    if (nearbyOn) q = q.in("location", BASIN_CITIES);
     q.then(({ data, error }) => {
       if (error) { setFetchError(error.message); console.error("Posts error:", error); }
       if (data) setPosts(data);
@@ -1041,12 +1055,16 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     });
   };
 
-  useEffect(() => { loadPosts(); }, [zone]);
+  useEffect(() => { loadPosts(); }, [activeFilters]);
 
-  // Filtrage client-side selon l'onglet actif
-  const filteredPosts = activeTab === "Tout" || !TAB_TO_POST_TYPE[activeTab]
+  // Filtrage client-side selon les chips actifs
+  const TYPE_MAP = { chope: "decouverte", lieux: "lieu", bons_plans: "bonplan" };
+  const activeTypes = Object.entries(TYPE_MAP)
+    .filter(([id]) => activeFilters.has(id))
+    .map(([, type]) => type);
+  const filteredPosts = activeFilters.has("all") || activeTypes.length === 0
     ? posts
-    : posts.filter(p => p.post_type === TAB_TO_POST_TYPE[activeTab]);
+    : posts.filter(p => activeTypes.includes(p.post_type));
 
   return (
     <div style={{
@@ -1056,8 +1074,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       display: "flex", flexDirection: "column",
     }}>
       <AppHeader setPage={setPage} profile={profile} user={user} requireAuth={requireAuth} />
-      <FilTabs active={activeTab} onSelect={setActiveTab} setPage={setPage} />
-      <VilleSelect zone={zone} setZone={setZone} />
+      <FilChips active={activeFilters} onToggle={toggleChip} setPage={setPage} />
       <div
         ref={scrollRef}
         onTouchStart={handleTouchStart}

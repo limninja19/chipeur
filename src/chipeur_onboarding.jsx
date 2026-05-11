@@ -51,7 +51,7 @@ function Screen1() {
         fontFamily: dm, fontSize: 15,
         color: "rgba(255,255,255,0.55)", lineHeight: 1.6, maxWidth: 280,
       }}>
-        Découvre les chopes, bons plans et sorties de Saint-Dié-des-Vosges
+        Découvre ta ville d'un autre œil — les instants de tes voisins, les produits de tes commerçants et artisans, les bons plans du quartier. Et partage les tiens.
       </div>
 
       <div style={{
@@ -190,7 +190,7 @@ function Screen3({ onDone }) {
           fontFamily: syne, fontWeight: 700, fontSize: 13,
           color: "#fff", marginBottom: 5,
         }}>
-          🏆 Défis & SpotDay
+          🏆 Défis
         </div>
         <div style={{
           fontFamily: dm, fontSize: 12,
