@@ -624,42 +624,60 @@ const GROUP_COLORS = {
 };
 
 function PostGroup({ icon, label, posts, onDelete, onEdit }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   if (posts.length === 0) return null;
 
   const colors = GROUP_COLORS[label] || GROUP_COLORS["Autres"];
+  const previews = posts.filter(p => p.image_url).slice(0, 2);
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: 12 }}>
       {lightboxIndex !== null && (
         <ProfileLightbox photos={posts} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
       )}
+
       {/* Header cliquable */}
       <div
         onClick={() => setOpen(o => !o)}
         style={{
           display: "flex", alignItems: "center", gap: 10,
-          background: colors.bg, borderRadius: open ? "16px 16px 0 0" : 16,
+          background: colors.bg,
+          borderRadius: open ? "16px 16px 0 0" : 16,
           border: `1.5px solid ${colors.border}`,
           padding: "12px 14px", cursor: "pointer",
         }}
       >
         <div style={{ width: 32, height: 32, borderRadius: 10, background: colors.border + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{icon}</div>
         <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, flex: 1 }}>{label}</span>
-        <span style={{ fontSize: 11, color: colors.dot, background: colors.border + "22", borderRadius: 20, padding: "2px 10px", fontWeight: 700 }}>
+
+        {/* 2 previews quand fermé */}
+        {!open && previews.length > 0 && (
+          <div style={{ display: "flex", gap: 4 }}>
+            {previews.map(p => (
+              <img key={p.id} src={p.image_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: `1.5px solid ${colors.border}` }} />
+            ))}
+            {posts.length > 2 && (
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.border + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: colors.dot }}>
+                +{posts.length - 2}
+              </div>
+            )}
+          </div>
+        )}
+
+        <span style={{ fontSize: 11, color: colors.dot, background: colors.border + "22", borderRadius: 20, padding: "2px 10px", fontWeight: 700, marginLeft: 4 }}>
           {posts.length}
         </span>
         <span style={{ fontSize: 14, color: C.ink2, marginLeft: 4 }}>{open ? "▾" : "▸"}</span>
       </div>
 
-      {/* Grille photos */}
+      {/* Grille photos — visible seulement si ouvert */}
       {open && (
         <div style={{
           display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6,
           background: colors.bg, border: `1.5px solid ${colors.border}`,
           borderTop: "none", borderRadius: "0 0 16px 16px",
-          padding: "10px 10px 10px",
+          padding: "10px",
         }}>
           {posts.map((p, i) => (
             <PhotoThumb key={p.id} p={p} onDelete={onDelete} onOpen={() => setLightboxIndex(i)} onEdit={onEdit} />
@@ -1039,11 +1057,10 @@ function TabRewards({ user }) {
   );
 }
 
-export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, user }) {
+export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, user, setEditPost }) {
   const [screen, setScreen] = useState("profil");
   const [activeTab, setActiveTab] = useState("Publications");
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [editTarget, setEditTarget] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [miniDefiId, setMiniDefiId] = useState(null);
   const [univers, setUnivers] = useState(miniDefisAll);
@@ -1139,7 +1156,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
             <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} rank={rank} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
-              {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} onEdit={p => setEditTarget(p)} loading={postsLoading} />}
+              {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} onEdit={p => { setEditPost?.(p); setPage("nouveau"); }} loading={postsLoading} />}
               {activeTab === "Événements" && <TabEvenements sorties={sorties} onDelete={handleDeleteSortie} loading={sortiesLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis setPage={setPage} />}
@@ -1203,13 +1220,6 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         />
       )}
 
-      {editTarget !== null && (
-        <EditPostModal
-          post={editTarget}
-          onSave={handleEditSave}
-          onCancel={() => setEditTarget(null)}
-        />
-      )}
 
       <BottomNav active="profil" onNavigate={setPage} onFab={() => setPage("nouveau")} />
 

@@ -574,7 +574,7 @@ function SuccessScreen({ type, onBack }) {
 }
 
 // ─── MAIN ───
-export default function ChipeurNouveauPost({ setPage, user, profile }) {
+export default function ChipeurNouveauPost({ setPage, user, profile, editPost, setEditPost }) {
   const [screen, setScreen] = useState("form");
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
@@ -607,6 +607,29 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   // Photo pour lieu (séparée de la photo post normal)
   const [lieuPhotoFile, setLieuPhotoFile] = useState(null);
 
+  // ── Mode édition : pré-remplir les champs si editPost existe ──
+  useEffect(() => {
+    if (!editPost) return;
+    const type = editPost.post_type || "decouverte";
+    setSelectedType(type);
+    setContent(editPost.content || "");
+    setActiveTags(Array.isArray(editPost.tags) ? editPost.tags : []);
+    setLinkUrl(editPost.link_url || "");
+    setMagasinId(editPost.magasin_id || null);
+    if (editPost.image_url) setPhotoPreview(editPost.image_url);
+    // Lieu : essayer de décomposer le contenu
+    if (type === "lieu" && editPost.content) {
+      const parts = editPost.content.split(" — ");
+      setLieuFields({
+        nom:  parts[0] || "",
+        type: parts[1] || "",
+        desc: parts[2] || "",
+      });
+      if (editPost.image_url) setPhotoPreview(editPost.image_url);
+    }
+  }, [editPost?.id]);
+
+  const isEditMode = !!editPost?.id;
   const isMagasin = profile?.role === "magasin";
   const types = isMagasin ? [
     { id: "decouverte", icon: "🛍️", name: "Chope", desc: "Chope un instant de ta journée", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
@@ -632,6 +655,41 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
     if (!user?.id) { setPublishError("Tu dois être connecté pour publier."); return; }
     setPublishing(true);
     setPublishError("");
+
+    // ── MODE ÉDITION ──
+    if (isEditMode) {
+      let image_url = editPost.image_url; // garde l'existante par défaut
+
+      // Upload nouvelle photo si sélectionnée
+      const uploadFile = selectedType === "lieu" ? lieuPhotoFile : photoFile;
+      if (uploadFile) {
+        const ext = (uploadFile.name.split(".").pop() || "jpg").toLowerCase();
+        const safeExt = ["jpg","jpeg","png","gif","webp"].includes(ext) ? ext : "jpg";
+        const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
+        const { error: upErr } = await supabase.storage.from("images").upload(path, uploadFile, { contentType: uploadFile.type || "image/jpeg", upsert: false });
+        if (upErr) { setPublishing(false); setPublishError("❌ Upload photo échoué : " + upErr.message); return; }
+        const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+        image_url = urlData.publicUrl;
+      }
+
+      const textContent = selectedType === "lieu"
+        ? [lieuFields.nom.trim(), lieuFields.type, lieuFields.desc.trim()].filter(Boolean).join(" — ")
+        : content.trim();
+
+      const { error } = await supabase.from("posts").update({
+        content: textContent,
+        image_url,
+        tags: selectedType === "lieu" ? (lieuFields.type ? [lieuFields.type] : []) : (pepiteOn ? [...activeTags, "Pépite ⭐"] : activeTags),
+        link_url: (linkUrl.trim().startsWith("http://") || linkUrl.trim().startsWith("https://")) ? linkUrl.trim() : null,
+        magasin_id: magasinId || null,
+      }).eq("id", editPost.id);
+
+      setPublishing(false);
+      if (error) { setPublishError("Erreur Supabase : " + error.message); return; }
+      setEditPost?.(null);
+      setPage("profil");
+      return;
+    }
 
     // ── CAS SORTIE ──
     if (selectedType === "sortie") {
@@ -793,13 +851,13 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
               padding: "12px 16px", borderBottom: `1px solid ${C.border}`,
               background: C.card, flexShrink: 0,
             }}>
-              <button onClick={() => setPage("fil")} style={{
+              <button onClick={() => { setEditPost?.(null); setPage(isEditMode ? "profil" : "fil"); }} style={{
                 width: 34, height: 34, borderRadius: "50%", background: C.pill,
                 border: "none", fontSize: 16, cursor: "pointer", color: C.ink2,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>✕</button>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: C.ink }}>
-                Nouveau post
+                {isEditMode ? "Modifier le post ✏️" : "Nouveau post"}
               </div>
               {/* Avatar utilisateur */}
               <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
@@ -897,7 +955,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
                   letterSpacing: 0.2,
                 }}
               >
-                {publishing ? "Publication…" : "Publier 🚀"}
+                {publishing ? "Sauvegarde…" : isEditMode ? "Enregistrer les modifications ✓" : "Publier 🚀"}
               </button>
             </div>
           </>
