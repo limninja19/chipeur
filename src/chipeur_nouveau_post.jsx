@@ -275,8 +275,39 @@ function PepiteToggle({ on, onChange }) {
   );
 }
 
+// ─── CHAMP LIEN ───
+function LinkInput({ value, onChange }) {
+  const isValid = value.trim() && (value.startsWith("http://") || value.startsWith("https://"));
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>🔗 Ajouter un lien (optionnel)</label>
+      <div style={{ position: "relative" }}>
+        <input
+          type="url"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="https://youtube.com/..."
+          style={{
+            width: "100%", padding: "10px 12px", borderRadius: 12,
+            border: `1.5px solid ${isValid ? C.accent : C.border}`,
+            fontFamily: "'DM Sans', sans-serif", fontSize: 12,
+            color: C.ink, background: C.card, outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+      {value.trim() && !isValid && (
+        <div style={{ fontSize: 10, color: "#E53935", marginTop: 3 }}>Le lien doit commencer par https://</div>
+      )}
+      {isValid && (
+        <div style={{ fontSize: 10, color: "#16a34a", marginTop: 3 }}>✅ Lien valide</div>
+      )}
+    </div>
+  );
+}
+
 // ─── FORM: TROUVAILLE ───
-function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, pepiteOn, onPepiteChange, magasinId, onMagasinSelect }) {
+function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, pepiteOn, onPepiteChange, magasinId, onMagasinSelect, linkUrl, onLinkChange }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} externalPreview={photoPreview} />
@@ -310,6 +341,7 @@ function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, active
           onToggle={onTagToggle}
         />
       </div>
+      <LinkInput value={linkUrl} onChange={onLinkChange} />
       <PepiteToggle on={pepiteOn} onChange={onPepiteChange} />
     </>
   );
@@ -405,7 +437,7 @@ function FormSortie({ fields, onChange }) {
 }
 
 // ─── FORM: BON PLAN ───
-function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, magasinId, onMagasinSelect }) {
+function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, magasinId, onMagasinSelect, linkUrl, onLinkChange }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-bonplan" externalPreview={photoPreview} />
@@ -430,6 +462,7 @@ function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTag
           onToggle={onTagToggle}
         />
       </div>
+      <LinkInput value={linkUrl} onChange={onLinkChange} />
     </>
   );
 }
@@ -569,6 +602,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
   // Lieu fields
   const [lieuFields, setLieuFields] = useState({ nom: "", desc: "", type: "" });
   const updateLieuField = (key, val) => setLieuFields(prev => ({ ...prev, [key]: val }));
+  // Lien externe
+  const [linkUrl, setLinkUrl] = useState("");
   // Photo pour lieu (séparée de la photo post normal)
   const [lieuPhotoFile, setLieuPhotoFile] = useState(null);
 
@@ -699,7 +734,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       location: profile?.quartier || "Saint-Dié-des-Vosges",
       tags: finalTags,
       post_type: selectedType, // "decouverte" ou "bonplan"
-      magasin_id: magasinId || null, // ✅ MagLink maintenant sauvegardé
+      magasin_id: magasinId || null,
+      link_url: (linkUrl.trim().startsWith("http://") || linkUrl.trim().startsWith("https://")) ? linkUrl.trim() : null,
     });
     setPublishing(false);
     if (error) {
@@ -718,6 +754,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       activeTags={activeTags} onTagToggle={handleTagToggle}
       pepiteOn={pepiteOn} onPepiteChange={setPepiteOn}
       magasinId={magasinId} onMagasinSelect={setMagasinId}
+      linkUrl={linkUrl} onLinkChange={setLinkUrl}
     />,
     lieu: <FormLieu fields={lieuFields} onChange={updateLieuField} onPhotoSelect={setLieuPhotoFile} />,
     sortie: <FormSortie fields={sortieFields} onChange={updateSortieField} />,
@@ -726,12 +763,14 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
       magasinId={magasinId} onMagasinSelect={setMagasinId}
+      linkUrl={linkUrl} onLinkChange={setLinkUrl}
     />,
     promo: <FormBonPlan
       content={content} onChange={setContent}
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
       magasinId={magasinId} onMagasinSelect={setMagasinId}
+      linkUrl={linkUrl} onLinkChange={setLinkUrl}
     />,
   };
 

@@ -540,6 +540,54 @@ function Lightbox({ src, alt, onClose }) {
   );
 }
 
+// ─── RENDU TEXTE AVEC LIENS CLIQUABLES ───
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+function renderTextWithLinks(text) {
+  if (!text) return null;
+  const parts = text.split(URL_REGEX);
+  return parts.map((part, i) =>
+    URL_REGEX.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+        onClick={e => e.stopPropagation()}
+        style={{ color: "#FF5733", textDecoration: "underline", wordBreak: "break-all" }}>
+        {part}
+      </a>
+    ) : part
+  );
+}
+
+function LinkPreviewCard({ url }) {
+  let domain = "";
+  try { domain = new URL(url).hostname.replace("www.", ""); } catch {}
+  const isYoutube = domain.includes("youtube") || domain.includes("youtu.be");
+  const isInsta = domain.includes("instagram");
+  const isFacebook = domain.includes("facebook");
+  const icon = isYoutube ? "▶️" : isInsta ? "📸" : isFacebook ? "📘" : "🔗";
+  return (
+    <a
+      href={url} target="_blank" rel="noopener noreferrer"
+      onClick={e => e.stopPropagation()}
+      style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: "#F5F2EE", borderRadius: 12, padding: "10px 12px",
+        marginTop: 8, textDecoration: "none",
+        border: "1px solid rgba(26,23,20,0.08)",
+      }}
+    >
+      <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#1A1714", marginBottom: 1 }}>
+          {domain || "Voir le lien"}
+        </div>
+        <div style={{ fontSize: 10, color: "#6B6560", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {url}
+        </div>
+      </div>
+      <span style={{ fontSize: 14, color: "#6B6560", flexShrink: 0 }}>›</span>
+    </a>
+  );
+}
+
 // ─── POST CARD RÉEL (Supabase) ───
 function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAuth }) {
   const [lightbox, setLightbox] = useState(false);
@@ -697,9 +745,10 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
         {/* Contenu */}
         <div style={{ padding: "10px 12px 6px" }}>
           {post.content
-            ? <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>{post.content}</div>
+            ? <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.5, marginBottom: 6 }}>{renderTextWithLinks(post.content)}</div>
             : post.image_url && <div style={{ fontSize: 11, color: C.ink2, fontStyle: "italic", marginBottom: 6 }}>📷 Photo sans description</div>
           }
+          {post.link_url && <LinkPreviewCard url={post.link_url} />}
           {post.tags?.length > 0 && (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
               {post.tags.map(t => <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>)}
@@ -831,7 +880,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     setLoading(true);
     let q = supabase
       .from("posts")
-      .select("*, profiles(id, pseudo, avatar_url, role)")
+      .select("*, profiles(id, pseudo, avatar_url, role), link_url")
       .neq("post_type", "defi_photo")
       .is("evenement_id", null)
       .order("created_at", { ascending: false });
