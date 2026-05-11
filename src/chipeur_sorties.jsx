@@ -325,8 +325,121 @@ function EventCard({ s, idx, onClick, user, onDelete }) {
   );
 }
 
+// ─── LIGHTBOX GALERIE ───
+function GalleryLightbox({ photos, startIndex, onClose }) {
+  const [index, setIndex] = useState(startIndex);
+  const touchX = useRef(null);
+  const photo = photos[index];
+
+  const prev = () => setIndex(i => Math.max(0, i - 1));
+  const next = () => setIndex(i => Math.min(photos.length - 1, i + 1));
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 500,
+        background: "rgba(0,0,0,0.97)",
+        display: "flex", flexDirection: "column",
+      }}
+      onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
+      onTouchEnd={e => {
+        if (touchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        touchX.current = null;
+        if (dx > 60) prev();
+        else if (dx < -60) next();
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 16px", flexShrink: 0,
+      }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff" }}>
+          {index + 1} / {photos.length}
+        </div>
+        <button onClick={onClose} style={{
+          background: "rgba(255,255,255,0.15)", border: "none",
+          borderRadius: "50%", width: 36, height: 36, color: "#fff",
+          fontSize: 18, cursor: "pointer", display: "flex",
+          alignItems: "center", justifyContent: "center",
+        }}>✕</button>
+      </div>
+
+      {/* Photo */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+        {/* Flèche gauche */}
+        {index > 0 && (
+          <button onClick={prev} style={{
+            position: "absolute", left: 12, zIndex: 10,
+            background: "rgba(255,255,255,0.18)", border: "none",
+            borderRadius: "50%", width: 42, height: 42, color: "#fff",
+            fontSize: 20, cursor: "pointer", display: "flex",
+            alignItems: "center", justifyContent: "center",
+          }}>‹</button>
+        )}
+        <img
+          key={photo.id}
+          src={photo.image_url}
+          alt=""
+          style={{
+            maxWidth: "100%", maxHeight: "100%",
+            objectFit: "contain", display: "block",
+          }}
+        />
+        {/* Flèche droite */}
+        {index < photos.length - 1 && (
+          <button onClick={next} style={{
+            position: "absolute", right: 12, zIndex: 10,
+            background: "rgba(255,255,255,0.18)", border: "none",
+            borderRadius: "50%", width: 42, height: 42, color: "#fff",
+            fontSize: 20, cursor: "pointer", display: "flex",
+            alignItems: "center", justifyContent: "center",
+          }}>›</button>
+        )}
+      </div>
+
+      {/* Infos auteur + légende */}
+      <div style={{ padding: "14px 16px 32px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: photo.content ? 8 : 0 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.15)",
+            overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+          }}>
+            {photo.profiles?.avatar_url
+              ? <img src={photo.profiles.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : "👤"}
+          </div>
+          <div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "#fff" }}>
+              {photo.profiles?.pseudo || "Voisin"}
+            </div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>{timeAgo(photo.created_at)}</div>
+          </div>
+        </div>
+        {photo.content && (
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>{photo.content}</div>
+        )}
+        {/* Indicateurs dots */}
+        {photos.length > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", gap: 5, marginTop: 14 }}>
+            {photos.map((_, i) => (
+              <div key={i} onClick={() => setIndex(i)} style={{
+                width: i === index ? 18 : 6, height: 6,
+                borderRadius: 3, cursor: "pointer",
+                background: i === index ? C.accent : "rgba(255,255,255,0.3)",
+                transition: "all 0.2s",
+              }} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── PHOTO CARD (in gallery) ───
-function PhotoCard({ post }) {
+function PhotoCard({ post, onOpen }) {
   const pseudo = post.profiles?.pseudo || "Voisin";
   const avatar = post.profiles?.avatar_url;
 
@@ -336,10 +449,17 @@ function PhotoCard({ post }) {
       marginBottom: 10, overflow: "hidden",
     }}>
       {post.image_url && (
-        <img
-          src={post.image_url} alt=""
-          style={{ width: "100%", maxHeight: 300, objectFit: "cover", display: "block" }}
-        />
+        <div onClick={onOpen} style={{ cursor: "zoom-in", position: "relative" }}>
+          <img
+            src={post.image_url} alt=""
+            style={{ width: "100%", maxHeight: 300, objectFit: "cover", display: "block" }}
+          />
+          <div style={{
+            position: "absolute", bottom: 8, right: 8,
+            background: "rgba(0,0,0,0.45)", color: "#fff",
+            fontSize: 10, padding: "3px 8px", borderRadius: 10,
+          }}>🔍 Agrandir</div>
+        </div>
       )}
       <div style={{ padding: "10px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: post.content ? 6 : 0 }}>
@@ -494,6 +614,7 @@ function EventDetailScreen({ event, user, onBack }) {
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   const { going, count, loading: loadingGoing, toggle } = useParticipation(event.id, user?.id);
 
   const d = parseDate(event.date_text);
@@ -669,7 +790,9 @@ function EventDetailScreen({ event, user, onBack }) {
                   📸 Ajouter ma photo
                 </button>
               )}
-              {photos.map(p => <PhotoCard key={p.id} post={p} />)}
+              {photos.map((p, i) => (
+                <PhotoCard key={p.id} post={p} onOpen={() => setLightboxIndex(i)} />
+              ))}
             </>
           )
         ) : (
@@ -734,6 +857,14 @@ function EventDetailScreen({ event, user, onBack }) {
             setShowUpload(false);
             setTab("galerie");
           }}
+        />
+      )}
+      {/* ── Lightbox galerie ── */}
+      {lightboxIndex !== null && photos.length > 0 && (
+        <GalleryLightbox
+          photos={photos}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
         />
       )}
     </div>
