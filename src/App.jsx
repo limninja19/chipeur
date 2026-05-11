@@ -20,6 +20,7 @@ import { checkDailyLogin } from "./chipeur_xp";
 import Notifications from "./chipeur_notifications";
 import Messages from "./chipeur_messages";
 import SignupModal from "./SignupModal";
+import Onboarding from "./chipeur_onboarding";
 
 function SplashScreen() {
   return (
@@ -110,7 +111,28 @@ export default function App() {
 
   const [showSignup, setShowSignup] = useState(false);
 
+  // ── Onboarding première visite ──────────────────────────────────────────
+  const [onboardingDone, setOnboardingDone] = useState(
+    () => localStorage.getItem("chipeur_onboarding_done") === "true"
+  );
+
+  async function handleOnboardingDone() {
+    localStorage.setItem("chipeur_onboarding_done", "true");
+    setOnboardingDone(true);
+    // Si connecté, on marque aussi en base
+    if (user?.id) {
+      await supabase.from("profiles").update({ has_seen_onboarding: true }).eq("id", user.id);
+    }
+  }
+
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
+
+  // Onboarding : après le chargement, avant tout le reste
+  // Visiteur : basé sur localStorage / Inscrit : basé sur profile.has_seen_onboarding
+  const dbDone = profile?.has_seen_onboarding === true;
+  if (!onboardingDone && !dbDone) {
+    return <Onboarding onDone={handleOnboardingDone} />;
+  }
 
   if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => setPage("fil")} />;
   if (page === "connexion")   return <Connexion   setPage={setPage} onAuth={() => setPage("fil")} />;
