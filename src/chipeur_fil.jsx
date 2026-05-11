@@ -405,9 +405,72 @@ const REACTIONS = [
   { type: "recommande", emoji: "👍", label: "Je recommande" },
 ];
 
+// ─── MODAL QUI A RÉAGI ───
+function ReactorsModal({ postId, reactionType, onClose }) {
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const reaction = REACTIONS.find(r => r.type === reactionType);
+
+  useEffect(() => {
+    supabase
+      .from("post_reactions")
+      .select("profiles:user_id(pseudo, avatar_url)")
+      .eq("post_id", postId)
+      .eq("type", reactionType)
+      .then(({ data }) => {
+        setList((data || []).map(r => r.profiles).filter(Boolean));
+        setLoading(false);
+      });
+  }, [postId, reactionType]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 400,
+        background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.card, borderRadius: "20px 20px 0 0",
+          width: "100%", maxWidth: 480, padding: "16px 20px 40px",
+          maxHeight: "60vh", display: "flex", flexDirection: "column",
+        }}
+      >
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.pill, margin: "0 auto 16px" }} />
+        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 20 }}>{reaction?.emoji}</span>
+          {reaction?.label}
+          <span style={{ fontSize: 12, color: C.ink2, fontWeight: 500 }}>· {list.length} voisin{list.length > 1 ? "s" : ""}</span>
+        </div>
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 12 }}>Chargement…</div>
+          ) : list.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 12 }}>Personne encore</div>
+          ) : list.map((p, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < list.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: C.pill, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : "🧑"}
+              </div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: C.ink }}>{p.pseudo || "Voisin"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Reactions({ postId, userId, authorId, user }) {
   const [counts, setCounts] = useState({});
   const [userReactions, setUserReactions] = useState(new Set());
+  const [reactorsFor, setReactorsFor] = useState(null); // type de réaction dont on affiche la liste
 
   useEffect(() => {
     if (!postId) return;
@@ -476,36 +539,46 @@ function Reactions({ postId, userId, authorId, user }) {
   };
 
   return (
-    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-      {REACTIONS.map(r => {
-        const count = counts[r.type] || 0;
-        const active = userReactions.has(r.type);
-        return (
-          <AuthGate key={r.type} user={user} onSuccess={() => handleReact(r.type)}>
-          <button
-            onClick={() => handleReact(r.type)}
-            style={{
-              padding: "6px 8px", borderRadius: 12,
-              border: `1.5px solid ${active ? C.accent : C.border}`,
-              background: active ? "#FFF0EB" : "transparent",
-              cursor: userId ? "pointer" : "default",
-              fontFamily: "'DM Sans', sans-serif",
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
-              color: active ? C.accent : C.ink,
-              transition: "all 0.15s",
-              minWidth: 44,
-            }}
-          >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>{r.emoji}</span>
-            <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.2, color: active ? C.accent : C.ink2 }}>{r.label}</span>
-            {count > 0 && (
-              <span style={{ fontSize: 9, fontWeight: 700, color: active ? C.accent : C.ink2 }}>{count}</span>
-            )}
-          </button>
-          </AuthGate>
-        );
-      })}
-    </div>
+    <>
+      {reactorsFor && (
+        <ReactorsModal postId={postId} reactionType={reactorsFor} onClose={() => setReactorsFor(null)} />
+      )}
+      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+        {REACTIONS.map(r => {
+          const count = counts[r.type] || 0;
+          const active = userReactions.has(r.type);
+          return (
+            <AuthGate key={r.type} user={user} onSuccess={() => handleReact(r.type)}>
+            <button
+              onClick={() => handleReact(r.type)}
+              style={{
+                padding: "6px 8px", borderRadius: 12,
+                border: `1.5px solid ${active ? C.accent : C.border}`,
+                background: active ? "#FFF0EB" : "transparent",
+                cursor: userId ? "pointer" : "default",
+                fontFamily: "'DM Sans', sans-serif",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
+                color: active ? C.accent : C.ink,
+                transition: "all 0.15s",
+                minWidth: 44,
+              }}
+            >
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{r.emoji}</span>
+              <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.2, color: active ? C.accent : C.ink2 }}>{r.label}</span>
+              {count > 0 && (
+                <span
+                  onClick={e => { e.stopPropagation(); setReactorsFor(r.type); }}
+                  style={{ fontSize: 9, fontWeight: 700, color: active ? C.accent : C.ink2, textDecoration: "underline", textUnderlineOffset: 2, cursor: "pointer" }}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+            </AuthGate>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
