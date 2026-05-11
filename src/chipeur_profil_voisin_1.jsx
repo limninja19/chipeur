@@ -98,9 +98,12 @@ function MiniDefiScreen({ defi, onBack, onSave, user }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const hasText = textValue.trim().length > 0;
-  const hasPhoto = !!photoPreview;
+  // Une photo est "valide" uniquement si c'est une URL Supabase (pas blob://)
+  const hasExistingPhoto = defi.photoUrl && !defi.photoUrl.startsWith("blob:");
+  const hasPhoto = !!photoFile || !!hasExistingPhoto;
   const xpGained = (hasText ? 5 : 0) + (hasPhoto ? 5 : 0);
 
   const handlePhotoFile = (e) => {
@@ -111,22 +114,32 @@ function MiniDefiScreen({ defi, onBack, onSave, user }) {
   };
 
   const handleSave = async () => {
-    if (!hasText && !hasPhoto) return;
+    if (!hasText && !photoFile && !hasExistingPhoto) return;
     setSaving(true);
-    // Si photo supprimée, on passe null
-    let photoUrl = photoPreview || null;
-    // Upload photo to Supabase if new file selected
+    setSaveError("");
+
+    // Photo : si nouveau fichier → upload Supabase
+    let photoUrl = hasExistingPhoto ? defi.photoUrl : null;
     if (photoFile && user?.id) {
-      const ext = photoFile.name.split(".").pop() || "jpg";
-      const path = `univers/${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile, { upsert: true, contentType: photoFile.type || "image/jpeg" });
-      if (!upErr) {
-        const { data } = supabase.storage.from("images").getPublicUrl(path);
-        photoUrl = data.publicUrl;
+      const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+      const safeExt = ["jpg","jpeg","png","gif","webp"].includes(ext) ? ext : "jpg";
+      const path = `univers/${user.id}/${Date.now()}.${safeExt}`;
+      const { error: upErr } = await supabase.storage
+        .from("images")
+        .upload(path, photoFile, { upsert: true, contentType: photoFile.type || "image/jpeg" });
+      if (upErr) {
+        console.error("Upload photo univers :", upErr.message);
+        setSaveError("❌ Upload photo échoué : " + upErr.message);
+        setSaving(false);
+        return;
       }
+      const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+      photoUrl = urlData.publicUrl;
     }
+
     setSaved(true);
-    setTimeout(() => onSave(textValue, photoUrl, xpGained), 600);
+    // On appelle onSave de façon synchrone (pas de setTimeout qui peut perdre le contexte)
+    await onSave(textValue, photoUrl, xpGained);
   };
 
   return (
@@ -192,11 +205,16 @@ function MiniDefiScreen({ defi, onBack, onSave, user }) {
 
       <button
         onClick={handleSave}
-        disabled={saving || (!hasText && !hasPhoto)}
+        disabled={saving || (!hasText && !photoFile && !hasExistingPhoto)}
         style={{ position: "absolute", bottom: 90, left: 20, right: 20, zIndex: 10, background: saved ? C.pro : (hasText || hasPhoto) ? C.accent : C.pill, color: (hasText || hasPhoto) ? "#fff" : C.ink2, border: "none", borderRadius: 16, padding: 14, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: (hasText || hasPhoto) ? "pointer" : "not-allowed", textAlign: "center", transition: "background 0.3s" }}
       >
-        {saved ? "✓ Enregistré !" : `Enregistrer · +${xpGained || "?"} XP`}
+        {saving ? "Enregistrement…" : saved ? "✓ Enregistré !" : `Enregistrer · +${xpGained || "?"} XP`}
       </button>
+      {saveError && (
+        <div style={{ position: "absolute", bottom: 150, left: 20, right: 20, zIndex: 10, background: "#FEE2E2", border: "1px solid #FECACA", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#DC2626", textAlign: "center" }}>
+          {saveError}
+        </div>
+      )}
     </div>
   );
 }
@@ -1340,7 +1358,10 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
               }).then(() => {});
             }
 
-            await updateProfile(profileUpdates);
+            const { error: saveErr } = await updateProfile(profileUpdates);
+            if (saveErr) {
+              console.error("❌ updateProfile univers :", saveErr);
+            }
             setScreen("profil"); setActiveTab("Mon univers"); setMiniDefiId(null);
           }}
         />
