@@ -684,10 +684,13 @@ export default function ChipeurNouveauPost({ setPage, user, profile }) {
         const safeExt = ["jpg","jpeg","png","gif","webp"].includes(ext) ? ext : "jpg";
         const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
         const { error: upErr } = await supabase.storage.from("images").upload(path, lieuPhotoFile, { contentType: lieuPhotoFile.type || "image/jpeg", upsert: false });
-        if (!upErr) {
-          const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
-          image_url = urlData.publicUrl;
+        if (upErr) {
+          setPublishing(false);
+          setPublishError("❌ Upload photo échoué : " + upErr.message);
+          return;
         }
+        const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+        image_url = urlData.publicUrl;
       }
       const { error } = await supabase.from("posts").insert({
         author_id: user.id,

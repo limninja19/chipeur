@@ -544,18 +544,22 @@ function ProfileLightbox({ photos, startIndex, onClose }) {
   );
 }
 
-function PhotoThumb({ p, onDelete, onOpen }) {
+function PhotoThumb({ p, onDelete, onOpen, onEdit }) {
   return (
     <div style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "zoom-in", background: C.pill }} onClick={onOpen}>
       {p.image_url ? (
         <img src={p.image_url} alt={p.content} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       ) : (
         <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 10, boxSizing: "border-box" }}>
-          <div style={{ fontSize: 28, marginBottom: 6 }}>📝</div>
-          <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 50)}{p.content?.length > 50 ? "…" : ""}</div>
+          <div style={{ fontSize: 22, marginBottom: 5 }}>📝</div>
+          <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 60)}{p.content?.length > 60 ? "…" : ""}</div>
         </div>
       )}
-      <button onClick={e => { e.stopPropagation(); onDelete(p.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+      {/* Boutons actions */}
+      <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 4 }}>
+        <button onClick={e => { e.stopPropagation(); onEdit(p); }} style={{ width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✏️</button>
+        <button onClick={e => { e.stopPropagation(); onDelete(p.id); }} style={{ width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+      </div>
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.65))", padding: "16px 8px 7px" }}>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>
           {new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
@@ -565,30 +569,100 @@ function PhotoThumb({ p, onDelete, onOpen }) {
   );
 }
 
-function PostGroup({ icon, label, posts, onDelete }) {
+// ─── EDIT POST MODAL ────────────────────────────────────────────
+function EditPostModal({ post, onSave, onCancel }) {
+  const [content, setContent] = useState(post.content || "");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("posts").update({ content: content.trim() }).eq("id", post.id);
+    setSaving(false);
+    if (!error) onSave(post.id, content.trim());
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.55)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+      <div style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "20px 20px 40px", width: "100%", boxSizing: "border-box" }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 12 }}>✏️ Modifier le post</div>
+        {post.image_url && (
+          <img src={post.image_url} alt="" style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 14, marginBottom: 12 }} />
+        )}
+        <textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          rows={4}
+          style={{
+            width: "100%", padding: "12px 14px", borderRadius: 14,
+            border: `1.5px solid ${C.accent}`, fontFamily: dm, fontSize: 13,
+            color: C.ink, background: C.bg, outline: "none",
+            resize: "none", boxSizing: "border-box", lineHeight: 1.6, marginBottom: 14,
+          }}
+        />
+        <button onClick={handleSave} disabled={saving} style={{
+          width: "100%", background: C.accent, color: "#fff", border: "none",
+          borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700,
+          fontFamily: dm, cursor: "pointer", marginBottom: 8,
+        }}>{saving ? "Sauvegarde…" : "Enregistrer ✓"}</button>
+        <button onClick={onCancel} style={{
+          width: "100%", background: C.pill, color: C.ink2, border: "none",
+          borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer",
+        }}>Annuler</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── GROUP COLORS ────────────────────────────────────────────────
+const GROUP_COLORS = {
+  "Souvenirs d'événements": { bg: "#EEF2FF", border: "#6366F1", dot: "#6366F1" },
+  "Photos de défis":        { bg: "#FFF7ED", border: "#F97316", dot: "#F97316" },
+  "Chopes":                 { bg: "#FFF0EB", border: "#FF5733", dot: "#FF5733" },
+  "Bons plans":             { bg: "#FFFBEB", border: "#F59E0B", dot: "#B45309" },
+  "Lieux":                  { bg: "#F0FDF9", border: "#0F766E", dot: "#0F766E" },
+  "Autres":                 { bg: C.bg,      border: C.border,  dot: C.ink2    },
+};
+
+function PostGroup({ icon, label, posts, onDelete, onEdit }) {
   const [open, setOpen] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   if (posts.length === 0) return null;
+
+  const colors = GROUP_COLORS[label] || GROUP_COLORS["Autres"];
+
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: 16 }}>
       {lightboxIndex !== null && (
         <ProfileLightbox photos={posts} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
       )}
+      {/* Header cliquable */}
       <div
         onClick={() => setOpen(o => !o)}
-        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: open ? 10 : 0, cursor: "pointer" }}
+        style={{
+          display: "flex", alignItems: "center", gap: 10,
+          background: colors.bg, borderRadius: open ? "16px 16px 0 0" : 16,
+          border: `1.5px solid ${colors.border}`,
+          padding: "12px 14px", cursor: "pointer",
+        }}
       >
-        <span style={{ fontSize: 16 }}>{icon}</span>
-        <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>{label}</span>
-        <span style={{ fontSize: 11, color: C.ink2, background: C.pill, borderRadius: 20, padding: "1px 8px", fontWeight: 600 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 10, background: colors.border + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{icon}</div>
+        <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, flex: 1 }}>{label}</span>
+        <span style={{ fontSize: 11, color: colors.dot, background: colors.border + "22", borderRadius: 20, padding: "2px 10px", fontWeight: 700 }}>
           {posts.length}
         </span>
-        <span style={{ marginLeft: "auto", fontSize: 13, color: C.ink2 }}>{open ? "▾" : "▸"}</span>
+        <span style={{ fontSize: 14, color: C.ink2, marginLeft: 4 }}>{open ? "▾" : "▸"}</span>
       </div>
+
+      {/* Grille photos */}
       {open && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6,
+          background: colors.bg, border: `1.5px solid ${colors.border}`,
+          borderTop: "none", borderRadius: "0 0 16px 16px",
+          padding: "10px 10px 10px",
+        }}>
           {posts.map((p, i) => (
-            <PhotoThumb key={p.id} p={p} onDelete={onDelete} onOpen={() => setLightboxIndex(i)} />
+            <PhotoThumb key={p.id} p={p} onDelete={onDelete} onOpen={() => setLightboxIndex(i)} onEdit={onEdit} />
           ))}
         </div>
       )}
@@ -596,7 +670,7 @@ function PostGroup({ icon, label, posts, onDelete }) {
   );
 }
 
-function TabPosts({ posts, onDelete, loading }) {
+function TabPosts({ posts, onDelete, onEdit, loading }) {
   if (loading) return <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>Chargement…</div>;
   if (posts.length === 0) return (
     <div style={{ textAlign: "center", padding: "40px 16px" }}>
@@ -618,7 +692,7 @@ function TabPosts({ posts, onDelete, loading }) {
   return (
     <div>
       {groupes.map(g => (
-        <PostGroup key={g.label} icon={g.icon} label={g.label} posts={g.posts} onDelete={onDelete} />
+        <PostGroup key={g.label} icon={g.icon} label={g.label} posts={g.posts} onDelete={onDelete} onEdit={onEdit} />
       ))}
     </div>
   );
@@ -969,6 +1043,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
   const [screen, setScreen] = useState("profil");
   const [activeTab, setActiveTab] = useState("Publications");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [miniDefiId, setMiniDefiId] = useState(null);
   const [univers, setUnivers] = useState(miniDefisAll);
@@ -1046,6 +1121,11 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
     setDeleteTarget(null);
   };
 
+  const handleEditSave = (id, newContent) => {
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, content: newContent } : p));
+    setEditTarget(null);
+  };
+
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
@@ -1059,7 +1139,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
             <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} rank={rank} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
-              {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} loading={postsLoading} />}
+              {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} onEdit={p => setEditTarget(p)} loading={postsLoading} />}
               {activeTab === "Événements" && <TabEvenements sorties={sorties} onDelete={handleDeleteSortie} loading={sortiesLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis setPage={setPage} />}
@@ -1120,6 +1200,14 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         <DeletePopup
           onConfirm={() => handleDelete(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {editTarget !== null && (
+        <EditPostModal
+          post={editTarget}
+          onSave={handleEditSave}
+          onCancel={() => setEditTarget(null)}
         />
       )}
 
