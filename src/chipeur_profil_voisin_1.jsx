@@ -477,6 +477,55 @@ function StickyTabs({ activeTab, onTabChange }) {
   );
 }
 
+function PhotoThumb({ p, onDelete }) {
+  return (
+    <div style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "pointer", background: C.pill }}>
+      {p.image_url ? (
+        <img src={p.image_url} alt={p.content} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      ) : (
+        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 10, boxSizing: "border-box" }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>📝</div>
+          <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 50)}{p.content?.length > 50 ? "…" : ""}</div>
+        </div>
+      )}
+      <button onClick={e => { e.stopPropagation(); onDelete(p.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.65))", padding: "16px 8px 7px" }}>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>
+          {new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PostGroup({ icon, label, posts, onDelete }) {
+  const [open, setOpen] = useState(true);
+  if (posts.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          marginBottom: open ? 10 : 0, cursor: "pointer",
+        }}
+      >
+        <span style={{ fontSize: 16 }}>{icon}</span>
+        <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>{label}</span>
+        <span style={{ fontSize: 11, color: C.ink2, background: C.pill, borderRadius: 20, padding: "1px 8px", fontWeight: 600 }}>
+          {posts.length}
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: 13, color: C.ink2 }}>{open ? "▾" : "▸"}</span>
+      </div>
+      {open && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          {posts.map(p => <PhotoThumb key={p.id} p={p} onDelete={onDelete} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TabPosts({ posts, onDelete, loading }) {
   if (loading) return <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>Chargement…</div>;
   if (posts.length === 0) return (
@@ -486,25 +535,20 @@ function TabPosts({ posts, onDelete, loading }) {
       <div style={{ fontSize: 12, color: C.ink2 }}>Publie ta première trouvaille depuis le fil !</div>
     </div>
   );
+
+  const groupes = [
+    { icon: "📅", label: "Souvenirs d'événements", posts: posts.filter(p => p.evenement_id) },
+    { icon: "🏆", label: "Photos de défis",        posts: posts.filter(p => p.defi_id && !p.evenement_id) },
+    { icon: "🛍️", label: "Chopes",                 posts: posts.filter(p => p.post_type === "decouverte") },
+    { icon: "💡", label: "Bons plans",              posts: posts.filter(p => p.post_type === "bonplan") },
+    { icon: "📍", label: "Lieux",                   posts: posts.filter(p => p.post_type === "lieu") },
+    { icon: "📝", label: "Autres",                  posts: posts.filter(p => !p.evenement_id && !p.defi_id && !["decouverte","bonplan","lieu"].includes(p.post_type)) },
+  ];
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-      {posts.map(p => (
-        <div key={p.id} style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "pointer", background: C.pill }}>
-          {p.image_url ? (
-            <img src={p.image_url} alt={p.content} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          ) : (
-            <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 10, boxSizing: "border-box" }}>
-              <div style={{ fontSize: 28, marginBottom: 6 }}>📝</div>
-              <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 50)}{p.content?.length > 50 ? "…" : ""}</div>
-            </div>
-          )}
-          <button onClick={e => { e.stopPropagation(); onDelete(p.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.65))", padding: "16px 8px 7px" }}>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>
-              {new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-            </span>
-          </div>
-        </div>
+    <div>
+      {groupes.map(g => (
+        <PostGroup key={g.label} icon={g.icon} label={g.label} posts={g.posts} onDelete={onDelete} />
       ))}
     </div>
   );
