@@ -144,13 +144,14 @@ function FilDropdown({ active, onToggle, setPage }) {
       <button
         onClick={() => setOpen(o => !o)}
         style={{
-          display: "flex", alignItems: "center", gap: 8,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+          width: "100%", boxSizing: "border-box",
           background: active.has("all") ? C.pill : C.ink,
           color: active.has("all") ? C.ink2 : "#fff",
           border: "none", borderRadius: 20,
-          padding: "8px 14px",
+          padding: "9px 16px",
           fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-          cursor: "pointer", maxWidth: "100%",
+          cursor: "pointer",
         }}
       >
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
@@ -1081,10 +1082,16 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     }
   };
 
-  const loadPosts = () => {
+  const loadPosts = async () => {
     setLoading(true);
-    // Zone géographique selon les chips actifs
     const nearbyOn = activeFilters.has("nearby");
+
+    // IDs des défis voisins (leurs photos apparaissent dans le fil)
+    const { data: voisinDefis } = await supabase
+      .from("defis").select("id").eq("type", "voisin");
+    const voisinDefiIds = (voisinDefis || []).map(d => d.id);
+
+    // Posts normaux (sans defi_photo, sans événement)
     let q = supabase
       .from("posts")
       .select("*, profiles(id, pseudo, avatar_url, role), link_url")
@@ -1092,11 +1099,27 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       .is("evenement_id", null)
       .order("created_at", { ascending: false });
     if (nearbyOn) q = q.in("location", BASIN_CITIES);
-    q.then(({ data, error }) => {
-      if (error) { setFetchError(error.message); console.error("Posts error:", error); }
-      if (data) setPosts(data);
-      setLoading(false);
-    });
+    const { data: mainPosts, error } = await q;
+
+    // Photos soumises aux défis voisins
+    let voisinPosts = [];
+    if (voisinDefiIds.length > 0) {
+      const { data: vp } = await supabase
+        .from("posts")
+        .select("*, profiles(id, pseudo, avatar_url, role), link_url")
+        .eq("post_type", "defi_photo")
+        .in("defi_id", voisinDefiIds)
+        .order("created_at", { ascending: false });
+      voisinPosts = vp || [];
+    }
+
+    // Fusionner et trier par date
+    const all = [...(mainPosts || []), ...voisinPosts]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    if (error) { setFetchError(error.message); console.error("Posts error:", error); }
+    setPosts(all);
+    setLoading(false);
   };
 
   useEffect(() => { loadPosts(); }, [activeFilters]);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
-import { getLevel, getNextLevel, getLevelProgress } from "./chipeur_xp";
+import { getLevel, getNextLevel, getLevelProgress, addXP } from "./chipeur_xp";
 import { THEMES, miniDefisAll } from "./chipeur_univers_data";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 
@@ -884,110 +884,243 @@ function computeTimeLeftProfil(ends_at, ended) {
   return `${days} jours`;
 }
 
-function TabDefis({ setPage }) {
-  const [defis, setDefis] = useState([]);
-  const [loading, setLoading] = useState(true);
+function TabDefis({ setPage, userId }) {
+  // ── Mes défis créés ──
+  const [myDefis, setMyDefis]     = useState([]);
+  const [loadingMy, setLoadingMy] = useState(true);
+  const [expanded, setExpanded]   = useState(null);
+  const [voteData, setVoteData]   = useState({});
+  const [confirmClose, setConfirmClose] = useState(null);
+  const [winnerPicker, setWinnerPicker] = useState(null);
+  const [xpResult, setXpResult]   = useState(null); // { defiId, total }
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("defis").select("*")
+      .eq("user_id", userId).eq("type", "voisin")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { setMyDefis(data || []); setLoadingMy(false); });
+  }, [userId]);
+
+  async function loadVotes(d) {
+    if (voteData[d.id]) { setExpanded(d.id); return; }
+    const [{ data: votes }, { data: photos }] = await Promise.all([
+      supabase.from("defi_votes").select("post_id, voter_id, vote").eq("defi_id", d.id),
+      supabase.from("posts").select("id, image_url, author_id, profiles:author_id(pseudo, avatar_url)")
+        .eq("defi_id", d.id).not("image_url", "is", null),
+    ]);
+    const voteMap = {};
+    const voters = new Set();
+    (votes || []).forEach(v => {
+      voters.add(v.voter_id);
+      if (!voteMap[v.post_id]) voteMap[v.post_id] = { likes: 0, passes: 0 };
+      v.vote === "like" ? voteMap[v.post_id].likes++ : voteMap[v.post_id].passes++;
+    });
+    const ranked = (photos || [])
+      .map(p => ({ ...p, likes: voteMap[p.id]?.likes || 0, passes: voteMap[p.id]?.passes || 0 }))
+      .sort((a, b) => b.likes - a.likes);
+    setVoteData(prev => ({ ...prev, [d.id]: { photos: ranked, totalVoters: voters.size } }));
+    setExpanded(d.id);
+  }
+
+  async function closeDefi(id) {
+    await supabase.from("defis").update({ ended: true }).eq("id", id);
+    setMyDefis(prev => prev.map(d => d.id === id ? { ...d, ended: true } : d));
+    setConfirmClose(null);
+  }
+
+  async function pickWinner(defi) {
+    const ranked = voteData[defi.id]?.photos || [];
+    if (ranked.length === 0) return;
+    const XP_REWARDS = [50, 20, 10];
+    const podiumEmojis = ["🥇", "🥈", "🥉"];
+    let totalXp = 0;
+    for (let i = 0; i < Math.min(3, ranked.length); i++) {
+      const p = ranked[i];
+      if (p.author_id) {
+        await addXP(p.author_id, XP_REWARDS[i], "defi_winner");
+        await supabase.from("notifications").insert({
+          user_id: p.author_id, from_user_id: userId,
+          type: "winner", reference_id: defi.id, read: false,
+        });
+        totalXp += XP_REWARDS[i];
+      }
+    }
+    await supabase.from("defis").update({ winner_post_id: ranked[0].id, ended: true }).eq("id", defi.id);
+    setMyDefis(prev => prev.map(d => d.id === defi.id ? { ...d, winner_post_id: ranked[0].id, ended: true } : d));
+    setWinnerPicker(null);
+    setXpResult({ defiId: defi.id, total: totalXp });
+  }
+
+  // ── Tous les défis actifs (section découverte) ──
+  const [allDefis, setAllDefis]     = useState([]);
+  const [loadingAll, setLoadingAll] = useState(true);
 
   useEffect(() => {
     supabase.from("defis").select("*")
       .eq("ended", false)
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setDefis(data || []);
-        setLoading(false);
-      });
+      .then(({ data }) => { setAllDefis(data || []); setLoadingAll(false); });
   }, []);
 
-  if (loading) return (
-    <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>Chargement…</div>
-  );
-
-  if (defis.length === 0) return (
-    <div style={{ textAlign: "center", padding: "40px 20px" }}>
-      <div style={{ fontSize: 48, marginBottom: 14 }}>🏆</div>
-      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 8 }}>Aucun défi en cours</div>
-      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6 }}>
-        Les défis arrivent bientôt — reste connecté !
-      </div>
-    </div>
-  );
-
-  const EMOJI_TO_CAT = {
-    "👗":"Mode","👠":"Mode","💄":"Beauté","🍕":"Resto","🥖":"Resto",
-    "🎨":"Loisirs","⚽":"Loisirs","🏠":"Maison","🛍️":"Mode","🏺":"Maison",
-    "☕":"Resto","🧁":"Resto","🍷":"Resto","🎯":"Loisirs","🌿":"Maison",
-  };
+  const podiumEmojis = ["🥇", "🥈", "🥉"];
+  const podiumColors = ["#F7A72D", "#A8A9AD", "#C07D3E"];
 
   return (
     <div>
-      {defis.map(d => {
-        const category = EMOJI_TO_CAT[d.emoji] || "Mode";
-        const rewardAmount = d.reward?.match(/(\d+)\s*€/)?.[1]
-          ? `${d.reward.match(/(\d+)\s*€/)[1]}€`
-          : d.reward?.split(" ").slice(0, 2).join(" ");
-        const timeLeft = computeTimeLeftProfil(d.ends_at, d.ended);
 
-        return (
-          <div
-            key={d.id}
-            onClick={() => setPage("defis")}
-            style={{
-              background: C.card, borderRadius: 18, border: `1px solid ${C.border}`,
-              overflow: "hidden", marginBottom: 12, cursor: "pointer",
-              boxShadow: "0 3px 12px rgba(0,0,0,0.07)",
-            }}
-          >
-            {/* Photo */}
-            <div style={{ position: "relative", height: 120 }}>
-              <ChallengeMedia
-                photoUrl={d.photo_url || null}
-                merchantName={d.merchant_name || d.title}
-                category={category}
-                height={120}
-              />
-              {rewardAmount && (
-                <div style={{ position: "absolute", top: 8, left: 8 }}>
-                  <RewardBadge amount={rewardAmount} size="sm" />
-                </div>
-              )}
-              <div style={{
-                position: "absolute", top: 8, right: 8,
-                background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)",
-                padding: "3px 8px", borderRadius: 999,
-                fontSize: 9, fontWeight: 700, color: "#fff",
-              }}>⏱ {timeLeft}</div>
+      {/* ── CONFIRM CLÔTURE ── */}
+      {confirmClose && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.55)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+          <div style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "20px 20px 40px", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>🔒 Clôturer ce défi ?</div>
+            <div style={{ fontSize: 12, color: C.ink2, marginBottom: 18 }}>Les participants ne pourront plus poster. Tu pourras ensuite choisir le gagnant et attribuer les XP.</div>
+            <button onClick={() => closeDefi(confirmClose)} style={{ width: "100%", background: C.ink, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", marginBottom: 8 }}>Clôturer</button>
+            <button onClick={() => setConfirmClose(null)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── PICKER GAGNANT ── */}
+      {winnerPicker && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.7)", display: "flex", flexDirection: "column", zIndex: 100 }}>
+          <div style={{ background: C.card, borderRadius: "24px 24px 0 0", marginTop: "auto", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "16px 16px 10px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>🏆 Classer le podium</div>
+              <div style={{ fontSize: 11, color: C.ink2, marginTop: 3 }}>Le classement est calculé par votes. Confirme pour attribuer les XP.</div>
             </div>
-            {/* Texte */}
-            <div style={{ padding: "10px 12px 12px" }}>
-              {d.merchant_name && (
-                <div style={{ fontSize: 9, fontWeight: 700, color: C.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 2 }}>
-                  🏪 {d.merchant_name}
+            <div style={{ overflowY: "auto", padding: 14 }}>
+              {(voteData[winnerPicker.id]?.photos || []).slice(0, 3).map((p, i) => (
+                <div key={p.id} style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, background: C.bg, borderRadius: 14, padding: "10px 12px" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 10, overflow: "hidden", flexShrink: 0 }}>
+                    <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>{podiumEmojis[i]} {p.profiles?.pseudo || "Voisin·e"}</div>
+                    <div style={{ fontSize: 11, color: C.ink2 }}>❤️ {p.likes} like{p.likes > 1 ? "s" : ""}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: ["#B45309","#6B7280","#92400E"][i], background: ["#FFF8E8","#F3F4F6","#FEF3E0"][i], padding: "4px 10px", borderRadius: 10 }}>
+                    +{[50,20,10][i]} XP
+                  </div>
                 </div>
+              ))}
+              {(voteData[winnerPicker.id]?.photos || []).length === 0 && (
+                <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 13 }}>Aucune photo soumise.</div>
               )}
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, lineHeight: 1.25, marginBottom: 4 }}>
-                {d.title}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 10, color: C.accent, fontWeight: 700, background: "#FFF0EB", padding: "2px 8px", borderRadius: 8 }}>
-                  +{d.xp || 10} XP
-                </span>
-                <span style={{ fontSize: 11, color: C.ink2, fontWeight: 600 }}>Participer →</span>
-              </div>
+            </div>
+            <div style={{ padding: "10px 14px 32px", flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+              <button onClick={() => pickWinner(winnerPicker)} style={{ width: "100%", background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}>Confirmer et attribuer les XP 🏆</button>
+              <button onClick={() => setWinnerPicker(null)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
             </div>
           </div>
-        );
-      })}
-      <button
-        onClick={() => setPage("defis")}
-        style={{
-          width: "100%", background: C.accent, color: "#fff",
-          border: "none", borderRadius: 14, padding: "10px 16px",
-          fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm,
-          marginTop: 4,
-        }}
-      >
-        Voir tous les défis 🏆
-      </button>
+        </div>
+      )}
+
+      {/* ── CONFIRMATION XP ATTRIBUÉS ── */}
+      {xpResult && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }}>
+          <div style={{ background: C.card, borderRadius: 24, padding: "28px 24px", textAlign: "center", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, color: C.ink, marginBottom: 8 }}>XP distribués !</div>
+            <div style={{ fontSize: 13, color: C.ink2, marginBottom: 20, lineHeight: 1.5 }}>
+              🥇 50 XP · 🥈 20 XP · 🥉 10 XP<br />Les gagnants ont été notifiés.
+            </div>
+            <button onClick={() => setXpResult(null)} style={{ width: "100%", background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}>Super !</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MES DÉFIS CRÉÉS ── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Mes défis créés</div>
+          <button
+            onClick={() => setPage("nouveau")}
+            style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}
+          >+ Créer un défi</button>
+        </div>
+
+        {loadingMy ? (
+          <div style={{ textAlign: "center", padding: "16px 0", color: C.ink2, fontSize: 12 }}>Chargement…</div>
+        ) : myDefis.length === 0 ? (
+          <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, padding: "20px 16px", textAlign: "center" }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🏆</div>
+            <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.5 }}>Tu n'as pas encore créé de défi.<br />Lance-toi !</div>
+          </div>
+        ) : myDefis.map(d => {
+          const isOpen = expanded === d.id;
+          const data = voteData[d.id];
+          const isEnded = d.ended || (d.ends_at && new Date(d.ends_at) < new Date());
+          const daysLeft = d.ends_at ? Math.max(0, Math.ceil((new Date(d.ends_at) - new Date()) / 86400000)) : null;
+          return (
+            <div key={d.id} style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 12, overflow: "hidden" }}>
+              <div style={{ display: "flex", gap: 10, padding: "12px 14px", alignItems: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🏆</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2 }}>{d.title}</div>
+                  <div style={{ fontSize: 11, color: C.ink2 }}>
+                    {isEnded ? "✅ Terminé" : daysLeft !== null ? `⏱ ${daysLeft}j restant${daysLeft > 1 ? "s" : ""}` : "En cours"}
+                  </div>
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: isEnded ? C.pill : "#EBF5F0", color: isEnded ? C.ink2 : "#0A3D2E" }}>
+                  {isEnded ? "Terminé" : "En cours"}
+                </span>
+              </div>
+              {/* Résultats votes */}
+              {isOpen && data && (
+                <div style={{ padding: "0 14px 10px" }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: C.ink2, marginBottom: 8 }}>📊 {data.photos.length} photo{data.photos.length > 1 ? "s" : ""} · {data.totalVoters} votant{data.totalVoters > 1 ? "s" : ""}</div>
+                  {data.photos.slice(0, 3).map((p, i) => (
+                    <div key={p.id} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
+                        <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                      <div style={{ flex: 1, fontSize: 12, color: C.ink }}>{podiumEmojis[i]} {p.profiles?.pseudo || "Voisin·e"}</div>
+                      <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 700 }}>❤️ {p.likes}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 8, padding: "8px 14px 14px" }}>
+                <button onClick={() => isOpen ? setExpanded(null) : loadVotes(d)} style={{ flex: 1, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: "8px 0", fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer", color: C.ink }}>
+                  {isOpen ? "Masquer" : "📊 Résultats"}
+                </button>
+                {!isEnded && (
+                  <button onClick={() => setConfirmClose(d.id)} style={{ flex: 1, background: C.pill, border: "none", borderRadius: 12, padding: "8px 0", fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer", color: C.ink2 }}>🔒 Clôturer</button>
+                )}
+                {isEnded && !d.winner_post_id && data?.photos?.length > 0 && (
+                  <button onClick={() => { loadVotes(d); setWinnerPicker(d); }} style={{ flex: 1, background: "#FFF8E8", border: "1.5px solid #F7A72D", borderRadius: 12, padding: "8px 0", fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer", color: "#B45309" }}>🏆 Podium</button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── DÉFIS EN COURS (découverte) ── */}
+      <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, marginBottom: 8 }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 12 }}>Défis en cours</div>
+        {loadingAll ? (
+          <div style={{ textAlign: "center", padding: "16px 0", color: C.ink2, fontSize: 12 }}>Chargement…</div>
+        ) : allDefis.length === 0 ? (
+          <div style={{ fontSize: 13, color: C.ink2, textAlign: "center", padding: "12px 0" }}>Aucun défi actif pour l'instant.</div>
+        ) : allDefis.slice(0, 3).map(d => (
+          <div key={d.id} onClick={() => setPage("defis")} style={{ display: "flex", gap: 10, alignItems: "center", background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "10px 12px", marginBottom: 8, cursor: "pointer" }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+              {d.photo_url ? <img src={d.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : d.emoji || "🏆"}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink, marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.title}</div>
+              <div style={{ fontSize: 10, color: C.ink2 }}>{computeTimeLeftProfil(d.ends_at, d.ended)} · {d.reward || "Récompense"}</div>
+            </div>
+            <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, flexShrink: 0 }}>Participer →</div>
+          </div>
+        ))}
+        <button onClick={() => setPage("defis")} style={{ width: "100%", background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm, marginTop: 4 }}>
+          Voir tous les défis 🏆
+        </button>
+      </div>
     </div>
   );
 }
@@ -1159,7 +1292,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
               {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} onEdit={p => { setEditPost?.(p); setPage("nouveau"); }} loading={postsLoading} />}
               {activeTab === "Événements" && <TabEvenements sorties={sorties} onDelete={handleDeleteSortie} loading={sortiesLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
-              {activeTab === "Défis" && <TabDefis setPage={setPage} />}
+              {activeTab === "Défis" && <TabDefis setPage={setPage} userId={user?.id} />}
               {activeTab === "Récompenses" && <TabRewards user={user} />}
             </div>
           </div>

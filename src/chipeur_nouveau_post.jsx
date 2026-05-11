@@ -548,6 +548,7 @@ function SuccessScreen({ type, onBack }) {
     sortie: "L'événement est ajouté à la page Sorties. Les voisins peuvent maintenant dire qu'ils y vont !",
     bonplan: "Ton bon plan est partagé avec le quartier ! 💡",
     promo: "Ta promo est visible sur ta fiche commerce. Les voisins vont en profiter ! 🏷️",
+    defi_voisin: "Ton défi est lancé ! Les voisins peuvent maintenant y participer et poster leurs photos. 🏆",
   };
   return (
     <div style={{
@@ -602,6 +603,9 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   // Lieu fields
   const [lieuFields, setLieuFields] = useState({ nom: "", desc: "", type: "" });
   const updateLieuField = (key, val) => setLieuFields(prev => ({ ...prev, [key]: val }));
+  // Défi voisin fields
+  const [defiFields, setDefiFields] = useState({ title: "", description: "", ends_at: "" });
+  const updateDefiField = (key, val) => setDefiFields(prev => ({ ...prev, [key]: val }));
   // Lien externe
   const [linkUrl, setLinkUrl] = useState("");
   // Photo pour lieu (séparée de la photo post normal)
@@ -641,6 +645,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
     { id: "lieu", icon: "📍", name: "Lieu", desc: "Un spot nature, un endroit à découvrir", grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
     { id: "sortie", icon: "🎉", name: "Événement", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
     { id: "bonplan", icon: "💡", name: "Bon plan", desc: "Un conseil, une adresse à ne pas rater", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
+    { id: "defi_voisin", icon: "🏆", name: "Défi", desc: "Lance un défi photo à ta communauté", grad: "linear-gradient(135deg,#FF5733,#F7A72D)", light: "#FFF8E8" },
   ];
 
   const handlePublishClick = () => {
@@ -766,6 +771,48 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       return;
     }
 
+    // ── CAS DÉFI VOISIN ──
+    if (selectedType === "defi_voisin") {
+      if (!defiFields.title.trim()) {
+        setPublishing(false);
+        setPublishError("Le titre du défi est obligatoire.");
+        return;
+      }
+      if (!defiFields.ends_at) {
+        setPublishing(false);
+        setPublishError("La date limite est obligatoire.");
+        return;
+      }
+      // Photo de couverture (optionnelle)
+      let photo_url = null;
+      if (photoFile) {
+        const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+        const safeExt = ["jpg","jpeg","png","gif","webp"].includes(ext) ? ext : "jpg";
+        const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
+        const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile, { contentType: photoFile.type || "image/jpeg", upsert: false });
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+          photo_url = urlData.publicUrl;
+        }
+      }
+      const { error } = await supabase.from("defis").insert({
+        user_id: user.id,
+        title: defiFields.title.trim(),
+        description: defiFields.description.trim() || null,
+        ends_at: defiFields.ends_at,
+        photo_url,
+        emoji: "🏆",
+        type: "voisin",
+        reward: "50 XP 🏆",
+        ended: false,
+      });
+      setPublishing(false);
+      if (error) { setPublishError("Erreur : " + error.message); return; }
+      addXP(user.id, 5, "defi_cree");
+      setScreen("success");
+      return;
+    }
+
     // ── CAS POST (trouvaille, bon plan) ──
     if (!content.trim() && !photoFile) { setPublishing(false); setPublishError("Ajoute une photo ou écris quelque chose !"); return; }
 
@@ -808,6 +855,62 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
     setScreen("success");
   };
 
+  const inputStyle2 = {
+    width: "100%", boxSizing: "border-box", padding: "11px 14px",
+    borderRadius: 14, border: `1.5px solid ${C.border}`,
+    fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.ink,
+    background: C.card, outline: "none",
+  };
+
+  const formDefiVoisin = (
+    <div>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Titre du défi *</label>
+        <input
+          value={defiFields.title}
+          onChange={e => updateDefiField("title", e.target.value)}
+          placeholder="Ex : La plus belle photo de la ville"
+          maxLength={80}
+          style={inputStyle2}
+        />
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Description (optionnelle)</label>
+        <textarea
+          value={defiFields.description}
+          onChange={e => updateDefiField("description", e.target.value)}
+          placeholder="Explique les règles du défi…"
+          rows={3}
+          maxLength={300}
+          style={{ ...inputStyle2, resize: "none", lineHeight: 1.5 }}
+        />
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Date limite *</label>
+        <input
+          type="date"
+          value={defiFields.ends_at}
+          onChange={e => updateDefiField("ends_at", e.target.value)}
+          min={new Date().toISOString().slice(0, 10)}
+          style={inputStyle2}
+        />
+      </div>
+      {/* Récompenses info */}
+      <div style={{ background: "#FFF8E8", border: "1.5px solid #F7A72D", borderRadius: 16, padding: "12px 14px", marginBottom: 12 }}>
+        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, color: "#B45309", marginBottom: 6 }}>🏆 Récompenses XP automatiques</div>
+        <div style={{ fontSize: 12, color: "#92400E", lineHeight: 1.6 }}>
+          🥇 1er : <b>50 XP</b> · 🥈 2e : <b>20 XP</b> · 🥉 3e : <b>10 XP</b>
+        </div>
+        <div style={{ fontSize: 11, color: "#B45309", marginTop: 4 }}>Attribuées quand tu choisiras le gagnant.</div>
+      </div>
+      {/* Photo de couverture optionnelle */}
+      <div style={{ marginBottom: 4 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Photo de couverture (optionnelle)</label>
+        <PhotoZone onPhotoSelect={handlePhotoSelect} zoneId="defi" externalPreview={photoPreview} />
+      </div>
+    </div>
+  );
+
   const formMap = {
     decouverte: <FormDecouverte
       content={content} onChange={setContent}
@@ -833,6 +936,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       magasinId={magasinId} onMagasinSelect={setMagasinId}
       linkUrl={linkUrl} onLinkChange={setLinkUrl}
     />,
+    defi_voisin: formDefiVoisin,
   };
 
   return (
