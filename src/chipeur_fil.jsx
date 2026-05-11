@@ -572,46 +572,81 @@ function Reactions({ postId, userId, authorId, user }) {
     }
   };
 
+  // Réactions avec au moins 1 vote
+  const activeTypes = REACTIONS.filter(r => (counts[r.type] || 0) > 0);
+  const totalReactions = Object.values(counts).reduce((s, n) => s + n, 0);
+
   return (
     <>
       {reactorsFor && (
         <ReactorsModal postId={postId} reactionType={reactorsFor} onClose={() => setReactorsFor(null)} />
       )}
-      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+
+      {/* ── Boutons de réaction ── */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: activeTypes.length > 0 ? 8 : 0 }}>
         {REACTIONS.map(r => {
-          const count = counts[r.type] || 0;
           const active = userReactions.has(r.type);
           return (
             <AuthGate key={r.type} user={user} onSuccess={() => handleReact(r.type)}>
-            <button
-              onClick={() => handleReact(r.type)}
-              style={{
-                padding: "6px 8px", borderRadius: 12,
-                border: `1.5px solid ${active ? C.accent : C.border}`,
-                background: active ? "#FFF0EB" : "transparent",
-                cursor: userId ? "pointer" : "default",
-                fontFamily: "'DM Sans', sans-serif",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 1,
-                color: active ? C.accent : C.ink,
-                transition: "all 0.15s",
-                minWidth: 44,
-              }}
-            >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{r.emoji}</span>
-              <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.2, color: active ? C.accent : C.ink2 }}>{r.label}</span>
-              {count > 0 && (
-                <span
-                  onClick={e => { e.stopPropagation(); setReactorsFor(r.type); }}
-                  style={{ fontSize: 9, fontWeight: 700, color: active ? C.accent : C.ink2, textDecoration: "underline", textUnderlineOffset: 2, cursor: "pointer" }}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
+              <button
+                onClick={() => handleReact(r.type)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "6px 12px", borderRadius: 20,
+                  border: `1.5px solid ${active ? C.accent : C.border}`,
+                  background: active ? C.accent : C.pill,
+                  cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                  transition: "all 0.15s",
+                  boxShadow: active ? "0 2px 8px rgba(255,87,51,0.25)" : "none",
+                }}
+              >
+                <span style={{ fontSize: 15, lineHeight: 1 }}>{r.emoji}</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 600, lineHeight: 1,
+                  color: active ? "#fff" : C.ink2,
+                }}>{r.label}</span>
+              </button>
             </AuthGate>
           );
         })}
       </div>
+
+      {/* ── Compteurs sous les boutons (style dialogue) ── */}
+      {activeTypes.length > 0 && (
+        <div style={{
+          display: "flex", gap: 8, flexWrap: "wrap",
+          padding: "8px 12px", borderRadius: 14,
+          background: C.bg, border: `1px solid ${C.border}`,
+        }}>
+          {activeTypes.map(r => {
+            const count = counts[r.type] || 0;
+            const active = userReactions.has(r.type);
+            return (
+              <div
+                key={r.type}
+                onClick={() => setReactorsFor(r.type)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  cursor: "pointer",
+                }}
+              >
+                <span style={{ fontSize: 14 }}>{r.emoji}</span>
+                <span style={{
+                  fontSize: 12, fontWeight: 700,
+                  color: active ? C.accent : C.ink,
+                }}>{count}</span>
+                <span style={{ fontSize: 11, color: C.ink2 }}>{r.label}</span>
+                {r !== activeTypes[activeTypes.length - 1] && (
+                  <span style={{ fontSize: 10, color: C.border, marginLeft: 2 }}>·</span>
+                )}
+              </div>
+            );
+          })}
+          <span style={{ fontSize: 11, color: C.ink2, marginLeft: "auto" }}>
+            {totalReactions} réaction{totalReactions > 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
     </>
   );
 }
