@@ -183,7 +183,7 @@ function Screen1({ onSuccess, isLogin, setIsLogin }) {
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
           <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 8, letterSpacing: 3, color: C.accent, textTransform: "uppercase" }}>
-            Découvre · Chope · Partage
+            Découvre ta ville, à travers tes voisins
           </div>
         </div>
       </div>

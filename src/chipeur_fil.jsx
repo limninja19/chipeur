@@ -44,7 +44,7 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
           <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 9, letterSpacing: 0.5, color: C.accent, textTransform: "uppercase", lineHeight: 1, marginTop: -1 }}>
-            Découvre · Chope · Partage
+            Découvre ta ville, à travers tes voisins
           </div>
           {profile?.pseudo && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.ink2, marginTop: 1 }}>Bonjour {profile.pseudo} 👋</div>}
         </div>
