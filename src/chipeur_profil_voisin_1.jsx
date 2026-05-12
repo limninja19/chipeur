@@ -911,6 +911,10 @@ function TabDefis({ setPage, userId }) {
   const [confirmClose, setConfirmClose] = useState(null);
   const [winnerPicker, setWinnerPicker] = useState(null);
   const [xpResult, setXpResult]   = useState(null); // { defiId, total }
+  const [confirmDelete, setConfirmDelete] = useState(null); // id à supprimer
+  const [editDefi, setEditDefi]   = useState(null); // défi en cours d'édition
+  const [editForm, setEditForm]   = useState({ title: "", description: "", ends_at: "" });
+  const [saving, setSaving]       = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -968,6 +972,38 @@ function TabDefis({ setPage, userId }) {
     setMyDefis(prev => prev.map(d => d.id === defi.id ? { ...d, winner_post_id: ranked[0].id, ended: true } : d));
     setWinnerPicker(null);
     setXpResult({ defiId: defi.id, total: totalXp });
+  }
+
+  async function deleteDefi(id) {
+    await supabase.from("defi_votes").delete().eq("defi_id", id);
+    await supabase.from("defis").delete().eq("id", id);
+    setMyDefis(prev => prev.filter(d => d.id !== id));
+    setConfirmDelete(null);
+  }
+
+  function openEdit(d) {
+    setEditForm({
+      title: d.title || "",
+      description: d.description || "",
+      ends_at: d.ends_at ? d.ends_at.slice(0, 10) : "",
+    });
+    setEditDefi(d);
+  }
+
+  async function saveEditDefi() {
+    if (!editForm.title.trim()) return;
+    setSaving(true);
+    await supabase.from("defis").update({
+      title: editForm.title.trim(),
+      description: editForm.description.trim() || null,
+      ends_at: editForm.ends_at || null,
+    }).eq("id", editDefi.id);
+    setMyDefis(prev => prev.map(d => d.id === editDefi.id
+      ? { ...d, title: editForm.title.trim(), description: editForm.description.trim() || null, ends_at: editForm.ends_at || null }
+      : d
+    ));
+    setSaving(false);
+    setEditDefi(null);
   }
 
   // ── Tous les défis actifs (section découverte) ──
@@ -1048,6 +1084,60 @@ function TabDefis({ setPage, userId }) {
         </div>
       )}
 
+      {/* ── CONFIRM SUPPRESSION ── */}
+      {confirmDelete && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.55)", display: "flex", alignItems: "flex-end", zIndex: 110 }}>
+          <div style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "20px 20px 44px", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>🗑️ Supprimer ce défi ?</div>
+            <div style={{ fontSize: 12, color: C.ink2, marginBottom: 18, lineHeight: 1.5 }}>Cette action est irréversible. Tous les votes associés seront également supprimés.</div>
+            <button onClick={() => deleteDefi(confirmDelete)} style={{ width: "100%", background: "#E53935", color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", marginBottom: 8 }}>Supprimer définitivement</button>
+            <button onClick={() => setConfirmDelete(null)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT DÉFI ── */}
+      {editDefi && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.55)", display: "flex", alignItems: "flex-end", zIndex: 110 }}>
+          <div style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "20px 20px 44px", width: "100%", boxSizing: "border-box" }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 16 }}>✏️ Modifier le défi</div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>Titre *</div>
+              <input
+                value={editForm.title}
+                onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                maxLength={80}
+                style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.bg, outline: "none" }}
+              />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>Description</div>
+              <textarea
+                value={editForm.description}
+                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                rows={3}
+                maxLength={300}
+                style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.bg, outline: "none", resize: "none", lineHeight: 1.5 }}
+              />
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>Date limite</div>
+              <input
+                type="date"
+                value={editForm.ends_at}
+                onChange={e => setEditForm(f => ({ ...f, ends_at: e.target.value }))}
+                min={new Date().toISOString().slice(0, 10)}
+                style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.bg, outline: "none" }}
+              />
+            </div>
+            <button onClick={saveEditDefi} disabled={saving || !editForm.title.trim()} style={{ width: "100%", background: saving ? "#ccc" : C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: saving ? "not-allowed" : "pointer", marginBottom: 8 }}>
+              {saving ? "Enregistrement…" : "Enregistrer"}
+            </button>
+            <button onClick={() => setEditDefi(null)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: 13, fontSize: 13, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
       {/* ── MES DÉFIS CRÉÉS ── */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -1080,9 +1170,21 @@ function TabDefis({ setPage, userId }) {
                     {isEnded ? "✅ Terminé" : daysLeft !== null ? `⏱ ${daysLeft}j restant${daysLeft > 1 ? "s" : ""}` : "En cours"}
                   </div>
                 </div>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: isEnded ? C.pill : "#EBF5F0", color: isEnded ? C.ink2 : "#0A3D2E" }}>
-                  {isEnded ? "Terminé" : "En cours"}
-                </span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: isEnded ? C.pill : "#EBF5F0", color: isEnded ? C.ink2 : "#0A3D2E" }}>
+                    {isEnded ? "Terminé" : "En cours"}
+                  </span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); openEdit(d); }}
+                      style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8, padding: "3px 8px", fontSize: 12, cursor: "pointer", color: C.ink2 }}
+                    >✏️</button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setConfirmDelete(d.id); }}
+                      style={{ background: "#FFF0EE", border: "1px solid #FFB0A0", borderRadius: 8, padding: "3px 8px", fontSize: 12, cursor: "pointer", color: "#E53935" }}
+                    >🗑️</button>
+                  </div>
+                </div>
               </div>
               {/* Résultats votes */}
               {isOpen && data && (
