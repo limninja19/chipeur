@@ -290,16 +290,26 @@ function BandeauDefis({ setPage, user }) {
 
   useEffect(() => {
     supabase.from("defis")
-      .select("*, creator:user_id(pseudo, role)")
+      .select("*")
       .eq("ended", false)
       .order("created_at", { ascending: false })
-      .then(({ data: defisData }) => {
+      .then(async ({ data: defisData }) => {
         if (!defisData || defisData.length === 0) return;
+
+        // Récupérer les pseudos des créateurs
+        const userIds = [...new Set(defisData.map(d => d.user_id).filter(Boolean))];
+        let pseudoMap = {};
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles").select("id, pseudo").in("id", userIds);
+          (profiles || []).forEach(p => { pseudoMap[p.id] = p.pseudo; });
+        }
+
         const mapped = defisData.map((d) => ({
           id:                 d.id,
           title:              d.title,
           type:               d.type || "merchant",
-          creator_name:       d.creator?.pseudo || d.merchant_name || "Chipeur",
+          creator_name:       pseudoMap[d.user_id] || d.merchant_name || "Chipeur",
           photo_url:          d.photo_url || null,
           days_remaining:     daysRemaining(d.ends_at),
           reward_amount:      extractRewardAmount(d.reward),
