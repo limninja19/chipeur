@@ -382,22 +382,33 @@ function BandeauDefis({ setPage, user }) {
           ? merchantDefis.map(d => <DefiCard key={d.id} d={d} />)
           : (
             <div style={{ flexShrink: 0, width: 160 }}>
-              <div style={{
-                borderRadius: 16, overflow: "hidden", background: C.card,
-                border: "1.5px dashed rgba(10,61,46,0.25)",
-                height: 168, display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center",
-                padding: "0 14px", textAlign: "center", gap: 8,
-              }}>
-                <div style={{ fontSize: 32 }}>🏪</div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 11, color: "#0A3D2E", lineHeight: 1.3 }}>
-                  Les commerçants préparent leurs défis…
+              <div style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 3px 10px rgba(0,0,0,0.08)" }}>
+                {/* Zone visuelle */}
+                <div style={{
+                  height: 120, position: "relative",
+                  background: "linear-gradient(135deg, #0A3D2E 0%, #1a6b4a 50%, #F7A72D 100%)",
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 6,
+                }}>
+                  {/* Icônes décoratives */}
+                  <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
+                    <span style={{ fontSize: 22, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>🏪</span>
+                    <span style={{ fontSize: 22, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>🏆</span>
+                    <span style={{ fontSize: 22, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>🎁</span>
+                  </div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 13, color: "#fff", textAlign: "center", lineHeight: 1.2, padding: "0 10px" }}>
+                    On les attend avec impatience !
+                  </div>
+                  {/* Badge */}
+                  <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(6px)", borderRadius: 20, padding: "3px 8px", fontSize: 8, fontWeight: 700, color: "#fff", letterSpacing: 0.5 }}>
+                    BIENTÔT
+                  </div>
                 </div>
-                <div style={{ fontSize: 10, color: C.ink2, lineHeight: 1.4 }}>
-                  Reviens bientôt pour participer et gagner des récompenses locales !
-                </div>
-                <div style={{ background: "#EBF5F0", borderRadius: 20, padding: "4px 10px", fontSize: 9, fontWeight: 700, color: "#0A3D2E" }}>
-                  Bientôt disponible
+                {/* Bas de carte */}
+                <div style={{ background: C.card, padding: "9px 10px" }}>
+                  <div style={{ fontSize: 10, color: C.ink2, lineHeight: 1.4, textAlign: "center" }}>
+                    Les défis commerçants arrivent dans ton quartier 🛍️
+                  </div>
                 </div>
               </div>
             </div>
