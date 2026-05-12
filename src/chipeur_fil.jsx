@@ -39,16 +39,22 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
           <circle cx="36" cy="26" r="10" fill="white"/>
           <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
         </svg>
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, letterSpacing: -0.1, color: C.accent, lineHeight: 1.55, marginTop: 2 }}>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, letterSpacing: -0.1, color: C.accent, lineHeight: 1.6, marginTop: 5 }}>
             Découvre ta ville,<br />à travers tes voisins
           </div>
-          {profile?.pseudo && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.ink2, marginTop: 1 }}>Bonjour {profile.pseudo} 👋</div>}
         </div>
       </div>
+
+      {/* Centre : bonjour pseudo */}
+      {profile?.pseudo && (
+        <div style={{ flex: 1, textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.ink2, padding: "0 8px" }}>
+          Bonjour {profile.pseudo} 👋
+        </div>
+      )}
 
       {/* Droite : icônes + voisins en dessous */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
