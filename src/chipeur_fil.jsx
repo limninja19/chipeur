@@ -319,74 +319,90 @@ function BandeauDefis({ setPage, user }) {
       });
   }, []);
 
+  const voisinDefis   = defis.filter(d => d.type === "voisin");
+  const merchantDefis = defis.filter(d => d.type !== "voisin");
+
   if (defis.length === 0) return null;
+
+  const DefiCard = ({ d }) => (
+    <div style={{ flexShrink: 0, width: 160, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div
+        onClick={() => setPage("defis")}
+        style={{ borderRadius: 16, overflow: "hidden", cursor: "pointer", background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 3px 10px rgba(0,0,0,0.08)" }}
+      >
+        <div style={{ position: "relative", height: 120 }}>
+          {d.photo_url ? (
+            <img src={d.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          ) : (
+            <div style={{ height: 120, background: "linear-gradient(135deg,#FF5733,#E94B2C)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 52, fontWeight: 900, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
+                {(d.title || "C").charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          {d.reward_amount && (
+            <div style={{ position: "absolute", top: 8, left: 8, background: "#fff", borderRadius: 8, padding: "4px 8px", boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>
+              <div style={{ fontSize: 7, fontWeight: 800, color: "#E94B2C", letterSpacing: 1 }}>À GAGNER</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#1A1714", lineHeight: 1 }}>{d.reward_amount}</div>
+            </div>
+          )}
+          <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", borderRadius: 20, padding: "3px 7px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
+            ⏱ {d.days_remaining}j
+          </div>
+        </div>
+        <div style={{ padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+          <span style={{ fontSize: 10, color: C.ink2, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
+            {d.type === "voisin" ? "🏘️" : "🏪"} {d.creator_name}
+          </span>
+          <span style={{ background: C.accent, color: "#fff", borderRadius: 20, padding: "5px 10px", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>Participer →</span>
+        </div>
+      </div>
+      <button
+        onClick={() => setVoteDefi(d)}
+        style={{ background: "linear-gradient(135deg,#FF5733,#F7A72D)", border: "none", borderRadius: 12, padding: "8px 0", fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", width: "100%" }}
+      >🗳️ Voter</button>
+    </div>
+  );
 
   return (
     <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
-      {/* Modale swipe vote */}
-      {voteDefi && (
-        <SwipeVoteModal d={voteDefi} user={user} onClose={() => setVoteDefi(null)} />
-      )}
+      {voteDefi && <SwipeVoteModal d={voteDefi} user={user} onClose={() => setVoteDefi(null)} />}
 
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
-        letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
-      }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
         🏆 Défis en cours
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
+
       <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6 }}>
-        {defis.map(d => (
-          <div key={d.id} style={{ flexShrink: 0, width: 160, display: "flex", flexDirection: "column", gap: 6 }}>
-            {/* Carte compacte */}
-            <div
-              onClick={() => setPage("defis")}
-              style={{ borderRadius: 16, overflow: "hidden", cursor: "pointer", background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 3px 10px rgba(0,0,0,0.08)" }}
-            >
-              {/* Photo */}
-              <div style={{ position: "relative", height: 120 }}>
-                {d.photo_url ? (
-                  <img src={d.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                ) : (
-                  <div style={{ height: 120, background: "linear-gradient(135deg,#FF5733,#E94B2C)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 52, fontWeight: 900, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
-                      {(d.title || "C").charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-                {/* Badge prix */}
-                {d.reward_amount && (
-                  <div style={{ position: "absolute", top: 8, left: 8, background: "#fff", borderRadius: 8, padding: "4px 8px", boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>
-                    <div style={{ fontSize: 7, fontWeight: 800, color: "#E94B2C", letterSpacing: 1 }}>À GAGNER</div>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#1A1714", lineHeight: 1 }}>{d.reward_amount}</div>
-                  </div>
-                )}
-                {/* Jours restants */}
-                <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)", borderRadius: 20, padding: "3px 7px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
-                  ⏱ {d.days_remaining}j
+        {/* Défis voisins */}
+        {voisinDefis.map(d => <DefiCard key={d.id} d={d} />)}
+
+        {/* Défis commerçants ou teaser */}
+        {merchantDefis.length > 0
+          ? merchantDefis.map(d => <DefiCard key={d.id} d={d} />)
+          : (
+            <div style={{ flexShrink: 0, width: 160 }}>
+              <div style={{
+                borderRadius: 16, overflow: "hidden", background: C.card,
+                border: "1.5px dashed rgba(10,61,46,0.25)",
+                height: 168, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                padding: "0 14px", textAlign: "center", gap: 8,
+              }}>
+                <div style={{ fontSize: 32 }}>🏪</div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 11, color: "#0A3D2E", lineHeight: 1.3 }}>
+                  Les commerçants préparent leurs défis…
+                </div>
+                <div style={{ fontSize: 10, color: C.ink2, lineHeight: 1.4 }}>
+                  Reviens bientôt pour participer et gagner des récompenses locales !
+                </div>
+                <div style={{ background: "#EBF5F0", borderRadius: 20, padding: "4px 10px", fontSize: 9, fontWeight: 700, color: "#0A3D2E" }}>
+                  Bientôt disponible
                 </div>
               </div>
-              {/* Bas de carte : créateur + bouton */}
-              <div style={{ padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-                <span style={{ fontSize: 10, color: C.ink2, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
-                  {d.type === "voisin" ? "🏘️" : "🏪"} {d.creator_name}
-                </span>
-                <span style={{ background: C.accent, color: "#fff", borderRadius: 20, padding: "5px 10px", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>Participer →</span>
-              </div>
             </div>
-            {/* Bouton Voter */}
-            <button
-              onClick={() => setVoteDefi(d)}
-              style={{
-                background: "linear-gradient(135deg,#FF5733,#F7A72D)",
-                border: "none", borderRadius: 12, padding: "8px 0",
-                fontSize: 12, fontWeight: 700, color: "#fff",
-                cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-                width: "100%",
-              }}
-            >🗳️ Voter</button>
-          </div>
-        ))}
+          )
+        }
       </div>
     </div>
   );
