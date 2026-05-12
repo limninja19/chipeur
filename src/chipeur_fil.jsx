@@ -595,11 +595,17 @@ function ReactorsModal({ postId, reactionType, onClose }) {
   useEffect(() => {
     supabase
       .from("post_reactions")
-      .select("profiles:user_id(pseudo, avatar_url)")
+      .select("user_id")
       .eq("post_id", postId)
       .eq("type", reactionType)
-      .then(({ data }) => {
-        setList((data || []).map(r => r.profiles).filter(Boolean));
+      .then(async ({ data: reactions }) => {
+        const userIds = (reactions || []).map(r => r.user_id).filter(Boolean);
+        if (userIds.length === 0) { setList([]); setLoading(false); return; }
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("pseudo, avatar_url")
+          .in("id", userIds);
+        setList(profiles || []);
         setLoading(false);
       });
   }, [postId, reactionType]);
