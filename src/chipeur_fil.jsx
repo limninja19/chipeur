@@ -163,7 +163,16 @@ function FilDropdown({ active, onToggle, setPage }) {
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
           {label}
         </span>
-        <span style={{ fontSize: 10, flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" }}>▾</span>
+        <svg width="14" height="18" viewBox="0 0 72 90" fill="none" style={{ flexShrink: 0 }} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="pinDropdown" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#FF5733"/>
+              <stop offset="100%" stopColor="#FF8C42"/>
+            </linearGradient>
+          </defs>
+          <path d="M36 4C22 4 11 15 11 29C11 46 36 82 36 82C36 82 61 46 61 29C61 15 50 4 36 4Z" fill={active.has("all") ? "#BBBAB8" : "rgba(255,255,255,0.7)"}/>
+          <circle cx="36" cy="29" r="11" fill={active.has("all") ? "#F5F2EE" : "rgba(255,255,255,0.25)"}/>
+        </svg>
       </button>
 
       {/* Panneau déroulé */}
