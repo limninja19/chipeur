@@ -102,9 +102,7 @@ function Podium({ voisins, onOpen }) {
           if (!v) return <div key={i} style={{ width: s.w }} />;
           return (
             <div key={v.id} onClick={() => onOpen(v.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <div style={{ width: s.w, height: s.w, borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, border: `2px solid ${s.rc}`, background: v.bg }}>
-                {v.avatar_url ? <img src={v.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🧑"}
-              </div>
+              <Avatar v={{ ...v, isMe: false }} size={s.w} borderColor={s.rc} />
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: s.rc }}>{s.rank}</div>
               <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", textAlign: "center", maxWidth: 60 }}>{v.pseudo || "Voisin·e"}</div>
               <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)" }}>{v.xp} XP</div>
@@ -121,10 +119,19 @@ function Podium({ voisins, onOpen }) {
   );
 }
 
-function Avatar({ v, size = 48 }) {
+const AVATAR_PALETTE = [
+  ["#FF5733","#fff"],["#0A3D2E","#fff"],["#F7A72D","#fff"],["#7C3AED","#fff"],
+  ["#0369A1","#fff"],["#BE185D","#fff"],["#B45309","#fff"],["#0F766E","#fff"],
+  ["#1D4ED8","#fff"],["#DC2626","#fff"],
+];
+function hashStr(s) { let h=0; for(let i=0;i<(s||"").length;i++) h=(h*31+s.charCodeAt(i))&0xfffffff; return h; }
+function Avatar({ v, size = 48, borderColor }) {
+  const initial = (v.pseudo || "?").trim().charAt(0).toUpperCase();
+  const [bg, fg] = AVATAR_PALETTE[hashStr(v.pseudo) % AVATAR_PALETTE.length];
+  const border = borderColor ? `2px solid ${borderColor}` : v.isMe ? `2px solid ${C.accent}` : "none";
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", background: v.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.45, border: v.isMe ? `2px solid ${C.accent}` : "none", flexShrink: 0 }}>
-      {v.avatar_url ? <img src={v.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🧑"}
+    <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", background: v.avatar_url ? "transparent" : bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.42, fontWeight: 700, fontFamily: "'Syne', sans-serif", color: fg, border, flexShrink: 0 }}>
+      {v.avatar_url ? <img src={v.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : initial}
     </div>
   );
 }
@@ -216,9 +223,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
         </div>
         <div style={{ padding: "10px 18px 10px", display: "flex", alignItems: "flex-start", gap: 14 }}>
           {/* Avatar */}
-          <div style={{ width: 60, height: 60, borderRadius: "50%", border: `2.5px solid ${C.gold}`, flexShrink: 0, background: v.bg, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
-            {v.avatar_url ? <img src={v.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🧑"}
-          </div>
+          <Avatar v={v} size={60} borderColor={C.gold} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink }}>{v.pseudo || "Voisin·e"}{v.isMe && <span style={{ fontSize: 11, color: C.accent, marginLeft: 6 }}>👋 Toi</span>}</div>
             <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>

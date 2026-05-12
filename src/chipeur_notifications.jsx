@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
+import Avatar from "./Avatar";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -74,16 +75,7 @@ function NotifItem({ n, setPage, setSelectedVoisinId }) {
     >
       {/* Avatar cliquable → profil de l'expéditeur */}
       <div onClick={goToProfile} style={{ position: "relative", flexShrink: 0, cursor: "pointer" }}>
-        <div style={{
-          width: 42, height: 42, borderRadius: "50%",
-          background: C.pill, overflow: "hidden",
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-        }}>
-          {avatar
-            ? <img src={avatar} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                onError={e => { e.target.style.display = "none"; }} />
-            : "😊"}
-        </div>
+        <Avatar pseudo={pseudo} avatarUrl={avatar} size={42} />
         <div style={{
           position: "absolute", bottom: -3, right: -3,
           background: C.card, borderRadius: "50%", width: 20, height: 20,

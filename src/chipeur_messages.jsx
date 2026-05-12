@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
+import Avatar from "./Avatar";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -187,16 +188,7 @@ function ConversationView({ userId, other, onBack }) {
           onClick={onBack}
           style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2 }}
         >←</button>
-        <div style={{
-          width: 36, height: 36, borderRadius: "50%",
-          background: C.pill, overflow: "hidden",
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-        }}>
-          {other.avatar_url
-            ? <img src={other.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                onError={e => { e.target.style.display = "none"; }} />
-            : "😊"}
-        </div>
+        <Avatar pseudo={other.pseudo} avatarUrl={other.avatar_url} size={36} />
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>
             {other.pseudo || "Voisin"}
@@ -362,16 +354,7 @@ function ConversationsList({ userId, user, profile, onSelectConv, setPage }) {
                 }}
               >
                 {/* Avatar */}
-                <div style={{
-                  width: 48, height: 48, borderRadius: "50%",
-                  background: C.pill, overflow: "hidden", flexShrink: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                }}>
-                  {other.avatar_url
-                    ? <img src={other.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={e => { e.target.style.display = "none"; }} />
-                    : "😊"}
-                </div>
+                <Avatar pseudo={other.pseudo} avatarUrl={other.avatar_url} size={48} />
 
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>

@@ -6,6 +6,7 @@ import { addXP } from "./chipeur_xp";
 import AuthGate from "./AuthGate";
 import { ChallengeCard } from "./ChallengeUI";
 import SwipeVoteModal from "./SwipeVoteModal";
+import Avatar from "./Avatar";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -640,11 +641,7 @@ function ReactorsModal({ postId, reactionType, onClose }) {
             <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 12 }}>Personne encore</div>
           ) : list.map((p, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < list.length - 1 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ width: 38, height: 38, borderRadius: "50%", background: C.pill, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                {p.avatar_url
-                  ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : "🧑"}
-              </div>
+              <Avatar pseudo={p.pseudo} avatarUrl={p.avatar_url} size={38} />
               <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 14, color: C.ink }}>{p.pseudo || "Voisin"}</div>
             </div>
           ))}
@@ -946,11 +943,7 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
             }}
             style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, cursor: "pointer", minWidth: 0 }}
           >
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
-              {post.profiles?.avatar_url
-                ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-                : "😊"}
-            </div>
+            <Avatar pseudo={post.profiles?.pseudo} avatarUrl={post.profiles?.avatar_url} size={34} />
             <div style={{ minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700 }}>{post.profiles?.pseudo || "Voisin·e"}</span>

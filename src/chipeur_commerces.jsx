@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { addXP } from "./chipeur_xp";
+import Avatar from "./Avatar";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -381,11 +382,7 @@ function VitrinePostCard({ post, userId, comId, isOwner, onEnrich }) {
       <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
         {/* Header auteur */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 8px" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
-            {post.profiles?.avatar_url
-              ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} alt="" />
-              : "😊"}
-          </div>
+          <Avatar pseudo={post.profiles?.pseudo} avatarUrl={post.profiles?.avatar_url} size={34} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 700, color: C.ink }}>{post.profiles?.pseudo || "Voisin·e"}</div>
             <div style={{ fontSize: 10, color: C.ink2 }}>{timeAgo(post.created_at)}</div>
@@ -489,14 +486,7 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
 
           {/* Auteur + texte */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%", background: C.pill,
-              overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0,
-            }}>
-              {post.profiles?.avatar_url
-                ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
-                : "😊"}
-            </div>
+            <Avatar pseudo={post.profiles?.pseudo} avatarUrl={post.profiles?.avatar_url} size={28} />
             <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 700, color: C.ink }}>{post.profiles?.pseudo || "Voisin·e"}</div>
           </div>
           {post.content && (

@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 import { getLevel, getNextLevel, getLevelProgress, addXP } from "./chipeur_xp";
 import { THEMES, miniDefisAll } from "./chipeur_univers_data";
+import Avatar from "./Avatar";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
@@ -384,10 +385,8 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: -30 }}>
           {/* Avatar */}
           <div style={{ position: "relative", width: 68, height: 68 }}>
-            <div style={{ width: 68, height: 68, borderRadius: "50%", background: "#E8F4FD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, border: `3px solid ${C.card}`, boxShadow: "0 2px 12px rgba(26,23,20,0.15)", overflow: "hidden" }}>
-              {profile?.avatar_url
-                ? <img src={profile.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : "🧑‍🦱"}
+            <div style={{ border: `3px solid ${C.card}`, boxShadow: "0 2px 12px rgba(26,23,20,0.15)", borderRadius: "50%" }}>
+              <Avatar pseudo={profile?.pseudo} avatarUrl={profile?.avatar_url} size={68} />
             </div>
           </div>
           {/* Boutons action */}

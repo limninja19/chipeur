@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
+import Avatar from "./Avatar";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -182,11 +183,7 @@ function ParticipantsModal({ sortieId, onClose }) {
             <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 12 }}>Personne encore — sois le premier !</div>
           ) : list.map((p, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < list.length - 1 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.pill, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
-                {p.avatar_url
-                  ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : "🧑"}
-              </div>
+              <Avatar pseudo={p.pseudo} avatarUrl={p.avatar_url} size={36} />
               <div style={{ fontFamily: syne, fontWeight: 600, fontSize: 13, color: C.ink }}>{p.pseudo || "Voisin"}</div>
             </div>
           ))}

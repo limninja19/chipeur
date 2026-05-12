@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { addXP } from "./chipeur_xp";
+import Avatar from "./Avatar";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 import SwipeVoteModal from "./SwipeVoteModal";
 
@@ -1013,10 +1014,7 @@ function MagLinkPicker({ selectedId, onSelect }) {
               display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
               cursor: "pointer", borderBottom: i < merchants.length - 1 ? "1px solid rgba(26,23,20,0.08)" : "none",
             }}>
-              {m.avatar_url
-                ? <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
-                : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EBF5F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏪</div>
-              }
+              <Avatar pseudo={m.pseudo} avatarUrl={m.avatar_url} size={28} />
               <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1714" }}>{m.pseudo}</span>
             </div>
           ))}
