@@ -1098,6 +1098,110 @@ function BottomNav({ onNavigate }) {
   );
 }
 
+// ─── ONGLET MENTIONS ────────────────────────────────────────────
+function TabMentions({ pseudo, userId }) {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [claiming, setClaiming] = useState(null);
+  const [claimed, setClaimed] = useState(new Set());
+
+  const normalize = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+
+  useEffect(() => {
+    if (!pseudo) return;
+    // Cherche les posts avec magasin_nom non null et non déjà associé
+    supabase.from("posts")
+      .select("id, content, image_url, created_at, magasin_nom, magasin_id, profiles:author_id(pseudo, avatar_url)")
+      .not("magasin_nom", "is", null)
+      .is("magasin_id", null)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const norm = normalize(pseudo);
+        const matched = (data || []).filter(p => {
+          const n = normalize(p.magasin_nom);
+          return n.includes(norm) || norm.includes(n) || similarity(n, norm) > 0.6;
+        });
+        setPosts(matched);
+        setLoading(false);
+      });
+  }, [pseudo]);
+
+  // Similarité simple : ratio de caractères communs
+  function similarity(a, b) {
+    if (!a || !b) return 0;
+    const longer = a.length > b.length ? a : b;
+    const shorter = a.length > b.length ? b : a;
+    let matches = 0;
+    for (const c of shorter) { if (longer.includes(c)) matches++; }
+    return matches / longer.length;
+  }
+
+  async function claim(post) {
+    setClaiming(post.id);
+    await supabase.from("posts").update({ magasin_id: userId }).eq("id", post.id);
+    setClaimed(prev => new Set([...prev, post.id]));
+    setClaiming(null);
+  }
+
+  const timeAgo = (ts) => {
+    const diff = Math.floor((Date.now() - new Date(ts)) / 86400000);
+    if (diff === 0) return "Aujourd'hui";
+    if (diff === 1) return "Hier";
+    return `Il y a ${diff} jours`;
+  };
+
+  return (
+    <div style={{ padding: "16px 0 32px" }}>
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 4 }}>Posts te mentionnant</div>
+      <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16, lineHeight: 1.5 }}>
+        Des voisins ont associé des posts à ton commerce avant que tu sois inscrit. Tu peux les revendiquer pour qu'ils apparaissent dans ton profil.
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "24px 0", color: C.ink2, fontSize: 12 }}>Recherche en cours…</div>
+      ) : posts.length === 0 ? (
+        <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, padding: "24px 16px", textAlign: "center" }}>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>🏪</div>
+          <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.5 }}>
+            Aucune mention trouvée pour l'instant.<br />Quand un voisin associera un post à <b>"{pseudo}"</b>, il apparaîtra ici.
+          </div>
+        </div>
+      ) : posts.map(p => (
+        <div key={p.id} style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
+          {p.image_url && (
+            <div style={{ height: 120, overflow: "hidden" }}>
+              <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          )}
+          <div style={{ padding: "10px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pill, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+                {p.profiles?.avatar_url ? <img src={p.profiles.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "😊"}
+              </div>
+              <div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink }}>{p.profiles?.pseudo || "Voisin"}</div>
+                <div style={{ fontSize: 10, color: C.ink2 }}>{timeAgo(p.created_at)} · Mention : <b>"{p.magasin_nom}"</b></div>
+              </div>
+            </div>
+            {p.content && <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10, lineHeight: 1.5 }}>{p.content.slice(0, 100)}{p.content.length > 100 ? "…" : ""}</div>}
+            {claimed.has(p.id) ? (
+              <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: "#0A3D2E", padding: "8px 0" }}>✅ Associé à ton profil</div>
+            ) : (
+              <button
+                onClick={() => claim(p)}
+                disabled={claiming === p.id}
+                style={{ width: "100%", background: claiming === p.id ? "#ccc" : C.accent, color: "#fff", border: "none", borderRadius: 12, padding: "10px 0", fontSize: 12, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}
+              >
+                {claiming === p.id ? "Association…" : "🔗 Revendiquer ce post"}
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── ONGLET MES DÉFIS ───────────────────────────────────────────
 function TabMesDefis({ userId }) {
   const [defis, setDefis]               = useState([]);
@@ -1437,6 +1541,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
   const tabs = [
     { id: "dashboard", label: "Tableau de bord" },
     { id: "posts", label: "Mes posts" },
+    { id: "mentions", label: "📣 Mentions" },
     { id: "creer", label: "Créer" },
     { id: "defis", label: "Mes défis" },
     { id: "plan", label: "Mon plan" },
@@ -1494,6 +1599,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
           {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} />}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
+          {activeTab === "mentions" && <TabMentions pseudo={localProfile?.pseudo} userId={user?.id} />}
           {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} setPage={setPage} user={user} />}
           {activeTab === "defis" && <TabMesDefis userId={user?.id} />}
           {activeTab === "plan" && <TabPlan profile={localProfile} />}

@@ -194,52 +194,91 @@ function PhotoZone({ onPhotoSelect, zoneId, externalPreview }) {
 }
 
 // ─── MAG LINK ─── (état contrôlé depuis le parent)
-function MagLink({ selectedId, onSelect }) {
+function MagLink({ selectedId, selectedNom, onSelect, onSelectNom }) {
   const [merchants, setMerchants] = useState([]);
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     supabase.from("profiles")
       .select("id, pseudo, avatar_url")
-      .eq("role", "magasin")
+      .in("role", ["magasin", "artisan", "commercant"])
       .order("pseudo")
       .then(({ data }) => setMerchants(data || []));
   }, []);
 
   const selected = merchants.find(m => m.id === selectedId);
+  const normalize = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+  const filtered = search.trim()
+    ? merchants.filter(m => normalize(m.pseudo).includes(normalize(search)))
+    : merchants;
+  const hasResult = filtered.length > 0;
+  const isSelected = selectedId || selectedNom;
+
+  function clear() { onSelect(null); onSelectNom(""); setSearch(""); setOpen(false); }
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <div onClick={() => selectedId ? onSelect(null) : setOpen(!open)} style={{
+      {/* Bouton principal */}
+      <div onClick={() => isSelected ? clear() : setOpen(o => !o)} style={{
         display: "flex", alignItems: "center", gap: 10,
-        background: selectedId ? C.proBg : C.card,
-        borderRadius: 14, border: `1.5px solid ${selectedId ? C.pro : C.border}`,
+        background: isSelected ? C.proBg : C.card,
+        borderRadius: 14, border: `1.5px solid ${isSelected ? C.pro : C.border}`,
         padding: "10px 12px", cursor: "pointer",
       }}>
         <span style={{ fontSize: 20 }}>🏪</span>
-        <span style={{
-          fontSize: 12, fontWeight: selectedId ? 600 : 500,
-          color: selectedId ? C.pro : C.ink2, flex: 1,
-        }}>{selected ? selected.pseudo : "Associer un commerce du quartier"}</span>
-        <span style={{ fontSize: 14, color: C.ink2 }}>{selectedId ? "✕" : "→"}</span>
+        <span style={{ fontSize: 12, fontWeight: isSelected ? 600 : 500, color: isSelected ? C.pro : C.ink2, flex: 1 }}>
+          {selected ? selected.pseudo : selectedNom ? `🔖 ${selectedNom}` : "Associer un commerce du quartier"}
+        </span>
+        <span style={{ fontSize: 14, color: C.ink2 }}>{isSelected ? "✕" : "→"}</span>
       </div>
-      {open && !selectedId && (
+
+      {/* Panneau déroulé */}
+      {open && !isSelected && (
         <div style={{ marginTop: 6, background: C.card, borderRadius: 12, border: `1.5px solid ${C.border}`, overflow: "hidden" }}>
-          {merchants.length === 0 ? (
-            <div style={{ padding: "12px 14px", fontSize: 12, color: C.ink2 }}>Aucun commerce trouvé pour l'instant</div>
-          ) : merchants.map((m, i) => (
-            <div key={m.id} onClick={() => { onSelect(m.id); setOpen(false); }} style={{
-              display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
-              cursor: "pointer", borderBottom: i < merchants.length - 1 ? `1px solid ${C.border}` : "none",
-            }}>
-              {m.avatar_url ? (
-                <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
-              ) : (
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏪</div>
-              )}
-              <span style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{m.pseudo}</span>
+          {/* Champ de recherche */}
+          <div style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Chercher ou taper le nom du commerce…"
+              style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 10, border: `1px solid ${C.border}`, fontFamily: dm, fontSize: 12, color: C.ink, background: C.bg, outline: "none" }}
+            />
+          </div>
+
+          {/* Liste filtrée */}
+          {hasResult ? (
+            filtered.map((m, i) => (
+              <div key={m.id} onClick={() => { onSelect(m.id); onSelectNom(""); setSearch(""); setOpen(false); }} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+                cursor: "pointer", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none",
+              }}>
+                {m.avatar_url
+                  ? <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
+                  : <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏪</div>
+                }
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{m.pseudo}</span>
+              </div>
+            ))
+          ) : search.trim() ? (
+            /* Aucun résultat → saisie libre */
+            <div style={{ padding: "12px 14px" }}>
+              <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10 }}>
+                Ce commerce n'est pas encore inscrit sur Chipeur.
+              </div>
+              <button
+                onClick={() => { onSelectNom(search.trim()); onSelect(null); setOpen(false); }}
+                style={{ width: "100%", background: C.proBg, border: `1.5px solid ${C.pro}`, borderRadius: 12, padding: "9px 0", fontSize: 12, fontWeight: 700, color: C.pro, cursor: "pointer", fontFamily: dm }}
+              >
+                🔖 Associer "{search.trim()}"
+              </button>
+              <div style={{ fontSize: 10, color: C.ink2, marginTop: 6, lineHeight: 1.4, textAlign: "center" }}>
+                Il sera notifié dès qu'il rejoindra Chipeur.
+              </div>
             </div>
-          ))}
+          ) : (
+            <div style={{ padding: "12px 14px", fontSize: 12, color: C.ink2 }}>Aucun commerce inscrit pour l'instant</div>
+          )}
         </div>
       )}
     </div>
@@ -307,7 +346,7 @@ function LinkInput({ value, onChange }) {
 }
 
 // ─── FORM: TROUVAILLE ───
-function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, pepiteOn, onPepiteChange, magasinId, onMagasinSelect, linkUrl, onLinkChange }) {
+function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, pepiteOn, onPepiteChange, magasinId, magasinNom, onMagasinSelect, onMagasinNom, linkUrl, onLinkChange }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} externalPreview={photoPreview} />
@@ -328,7 +367,7 @@ function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, active
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
-        <MagLink selectedId={magasinId} onSelect={onMagasinSelect} />
+        <MagLink selectedId={magasinId} selectedNom={magasinNom} onSelect={onMagasinSelect} onSelectNom={onMagasinNom} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Tags</label>
@@ -437,7 +476,7 @@ function FormSortie({ fields, onChange }) {
 }
 
 // ─── FORM: BON PLAN ───
-function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, magasinId, onMagasinSelect, linkUrl, onLinkChange }) {
+function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTags, onTagToggle, magasinId, magasinNom, onMagasinSelect, onMagasinNom, linkUrl, onLinkChange }) {
   return (
     <>
       <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-bonplan" externalPreview={photoPreview} />
@@ -452,7 +491,7 @@ function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTag
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
-        <MagLink selectedId={magasinId} onSelect={onMagasinSelect} />
+        <MagLink selectedId={magasinId} selectedNom={magasinNom} onSelect={onMagasinSelect} onSelectNom={onMagasinNom} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Tags</label>
@@ -597,6 +636,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   // ✅ Pépite et MagLink remontés ici pour être pris en compte à la publication
   const [pepiteOn, setPepiteOn] = useState(false);
   const [magasinId, setMagasinId] = useState(null);
+  const [magasinNom, setMagasinNom] = useState("");
   // Sortie fields
   const [sortieFields, setSortieFields] = useState({ title: "", date: "", time: "", lieu: "", desc: "", type: "" });
   const updateSortieField = (key, val) => setSortieFields(prev => ({ ...prev, [key]: val }));
@@ -843,6 +883,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       tags: finalTags,
       post_type: selectedType, // "decouverte" ou "bonplan"
       magasin_id: magasinId || null,
+      magasin_nom: magasinNom || null,
       link_url: (linkUrl.trim().startsWith("http://") || linkUrl.trim().startsWith("https://")) ? linkUrl.trim() : null,
     });
     setPublishing(false);
@@ -917,7 +958,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
       pepiteOn={pepiteOn} onPepiteChange={setPepiteOn}
-      magasinId={magasinId} onMagasinSelect={setMagasinId}
+      magasinId={magasinId} magasinNom={magasinNom} onMagasinSelect={setMagasinId} onMagasinNom={setMagasinNom}
       linkUrl={linkUrl} onLinkChange={setLinkUrl}
     />,
     lieu: <FormLieu fields={lieuFields} onChange={updateLieuField} onPhotoSelect={setLieuPhotoFile} />,
@@ -926,14 +967,14 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       content={content} onChange={setContent}
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
-      magasinId={magasinId} onMagasinSelect={setMagasinId}
+      magasinId={magasinId} magasinNom={magasinNom} onMagasinSelect={setMagasinId} onMagasinNom={setMagasinNom}
       linkUrl={linkUrl} onLinkChange={setLinkUrl}
     />,
     promo: <FormBonPlan
       content={content} onChange={setContent}
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       activeTags={activeTags} onTagToggle={handleTagToggle}
-      magasinId={magasinId} onMagasinSelect={setMagasinId}
+      magasinId={magasinId} magasinNom={magasinNom} onMagasinSelect={setMagasinId} onMagasinNom={setMagasinNom}
       linkUrl={linkUrl} onLinkChange={setLinkUrl}
     />,
     defi_voisin: formDefiVoisin,
