@@ -182,8 +182,8 @@ function Screen1({ onSuccess, isLogin, setIsLogin }) {
           <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 34, lineHeight: 1, letterSpacing: -1, color: "#1A1A2E" }}>
             chi<span style={{ color: C.accent }}>p</span>eur
           </div>
-          <div style={{ fontFamily: "'Syne Mono', monospace", fontSize: 8, letterSpacing: 3, color: C.accent, textTransform: "uppercase" }}>
-            Découvre ta ville, à travers tes voisins
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, letterSpacing: -0.1, color: C.accent, lineHeight: 1.55, marginTop: 3 }}>
+            Découvre ta ville,<br />à travers tes voisins
           </div>
         </div>
       </div>
