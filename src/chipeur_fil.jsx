@@ -966,15 +966,6 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 10, color: C.ink2 }}>{post.location || "Saint-Dié"} · {timeAgo(post.created_at)}</span>
-                {post.defi_id ? (
-                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#FFF8E8", color: "#B45309" }}>🏆 Défi</span>
-                ) : post.post_type === "decouverte" ? (
-                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#FFF0EC", color: "#C83E1A" }}>🛍️ Chope</span>
-                ) : post.post_type === "lieu" ? (
-                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#EBF5F0", color: "#0A5C36" }}>📍 Lieu</span>
-                ) : post.post_type === "bonplan" ? (
-                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#F5F3FF", color: "#5B21B6" }}>💸 Bon plan</span>
-                ) : null}
               </div>
             </div>
           </div>
@@ -1031,12 +1022,38 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
           )}
         </div>
         {/* Image si présente */}
-        {post.image_url && (
-          <div onClick={() => setLightbox(true)} style={{ width: "100%", paddingTop: "80%", position: "relative", cursor: "zoom-in" }}>
-            <img src={post.image_url} alt={post.content} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-            <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.45)", color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>🔍 Agrandir</div>
-          </div>
-        )}
+        {post.image_url && (() => {
+          const ribbon = post.defi_id
+            ? { label: "🏆 Défi",     bg: "rgba(180,83,9,0.88)"   }
+            : post.post_type === "decouverte"
+            ? { label: "🛍️ Chope",   bg: "rgba(255,87,51,0.88)"  }
+            : post.post_type === "lieu"
+            ? { label: "📍 Lieu",     bg: "rgba(10,61,46,0.88)"   }
+            : post.post_type === "bonplan"
+            ? { label: "💸 Bon plan", bg: "rgba(91,33,182,0.88)"  }
+            : null;
+          return (
+            <div onClick={() => setLightbox(true)} style={{ width: "100%", paddingTop: "80%", position: "relative", cursor: "zoom-in", overflow: "hidden" }}>
+              <img src={post.image_url} alt={post.content} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+              {/* Ruban diagonal en coin */}
+              {ribbon && (
+                <div style={{ position: "absolute", top: 0, left: 0, width: 90, height: 90, overflow: "hidden", pointerEvents: "none" }}>
+                  <div style={{
+                    position: "absolute", top: 20, left: -28, width: 120,
+                    background: ribbon.bg,
+                    backdropFilter: "blur(4px)",
+                    transform: "rotate(-45deg)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    padding: "5px 0",
+                    fontSize: 10, fontWeight: 700, color: "#fff",
+                    letterSpacing: 0.3,
+                  }}>{ribbon.label}</div>
+                </div>
+              )}
+              <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.45)", color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>🔍 Agrandir</div>
+            </div>
+          );
+        })()}
         {/* Contenu */}
         <div style={{ padding: "10px 12px 6px" }}>
           {post.content
