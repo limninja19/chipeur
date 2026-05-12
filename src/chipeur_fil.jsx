@@ -1262,6 +1262,10 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
         )}
         <BandeauDefis setPage={setPage} user={user} />
         <BandeauSortiesPhotos setPage={setPage} setSelectedSortieId={setSelectedSortieId} />
+
+        {/* Séparateur discret avant le fil de posts */}
+        <div style={{ height: 1, background: C.border, margin: "4px 0 8px" }} />
+
 {fetchError && (
           <div style={{ background: "#FFF0EE", border: "1px solid #FF5733", borderRadius: 12, padding: "12px 14px", margin: "8px 0", fontSize: 12, color: "#C0392B" }}>
             ⚠️ Erreur : {fetchError}
