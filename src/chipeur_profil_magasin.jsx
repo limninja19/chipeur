@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 import { addXP } from "./chipeur_xp";
+import Avatar from "./Avatar";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
 async function compressImage(file, maxPx = 1200, quality = 0.82) {
@@ -1175,9 +1176,7 @@ function TabMentions({ pseudo, userId }) {
           )}
           <div style={{ padding: "10px 12px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pill, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
-                {p.profiles?.avatar_url ? <img src={p.profiles.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "😊"}
-              </div>
+              <Avatar pseudo={p.profiles?.pseudo} avatarUrl={p.profiles?.avatar_url} size={28} />
               <div>
                 <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink }}>{p.profiles?.pseudo || "Voisin"}</div>
                 <div style={{ fontSize: 10, color: C.ink2 }}>{timeAgo(p.created_at)} · Mention : <b>"{p.magasin_nom}"</b></div>
