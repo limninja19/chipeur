@@ -286,7 +286,8 @@ function extractRewardAmount(reward) {
 
 function BandeauDefis({ setPage, user }) {
   const [defis, setDefis]       = useState([]);
-  const [voteDefi, setVoteDefi] = useState(null); // défi en cours de vote
+  const [voteDefi, setVoteDefi] = useState(null);
+  const [showMerchantInfo, setShowMerchantInfo] = useState(false);
 
   useEffect(() => {
     supabase.from("defis")
@@ -368,6 +369,55 @@ function BandeauDefis({ setPage, user }) {
     <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
       {voteDefi && <SwipeVoteModal d={voteDefi} user={user} onClose={() => setVoteDefi(null)} />}
 
+      {/* ── MODALE EXPLICATION DÉFIS COMMERÇANTS ── */}
+      {showMerchantInfo && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.6)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={() => setShowMerchantInfo(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#F5F2EE", borderRadius: "24px 24px 0 0", padding: "24px 20px 48px", width: "100%", boxSizing: "border-box" }}>
+            {/* Poignée */}
+            <div style={{ width: 36, height: 4, background: "rgba(26,23,20,0.15)", borderRadius: 2, margin: "0 auto 20px" }} />
+
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#0A3D2E,#1a6b4a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🏪</div>
+              <div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: "#1A1714", lineHeight: 1.2 }}>Les défis commerçants arrivent !</div>
+                <div style={{ fontSize: 12, color: "#6B6660", marginTop: 2 }}>Comment ça marche ?</div>
+              </div>
+            </div>
+
+            {/* Étapes */}
+            {[
+              { emoji: "📣", title: "Un commerçant lance un défi", desc: "Un commerce de ton quartier propose un thème photo et une récompense à gagner." },
+              { emoji: "📸", title: "Tu participes avec une photo", desc: "Publie ta photo en réponse au défi. Elle apparaît dans le fil et les autres voisins peuvent voter pour toi." },
+              { emoji: "🗳️", title: "Les voisins votent", desc: "La communauté swipe et vote pour les meilleures photos pendant toute la durée du défi." },
+              { emoji: "🏆", title: "Le commerçant choisit le gagnant", desc: "À la clôture, il sélectionne le podium. Les 3 premiers gagnent des XP et une récompense locale !" },
+            ].map((step, i) => (
+              <div key={i} style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "#fff", border: "1.5px solid rgba(26,23,20,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{step.emoji}</div>
+                <div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: "#1A1714", marginBottom: 2 }}>{step.title}</div>
+                  <div style={{ fontSize: 12, color: "#6B6660", lineHeight: 1.5 }}>{step.desc}</div>
+                </div>
+              </div>
+            ))}
+
+            {/* Récompenses XP */}
+            <div style={{ background: "#FFF8E8", border: "1.5px solid #F7A72D", borderRadius: 16, padding: "12px 14px", marginBottom: 20 }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, color: "#B45309", marginBottom: 6 }}>🏆 Récompenses XP</div>
+              <div style={{ fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
+                🥇 1er : <b>50 XP</b> · 🥈 2e : <b>20 XP</b> · 🥉 3e : <b>10 XP</b><br />
+                + récompense offerte par le commerçant
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowMerchantInfo(false)}
+              style={{ width: "100%", background: "#1A1714", color: "#fff", border: "none", borderRadius: 16, padding: 14, fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+            >J'ai hâte ! 🔥</button>
+          </div>
+        </div>
+      )}
+
       <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
         🏆 Défis en cours
         <div style={{ flex: 1, height: 1, background: C.border }} />
@@ -381,8 +431,8 @@ function BandeauDefis({ setPage, user }) {
         {merchantDefis.length > 0
           ? merchantDefis.map(d => <DefiCard key={d.id} d={d} />)
           : (
-            <div style={{ flexShrink: 0, width: 160 }}>
-              <div style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 3px 10px rgba(0,0,0,0.08)" }}>
+            <div style={{ flexShrink: 0, width: 160 }} onClick={() => setShowMerchantInfo(true)}>
+              <div style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 3px 10px rgba(0,0,0,0.08)", cursor: "pointer" }}>
                 {/* Zone visuelle */}
                 <div style={{
                   height: 120, position: "relative",
