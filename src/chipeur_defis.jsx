@@ -850,7 +850,11 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
             <div style={{ height: "100%", borderRadius: 4, width: `${Math.min(d.pct || 0, 100)}%`, background: d.grad }} />
           </div>
           {d.isFull && (
-            <div style={{ fontSize: 11, color: "#E53935", fontWeight: 700, marginTop: 6 }}>🔒 Places complètes — le commerçant va choisir son gagnant !</div>
+            <div style={{ fontSize: 11, color: "#E53935", fontWeight: 700, marginTop: 6 }}>
+              {d.type === "voisin"
+                ? "🔒 Places complètes — les votes vont départager les participants !"
+                : "🔒 Places complètes — le commerçant va choisir son gagnant !"}
+            </div>
           )}
         </div>
 
@@ -976,11 +980,58 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
 }
 
 // ─── PARTICIPE SCREEN ───────────────────────────────────────────
+function MagLinkPicker({ selectedId, onSelect }) {
+  const [merchants, setMerchants] = useState([]);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    supabase.from("profiles").select("id, pseudo, avatar_url")
+      .in("role", ["magasin", "artisan", "commercant"])
+      .order("pseudo")
+      .then(({ data }) => setMerchants(data || []));
+  }, []);
+  const selected = merchants.find(m => m.id === selectedId);
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div onClick={() => selectedId ? onSelect(null) : setOpen(v => !v)} style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: selectedId ? "#EBF5F0" : "#fff",
+        borderRadius: 14, border: `1.5px solid ${selectedId ? "#0A3D2E" : "rgba(26,23,20,0.08)"}`,
+        padding: "10px 12px", cursor: "pointer",
+      }}>
+        <span style={{ fontSize: 20 }}>🏪</span>
+        <span style={{ fontSize: 12, fontWeight: selectedId ? 600 : 500, color: selectedId ? "#0A3D2E" : "#6B6560", flex: 1 }}>
+          {selected ? selected.pseudo : "Associer un commerce (optionnel)"}
+        </span>
+        <span style={{ fontSize: 14, color: "#6B6560" }}>{selectedId ? "✕" : "→"}</span>
+      </div>
+      {open && !selectedId && (
+        <div style={{ marginTop: 6, background: "#fff", borderRadius: 12, border: "1.5px solid rgba(26,23,20,0.08)", overflow: "hidden" }}>
+          {merchants.length === 0 ? (
+            <div style={{ padding: "12px 14px", fontSize: 12, color: "#6B6560" }}>Aucun commerce trouvé</div>
+          ) : merchants.map((m, i) => (
+            <div key={m.id} onClick={() => { onSelect(m.id); setOpen(false); }} style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+              cursor: "pointer", borderBottom: i < merchants.length - 1 ? "1px solid rgba(26,23,20,0.08)" : "none",
+            }}>
+              {m.avatar_url
+                ? <img src={m.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />
+                : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EBF5F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🏪</div>
+              }
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1714" }}>{m.pseudo}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ParticipeScreen({ d, user, profile, onBack, onPublishSuccess }) {
   const [imgFile, setImgFile] = useState(null);
   const [imgPreview, setImgPreview] = useState(null);
   const [desc, setDesc] = useState("");
   const [activeTags, setActiveTags] = useState(d.tags?.slice(0, 1) || []);
+  const [magasinId, setMagasinId] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
 
@@ -1024,6 +1075,8 @@ function ParticipeScreen({ d, user, profile, onBack, onPublishSuccess }) {
         image_url,
         location: profile?.quartier || "Saint-Dié-des-Vosges",
         tags: activeTags,
+        post_type: "defi_photo",
+        magasin_id: magasinId || null,
       };
       // Lie au défi si UUID réel
       if (isUUID(d.id)) postData.defi_id = d.id;
@@ -1120,7 +1173,7 @@ function ParticipeScreen({ d, user, profile, onBack, onPublishSuccess }) {
           <textarea
             value={desc}
             onChange={e => setDesc(e.target.value)}
-            placeholder="Décris ton commerce coup de cœur, pourquoi tu l'aimes…"
+            placeholder={d.type === "voisin" ? "Décris ta photo, partage ton expérience…" : "Décris ton commerce coup de cœur, pourquoi tu l'aimes…"}
             rows={3}
             style={{
               width: "100%", background: C.card,
@@ -1131,6 +1184,9 @@ function ParticipeScreen({ d, user, profile, onBack, onPublishSuccess }) {
             }}
           />
         </div>
+
+        {/* Lien commerçant (optionnel) */}
+        <MagLinkPicker selectedId={magasinId} onSelect={setMagasinId} />
 
         {/* Tags */}
         {d.tags && d.tags.length > 0 && (
@@ -1519,7 +1575,7 @@ export default function ChipeurDefis({ setPage, user, profile }) {
           fill: d.fill || palette.fill,
           reward: d.reward || null,
           merchant_name: d.merchant_name || null,
-          selection_mode: d.selection_mode || "choix",
+          selection_mode: d.selection_mode || (d.type === "voisin" ? "vote" : "choix"),
         };
       });
 
