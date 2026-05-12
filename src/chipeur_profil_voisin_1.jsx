@@ -914,6 +914,8 @@ function TabDefis({ setPage, userId }) {
   const [confirmDelete, setConfirmDelete] = useState(null); // id à supprimer
   const [editDefi, setEditDefi]   = useState(null); // défi en cours d'édition
   const [editForm, setEditForm]   = useState({ title: "", description: "", ends_at: "" });
+  const [editPhotoFile, setEditPhotoFile] = useState(null);
+  const [editPhotoPreview, setEditPhotoPreview] = useState(null);
   const [saving, setSaving]       = useState(false);
 
   useEffect(() => {
@@ -987,21 +989,40 @@ function TabDefis({ setPage, userId }) {
       description: d.description || "",
       ends_at: d.ends_at ? d.ends_at.slice(0, 10) : "",
     });
+    setEditPhotoFile(null);
+    setEditPhotoPreview(null);
     setEditDefi(d);
+  }
+
+  async function handleEditPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setEditPhotoFile(file);
+    setEditPhotoPreview(URL.createObjectURL(file));
   }
 
   async function saveEditDefi() {
     if (!editForm.title.trim()) return;
     setSaving(true);
-    await supabase.from("defis").update({
+    let photo_url = editPhotoPreview === "remove" ? null : (editDefi.photo_url || null);
+    if (editPhotoFile) {
+      const ext = (editPhotoFile.name.split(".").pop() || "jpg").toLowerCase();
+      const safeExt = ["jpg","jpeg","png","gif","webp"].includes(ext) ? ext : "jpg";
+      const path = `posts/${userId}/${Date.now()}.${safeExt}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, editPhotoFile, { contentType: editPhotoFile.type || "image/jpeg", upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+        photo_url = urlData.publicUrl;
+      }
+    }
+    const updates = {
       title: editForm.title.trim(),
       description: editForm.description.trim() || null,
       ends_at: editForm.ends_at || null,
-    }).eq("id", editDefi.id);
-    setMyDefis(prev => prev.map(d => d.id === editDefi.id
-      ? { ...d, title: editForm.title.trim(), description: editForm.description.trim() || null, ends_at: editForm.ends_at || null }
-      : d
-    ));
+      photo_url,
+    };
+    await supabase.from("defis").update(updates).eq("id", editDefi.id);
+    setMyDefis(prev => prev.map(d => d.id === editDefi.id ? { ...d, ...updates } : d));
     setSaving(false);
     setEditDefi(null);
   }
@@ -1120,7 +1141,7 @@ function TabDefis({ setPage, userId }) {
                 style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.bg, outline: "none", resize: "none", lineHeight: 1.5 }}
               />
             </div>
-            <div style={{ marginBottom: 18 }}>
+            <div style={{ marginBottom: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 4 }}>Date limite</div>
               <input
                 type="date"
@@ -1129,6 +1150,40 @@ function TabDefis({ setPage, userId }) {
                 min={new Date().toISOString().slice(0, 10)}
                 style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 13, color: C.ink, background: C.bg, outline: "none" }}
               />
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 6 }}>Photo de couverture (optionnelle)</div>
+              <input type="file" accept="image/*" id="edit-defi-photo" onChange={handleEditPhoto} style={{ display: "none" }} />
+              <label htmlFor="edit-defi-photo" style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: 14, border: `1.5px dashed ${C.border}`,
+                overflow: "hidden", cursor: "pointer", position: "relative",
+                aspectRatio: "16/7", background: "#000",
+              }}>
+                {editPhotoPreview || editDefi.photo_url ? (
+                  <>
+                    <img
+                      src={editPhotoPreview || editDefi.photo_url}
+                      alt=""
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }}
+                    />
+                    <div style={{ position: "relative", background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 20 }}>
+                      📷 Changer
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: 16 }}>
+                    <div style={{ fontSize: 28 }}>📷</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#fff" }}>Ajouter une photo</div>
+                  </div>
+                )}
+              </label>
+              {(editPhotoPreview || editDefi.photo_url) && !editPhotoPreview && (
+                <button
+                  onClick={() => { setEditPhotoFile(null); setEditPhotoPreview("remove"); }}
+                  style={{ marginTop: 6, background: "none", border: "none", fontSize: 11, color: "#E53935", cursor: "pointer", padding: 0 }}
+                >✕ Supprimer la photo</button>
+              )}
             </div>
             <button onClick={saveEditDefi} disabled={saving || !editForm.title.trim()} style={{ width: "100%", background: saving ? "#ccc" : C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 13, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: saving ? "not-allowed" : "pointer", marginBottom: 8 }}>
               {saving ? "Enregistrement…" : "Enregistrer"}
