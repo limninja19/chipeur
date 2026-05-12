@@ -289,34 +289,21 @@ function BandeauDefis({ setPage, user }) {
   const [voteDefi, setVoteDefi] = useState(null); // défi en cours de vote
 
   useEffect(() => {
-    supabase.from("defis").select("*").eq("ended", false)
+    supabase.from("defis")
+      .select("*, creator:user_id(pseudo, role)")
+      .eq("ended", false)
       .order("created_at", { ascending: false })
-      .then(async ({ data: defisData }) => {
+      .then(({ data: defisData }) => {
         if (!defisData || defisData.length === 0) return;
-        const { data: countsData } = await supabase
-          .from("posts").select("defi_id, author_id").not("defi_id", "is", null);
-        const seen = {};
-        (countsData || []).forEach(r => {
-          if (!seen[r.defi_id]) seen[r.defi_id] = new Set();
-          seen[r.defi_id].add(r.author_id);
-        });
-        const counts = {};
-        Object.keys(seen).forEach(id => { counts[id] = seen[id].size; });
-
         const mapped = defisData.map((d) => ({
-          id:                  d.id,
-          title:               d.title,
-          merchant_name:       d.description || "",
-          category:            EMOJI_TO_CATEGORY[d.emoji] || "Mode",
-          city:                "Saint-Dié",
-          photo_url:           d.photo_url || null,
-          days_remaining:      daysRemaining(d.ends_at),
-          participants_count:  counts[d.id] || 0,
-          target_count:        d.total_target || 100,
-          reward_amount:       extractRewardAmount(d.reward),
-          reward_description:  d.reward || "Récompense surprise",
-          top_reactions:       [],
-          reactions_total:     0,
+          id:                 d.id,
+          title:              d.title,
+          type:               d.type || "merchant",
+          creator_name:       d.creator?.pseudo || d.merchant_name || "Chipeur",
+          photo_url:          d.photo_url || null,
+          days_remaining:     daysRemaining(d.ends_at),
+          reward_amount:      extractRewardAmount(d.reward),
+          reward_description: d.reward || "Récompense surprise",
         }));
         setDefis(mapped);
       });
@@ -369,10 +356,12 @@ function BandeauDefis({ setPage, user }) {
                   ⏱ {d.days_remaining}j
                 </div>
               </div>
-              {/* Bas de carte : participants + bouton */}
+              {/* Bas de carte : créateur + bouton */}
               <div style={{ padding: "8px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-                <span style={{ fontSize: 10, color: C.ink2, fontWeight: 600 }}>👥 {d.participants_count}/{d.target_count}</span>
-                <span style={{ background: C.accent, color: "#fff", borderRadius: 20, padding: "5px 10px", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap" }}>Participer →</span>
+                <span style={{ fontSize: 10, color: C.ink2, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
+                  {d.type === "voisin" ? "🏘️" : "🏪"} {d.creator_name}
+                </span>
+                <span style={{ background: C.accent, color: "#fff", borderRadius: 20, padding: "5px 10px", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap", flexShrink: 0 }}>Participer →</span>
               </div>
             </div>
             {/* Bouton Voter */}
