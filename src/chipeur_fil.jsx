@@ -1166,7 +1166,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
           <div style={{ textAlign: "center", padding: "40px 16px" }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>🫣</div>
             <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 6 }}>
-              {activeTab === "Tout" ? "Le fil est vide pour l'instant" : `Aucun post "${activeTab}" pour l'instant`}
+              {activeFilters.has("all") ? "Le fil est vide pour l'instant" : "Aucun post pour ce filtre pour l'instant"}
             </div>
             <div style={{ fontSize: 13, color: C.ink2 }}>Sois le premier à partager une trouvaille de ton quartier !</div>
           </div>
