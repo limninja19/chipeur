@@ -868,96 +868,285 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
   );
 }
 
+// ─── MODES VITRINE ───
+const VITRINE_MODES = [
+  { id: "tout",    label: "✦ Tout voir" },
+  { id: "galerie", label: "🖼 Galerie" },
+  { id: "cartes",  label: "🃏 Cartes" },
+  { id: "promos",  label: "🎁 Promos" },
+  { id: "defis",   label: "🏆 Défis" },
+];
+
+function VitrineDropdown({ activeMode, onChange }) {
+  const [open, setOpen] = useState(false);
+  const current = VITRINE_MODES.find(m => m.id === activeMode) || VITRINE_MODES[0];
+  return (
+    <div style={{ position: "relative", padding: "12px 16px 8px", zIndex: 20 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", background: C.card, border: `1.5px solid ${C.border}`,
+          borderRadius: 14, padding: "11px 16px", display: "flex", alignItems: "center",
+          justifyContent: "space-between", cursor: "pointer", fontFamily: dm,
+          fontSize: 13, fontWeight: 600, color: C.ink,
+        }}
+      >
+        <span>{current.label}</span>
+        <span style={{ fontSize: 10, color: C.ink2, transition: "transform 0.2s", display: "inline-block", transform: open ? "rotate(180deg)" : "none" }}>▼</span>
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
+          <div style={{
+            position: "absolute", top: "calc(100% - 4px)", left: 16, right: 16, zIndex: 20,
+            background: C.card, borderRadius: 14, border: `1px solid ${C.border}`,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)", overflow: "hidden",
+          }}>
+            {VITRINE_MODES.map((m, i) => (
+              <div
+                key={m.id}
+                onClick={() => { onChange(m.id); setOpen(false); }}
+                style={{
+                  padding: "13px 16px", fontSize: 13,
+                  fontWeight: m.id === activeMode ? 700 : 500,
+                  color: m.id === activeMode ? C.accent : C.ink,
+                  background: m.id === activeMode ? "rgba(255,87,51,0.05)" : "transparent",
+                  cursor: "pointer", fontFamily: dm, display: "flex", alignItems: "center", justifyContent: "space-between",
+                  borderBottom: i < VITRINE_MODES.length - 1 ? `1px solid ${C.border}` : "none",
+                }}
+              >
+                {m.label}
+                {m.id === activeMode && <span style={{ color: C.accent, fontSize: 14 }}>✓</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── CARTE DÉFI (vitrine) ───
+function DefiVitrine({ defi }) {
+  const now = new Date();
+  const enCours = !defi.ended && (!defi.ends_at || new Date(defi.ends_at) > now);
+  const daysLeft = defi.ends_at && !defi.ended
+    ? Math.max(0, Math.ceil((new Date(defi.ends_at) - now) / 86400000))
+    : null;
+
+  return (
+    <div style={{
+      background: C.card, borderRadius: 18, marginBottom: 10,
+      border: `1.5px solid ${enCours ? "rgba(255,87,51,0.25)" : C.border}`,
+      overflow: "hidden",
+    }}>
+      {defi.photo_url && (
+        <div style={{ width: "100%", height: 120, overflow: "hidden" }}>
+          <img src={defi.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </div>
+      )}
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, flex: 1 }}>
+            {defi.emoji || "🏆"} {defi.title}
+          </div>
+          <div style={{
+            fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 8, flexShrink: 0,
+            background: enCours ? "rgba(255,87,51,0.12)" : C.pill,
+            color: enCours ? C.accent : C.ink2,
+          }}>
+            {enCours ? "En cours" : "Terminé"}
+          </div>
+        </div>
+        {defi.description && (
+          <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5, marginBottom: 8 }}>{defi.description}</div>
+        )}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {defi.reward && (
+            <span style={{ fontSize: 11, background: C.proBg, color: C.pro, padding: "3px 9px", borderRadius: 8, fontWeight: 600 }}>🎁 {defi.reward}</span>
+          )}
+          {enCours && daysLeft !== null && (
+            <span style={{ fontSize: 11, background: "rgba(255,87,51,0.08)", color: C.accent, padding: "3px 9px", borderRadius: 8, fontWeight: 600 }}>⏳ {daysLeft}j restants</span>
+          )}
+          {defi.winner_post_id && (
+            <span style={{ fontSize: 11, background: C.proBg, color: C.pro, padding: "3px 9px", borderRadius: 8, fontWeight: 600 }}>🥇 Gagnant désigné</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── ONGLET VITRINE ───
 function TabVitrine({ com, realPosts, loadingPosts, user }) {
   const [posts, setPosts] = useState(realPosts);
-  const [activeFilter, setActiveFilter] = useState("tous");
+  const [activeMode, setActiveMode] = useState("tout");
   const [selectedPost, setSelectedPost] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
+  const [defis, setDefis] = useState([]);
+  const [loadingDefis, setLoadingDefis] = useState(false);
+  const touchXVit = useRef(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
 
+  // Charger les défis quand on passe en mode défis
+  useEffect(() => {
+    if (activeMode !== "defis" || defis.length > 0) return;
+    setLoadingDefis(true);
+    supabase.from("defis").select("*")
+      .eq("user_id", com.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { setDefis(data || []); setLoadingDefis(false); });
+  }, [activeMode, com.id]);
+
   const isOwner = user?.id === com.id;
 
-  const filters = [
-    { id: "tous",    label: "✦ Tous" },
-    { id: "photos",  label: "📸 Photos" },
-    { id: "galerie", label: "🏪 Galerie" },
-    { id: "bonplan", label: "🎁 Bons plans" },
-  ];
+  // Listes filtrées
+  const photoPosts = posts.filter(p => !!p.image_url);
+  const filtered = activeMode === "galerie"  ? photoPosts
+    : activeMode === "cartes"  ? posts
+    : activeMode === "promos"  ? posts.filter(p => p.post_type === "bonplan" || p.post_type === "promo")
+    : posts; // "tout" = tout
 
-  // Photos clients (taguent le magasin mais ne sont pas du magasin)
-  const photoPosts = posts.filter(p => !!p.image_url && p.author_id !== com.id);
-  // Photos du commerçant lui-même
-  const galeriePosts = posts.filter(p => !!p.image_url && p.author_id === com.id);
-
-  const filtered = activeFilter === "photos"
-    ? photoPosts
-    : activeFilter === "galerie"
-      ? galeriePosts
-      : activeFilter === "bonplan"
-        ? posts.filter(p => p.post_type === "bonplan")
-        : posts;
+  const defisEnCours  = defis.filter(d => !d.ended);
+  const defisTermines = defis.filter(d => !!d.ended);
 
   return (
     <div style={{ padding: "0 0 100px" }}>
-      {/* Filtres */}
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", padding: "14px 16px 12px" }}>
-        {filters.map(f => (
-          <button key={f.id} onClick={() => setActiveFilter(f.id)} style={{
-            padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-            border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-            fontFamily: dm, transition: "all 0.15s",
-            background: activeFilter === f.id ? C.ink : C.pill,
-            color: activeFilter === f.id ? "#fff" : C.ink2,
-          }}>{f.label}</button>
-        ))}
-      </div>
+      {/* Dropdown mode */}
+      <VitrineDropdown activeMode={activeMode} onChange={setActiveMode} />
 
-      {loadingPosts ? (
-        <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
-          Aucun contenu pour l'instant.
-        </div>
-      ) : (activeFilter === "photos" || activeFilter === "galerie") ? (
-        /* ── Grille photos ── */
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
-          {filtered.map(post => (
-            <div
-              key={post.id}
-              onClick={() => setSelectedPost(post)}
-              style={{ aspectRatio: "1", overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill }}
-            >
-              <img src={post.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              {/* Badge fiche produit */}
-              {(post.product_label || post.product_price) && (
-                <div style={{ position: "absolute", bottom: 4, right: 4, background: C.pro, borderRadius: 6, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff" }}>✦</div>
-              )}
-              {/* Badge bon plan */}
-              {post.post_type === "bonplan" && (
-                <div style={{ position: "absolute", top: 4, left: 4, background: C.accent, borderRadius: 6, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff" }}>🎁</div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        /* ── Liste cartes complètes ── */
+      {/* ── Mode DÉFIS ── */}
+      {activeMode === "defis" && (
         <div style={{ padding: "0 16px" }}>
-          {filtered.map(post => (
-            <VitrinePostCard
-              key={post.id}
-              post={post}
-              userId={user?.id}
-              comId={com.id}
-              isOwner={isOwner}
-              onEnrich={() => setEnrichingPost(post)}
-            />
-          ))}
+          {loadingDefis ? (
+            <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+          ) : defis.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
+              Aucun défi lancé pour l'instant.
+            </div>
+          ) : (
+            <>
+              {defisEnCours.length > 0 && (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: dm, marginBottom: 10, marginTop: 4 }}>
+                    🏆 Défis en cours
+                  </div>
+                  {defisEnCours.map(d => <DefiVitrine key={d.id} defi={d} />)}
+                </>
+              )}
+              {defisTermines.length > 0 && (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: dm, marginBottom: 10, marginTop: defisEnCours.length > 0 ? 16 : 4 }}>
+                    🏁 Défis terminés
+                  </div>
+                  {defisTermines.map(d => <DefiVitrine key={d.id} defi={d} />)}
+                </>
+              )}
+            </>
+          )}
         </div>
       )}
 
-      {/* Modal détail photo (clic sur la grille) */}
+      {/* ── Mode GALERIE ── */}
+      {activeMode === "galerie" && (
+        loadingPosts ? (
+          <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+        ) : photoPosts.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>Aucune photo pour l'instant.</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
+            {photoPosts.map((post, idx) => (
+              <div
+                key={post.id}
+                onClick={() => setLightboxIndex(idx)}
+                style={{ aspectRatio: "1", overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill }}
+              >
+                <img src={post.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                {(post.product_label || post.product_price) && (
+                  <div style={{ position: "absolute", bottom: 4, right: 4, background: C.pro, borderRadius: 6, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff" }}>✦</div>
+                )}
+                {(post.post_type === "bonplan" || post.post_type === "promo") && (
+                  <div style={{ position: "absolute", top: 4, left: 4, background: C.accent, borderRadius: 6, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff" }}>🎁</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* ── Mode TOUT, CARTES, PROMOS ── */}
+      {(activeMode === "tout" || activeMode === "cartes" || activeMode === "promos") && (
+        loadingPosts ? (
+          <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
+            {activeMode === "promos" ? "Aucune promo pour l'instant." : "Aucun contenu pour l'instant."}
+          </div>
+        ) : (
+          <div style={{ padding: "0 16px" }}>
+            {filtered.map(post => (
+              <VitrinePostCard
+                key={post.id}
+                post={post}
+                userId={user?.id}
+                comId={com.id}
+                isOwner={isOwner}
+                onEnrich={() => setEnrichingPost(post)}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Lightbox galerie swipeable */}
+      {lightboxIndex !== null && photoPosts.length > 0 && (() => {
+        const prev = () => setLightboxIndex(i => Math.max(0, i - 1));
+        const next = () => setLightboxIndex(i => Math.min(photoPosts.length - 1, i + 1));
+        const photo = photoPosts[lightboxIndex];
+        return (
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 200, background: "#000", display: "flex", flexDirection: "column" }}
+            onTouchStart={e => { touchXVit.current = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              if (touchXVit.current === null) return;
+              const dx = e.changedTouches[0].clientX - touchXVit.current;
+              touchXVit.current = null;
+              if (dx > 60) prev(); else if (dx < -60) next();
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", flexShrink: 0 }}>
+              <button onClick={() => setLightboxIndex(null)} style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "#fff" }}>{lightboxIndex + 1} / {photoPosts.length}</div>
+              <div style={{ width: 36 }} />
+            </div>
+            <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+              {photo?.image_url && <img src={photo.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />}
+              {lightboxIndex > 0 && <button onClick={prev} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>}
+              {lightboxIndex < photoPosts.length - 1 && <button onClick={next} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>}
+              {photoPosts.length > 1 && (
+                <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 4 }}>
+                  {photoPosts.map((_, i) => <div key={i} onClick={() => setLightboxIndex(i)} style={{ width: i === lightboxIndex ? 18 : 6, height: 6, borderRadius: 3, background: i === lightboxIndex ? C.accent : "rgba(255,255,255,0.35)", transition: "all 0.2s", cursor: "pointer" }} />)}
+                </div>
+              )}
+            </div>
+            {photo && (
+              <div style={{ background: C.card, borderRadius: "20px 20px 0 0", padding: "14px 18px 32px", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Avatar pseudo={photo.profiles?.pseudo} avatarUrl={photo.profiles?.avatar_url} size={34} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>{photo.profiles?.pseudo || "Voisin·e"}</div>
+                    {photo.content && <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{photo.content}</div>}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Modal détail post (mode cartes/tout) */}
       {selectedPost && (
         <PostDetailModal
           post={selectedPost}
@@ -1114,6 +1303,16 @@ function VitrineScreen({ com, onBack, user }) {
   const [realPosts, setRealPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [realPostCount, setRealPostCount] = useState(null);
+  const [followersCount, setFollowersCount] = useState(null);
+  const [reactionsCount, setReactionsCount] = useState(null);
+
+  useEffect(() => {
+    if (!com.id) return;
+    // Abonnés
+    supabase.from("follows").select("id", { count: "exact", head: true })
+      .eq("following_id", com.id)
+      .then(({ count }) => setFollowersCount(count ?? 0));
+  }, [com.id]);
 
   useEffect(() => {
     if (!com.id) return;
@@ -1153,6 +1352,16 @@ function VitrineScreen({ com, onBack, user }) {
       setRealPosts(allPosts);
       setRealPostCount(allPosts.length);
       setLoadingPosts(false);
+
+      // Réactions totales
+      if (allPosts.length > 0) {
+        const ids = allPosts.map(p => p.id);
+        supabase.from("post_reactions").select("id", { count: "exact", head: true })
+          .in("post_id", ids)
+          .then(({ count }) => setReactionsCount(count ?? 0));
+      } else {
+        setReactionsCount(0);
+      }
     }
 
     loadPosts();
@@ -1177,9 +1386,14 @@ function VitrineScreen({ com, onBack, user }) {
 
         {/* Stats */}
         <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.card }}>
-          {[{ n: com.vues, l: "vues" }, { n: com.int, l: "intéressés" }, { n: displayPosts, l: "posts" }].map((s, i) => (
+          {[
+            { n: displayPosts,                   l: "posts",     icon: "📸" },
+            { n: reactionsCount ?? "—",          l: "réactions", icon: "❤️" },
+            { n: followersCount ?? "—",          l: "abonnés",   icon: "👥" },
+          ].map((s, i) => (
             <div key={i} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: i < 2 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink }}>{s.n}</div>
+              <div style={{ fontSize: 11, marginBottom: 2 }}>{s.icon}</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>{s.n}</div>
               <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
             </div>
           ))}
