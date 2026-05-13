@@ -467,12 +467,23 @@ function BandeauDefis({ setPage, user }) {
                   <div style={{ background: "#EBF5F0", border: "1.5px solid #0A3D2E44", borderRadius: 16, padding: "12px 14px", marginBottom: 20 }}>
                     <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, color: "#0A3D2E", marginBottom: 4 }}>✅ Entièrement gratuit</div>
                     <div style={{ fontSize: 12, color: "#1A5C40", lineHeight: 1.6 }}>
-                      L'inscription et la création de ta vitrine sont <b>100% gratuites</b>. Contacte-nous pour être parmi les premiers commerçants sur Chipeur !
+                      L'inscription et la création de ta vitrine sont <b>100% gratuites</b>. Sois parmi les premiers commerçants sur Chipeur !
                     </div>
                   </div>
 
-                  <button onClick={() => setShowMerchantInfo(false)} style={{ width: "100%", background: "#0A3D2E", color: "#fff", border: "none", borderRadius: 16, padding: 14, fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}>Je veux ma vitrine ! 🏪</button>
-                  <button onClick={() => setShowMerchantInfo(false)} style={{ width: "100%", background: "transparent", color: "#6B6660", border: "none", fontSize: 13, cursor: "pointer", fontFamily: "'Syne', sans-serif" }}>Pas maintenant</button>
+                  {/* CTA principal : créer son compte */}
+                  <button
+                    onClick={() => { setShowMerchantInfo(false); setPage("inscription"); }}
+                    style={{ width: "100%", background: "#0A3D2E", color: "#fff", border: "none", borderRadius: 16, padding: 14, fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}
+                  >Je crée mon compte commerçant 🏪</button>
+
+                  {/* CTA secondaire : contact par mail */}
+                  <a
+                    href="mailto:jennytassotto@gmail.com?subject=Chipeur%20-%20Je%20veux%20ma%20vitrine&body=Bonjour%2C%0A%0AJe%20suis%20int%C3%A9ress%C3%A9%28e%29%20par%20Chipeur%20pour%20mon%20commerce.%0A%0AMon%20commerce%20:%20%0AMon%20t%C3%A9l%C3%A9phone%20:%20%0A%0AMerci%20!"
+                    style={{ display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", background: "transparent", color: "#0A3D2E", border: "1.5px solid #0A3D2E44", borderRadius: 16, padding: 13, fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer", textDecoration: "none", marginBottom: 10 }}
+                  >📩 Nous contacter pour en savoir plus</a>
+
+                  <button onClick={() => setShowMerchantInfo(false)} style={{ width: "100%", background: "transparent", color: "#6B6660", border: "none", fontSize: 12, cursor: "pointer", fontFamily: "'Syne', sans-serif", padding: "6px 0" }}>Pas maintenant</button>
                 </>
               )}
             </div>
