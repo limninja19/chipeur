@@ -563,6 +563,7 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
   const [reactionsByType, setReactionsByType] = useState({});
   const [uniqueUsers, setUniqueUsers] = useState(0);
   const [topPosts, setTopPosts] = useState([]);
+  const [recoCount, setRecoCount] = useState(0);
 
   useEffect(() => { if (userId) loadData(); }, [period, userId]);
 
@@ -651,6 +652,15 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
       setTotalReactions(0); setReactionsByType({}); setUniqueUsers(0); setTopPosts([]);
     }
 
+    // Recommandations "Je cherche" reçues (toutes périodes)
+    if (userId) {
+      const { count } = await supabase
+        .from("post_recommendations")
+        .select("id", { count: "exact", head: true })
+        .eq("magasin_id", userId);
+      setRecoCount(count || 0);
+    }
+
     setLoading(false);
   };
 
@@ -694,13 +704,14 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
         </div>
       )}
 
-      {/* ── 4 CARTES MÉTRIQUES ── */}
+      {/* ── 5 CARTES MÉTRIQUES ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
         {[
           { v: postCount != null ? String(postCount) : "—", l: "Posts publiés",      icon: "📸", color: C.ink },
           { v: String(totalReactions),                       l: "Réactions reçues",   icon: "⚡", color: C.accent },
           { v: String(uniqueUsers),                          l: "Voisins engagés",    icon: "👥", color: "#7C3AED" },
           { v: String(intentionCount),                       l: "\"Je le veux\"",     icon: "🛒", color: C.pro },
+          { v: String(recoCount),                            l: "Je cherche · Recos", icon: "🔍", color: "#0369A1" },
         ].map((r, i) => (
           <div key={i} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "10px 12px" }}>
             <div style={{ fontSize: 16, marginBottom: 3 }}>{r.icon}</div>
@@ -1159,8 +1170,34 @@ function TabMentions({ pseudo, userId, merchantName }) {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(null);
   const [claimed, setClaimed] = useState(new Set());
+  const [recherchePosts, setRecherchePosts] = useState([]);
+  const [loadingReco, setLoadingReco] = useState(true);
 
   const normalize = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+
+  useEffect(() => {
+    if (!userId) return;
+    // Charger les recommandations "Je cherche" reçues
+    supabase.from("post_recommendations")
+      .select("id, magasin_nom, created_at, post_id, posts(id, content, created_at, profiles:author_id(pseudo, avatar_url))")
+      .eq("magasin_id", userId)
+      .order("created_at", { ascending: false })
+      .then(async ({ data: recos }) => {
+        if (!recos || recos.length === 0) { setLoadingReco(false); return; }
+        // Récupérer les votes pour chaque reco
+        const ids = recos.map(r => r.id);
+        const { data: votes } = await supabase
+          .from("recommendation_votes").select("recommendation_id, vote")
+          .in("recommendation_id", ids);
+        const voteData = votes || [];
+        setRecherchePosts(recos.map(r => ({
+          ...r,
+          up_count:   voteData.filter(v => v.recommendation_id === r.id && v.vote === "up").length,
+          down_count: voteData.filter(v => v.recommendation_id === r.id && v.vote === "down").length,
+        })));
+        setLoadingReco(false);
+      });
+  }, [userId]);
 
   useEffect(() => {
     if (!pseudo) return;
@@ -1209,6 +1246,45 @@ function TabMentions({ pseudo, userId, merchantName }) {
     <div style={{ padding: "16px 0 32px" }}>
       {/* Bloc XP — contexte pour le commerçant */}
       <MerchantXpBlock userId={userId} merchantName={merchantName} />
+
+      {/* ── SECTION "JE CHERCHE" ── */}
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 4 }}>🔍 Recommandé sur des "Je cherche"</div>
+      <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10, lineHeight: 1.5 }}>
+        Des voisins t'ont recommandé en réponse à des demandes. Voici les posts où ton commerce a été cité.
+      </div>
+      {loadingReco ? (
+        <div style={{ textAlign: "center", padding: "12px 0", color: C.ink2, fontSize: 12 }}>Chargement…</div>
+      ) : recherchePosts.length === 0 ? (
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "16px", textAlign: "center", marginBottom: 18 }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>🔍</div>
+          <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Aucune recommandation reçue pour l'instant.<br />Quand un voisin te recommandera sur un post "Je cherche", ça apparaîtra ici.</div>
+        </div>
+      ) : (
+        <div style={{ marginBottom: 20 }}>
+          {recherchePosts.map(reco => (
+            <div key={reco.id} style={{ background: "#EFF6FF", borderRadius: 14, border: "1.5px solid #BAE6FD", padding: "10px 12px", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <span style={{ fontSize: 20, flexShrink: 0 }}>🏪</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#0369A1", marginBottom: 2 }}>Recommandé par {reco.posts?.profiles?.pseudo || "un voisin"}</div>
+                  {reco.posts?.content && (
+                    <div style={{ fontSize: 11, color: C.ink2, marginBottom: 6, lineHeight: 1.4 }}>
+                      "{reco.posts.content.slice(0, 80)}{reco.posts.content.length > 80 ? "…" : ""}"
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>👍 {reco.up_count}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#E53935" }}>👎 {reco.down_count}</span>
+                    <span style={{ fontSize: 10, color: C.ink2, marginLeft: "auto" }}>
+                      {new Date(reco.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 4 }}>Posts te mentionnant</div>
       <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16, lineHeight: 1.5 }}>
