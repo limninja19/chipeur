@@ -1586,6 +1586,23 @@ export default function ChipeurCommerces({ setPage, user }) {
                   </div>
                 )}
 
+                {/* ── Section DÉMO en premier ── */}
+                {!search && (
+                  <div style={{ padding: "8px 16px 4px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                      ✨ Exemple de vitrine
+                      <div style={{ flex: 1, height: 1, background: "rgba(255,87,51,0.2)" }} />
+                      <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0, color: C.ink2 }}>aperçu</span>
+                    </div>
+                    <div style={{ position: "relative" }}>
+                      <ComCard com={DEMO_COMMERCE} onClick={() => { setSelectedCom(DEMO_COMMERCE); setScreen("vitrine"); }} />
+                      <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, background: "rgba(26,23,20,0.7)", borderRadius: 10, padding: "7px 12px", textAlign: "center" }}>
+                        <span style={{ fontSize: 11, color: "#fff", fontWeight: 600, fontFamily: dm }}>👆 Voir à quoi ressemble une vitrine complète</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* ── Bandeau "bientôt" si peu de contenu ── */}
                 {!search && realMerchants.length > 0 && realMerchants.length < 8 && (
                   <div style={{ margin: "4px 16px 4px", background: C.proBg, border: `1px solid rgba(10,61,46,0.12)`, borderRadius: 16, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -1598,7 +1615,7 @@ export default function ChipeurCommerces({ setPage, user }) {
                 )}
 
                 {/* ── Liste boutiques ── */}
-                <div style={{ padding: "8px 16px 4px" }}>
+                <div style={{ padding: "8px 16px 80px" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                     🏪 Les boutiques
                     <div style={{ flex: 1, height: 1, background: C.border }} />
@@ -1617,23 +1634,6 @@ export default function ChipeurCommerces({ setPage, user }) {
                     ))
                   )}
                 </div>
-
-                {/* ── Section DÉMO (toujours visible si pas de recherche) ── */}
-                {!search && (
-                  <div style={{ padding: "4px 16px 80px" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                      ✨ Exemple de vitrine
-                      <div style={{ flex: 1, height: 1, background: "rgba(255,87,51,0.2)" }} />
-                      <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0, color: C.ink2 }}>aperçu</span>
-                    </div>
-                    <div style={{ position: "relative" }}>
-                      <ComCard com={DEMO_COMMERCE} onClick={() => { setSelectedCom(DEMO_COMMERCE); setScreen("vitrine"); }} />
-                      <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, background: "rgba(26,23,20,0.7)", borderRadius: 10, padding: "7px 12px", textAlign: "center" }}>
-                        <span style={{ fontSize: 11, color: "#fff", fontWeight: 600, fontFamily: dm }}>👆 Voir à quoi ressemble une vitrine complète</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </>
             )}
           </div>
