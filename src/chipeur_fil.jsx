@@ -128,13 +128,14 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
 
 // ─── FIL DROPDOWN FILTRE (multi-sélection) ───
 const CHIPS = [
-  { id: "all",        label: "Tout le fil",      nav: null      },
-  { id: "nearby",     label: "📍 Autour de moi", nav: null      },
-  { id: "chope",      label: "Chope",             nav: null      },
-  { id: "lieux",      label: "Lieux",             nav: null      },
-  { id: "bons_plans", label: "Bons plans",        nav: null      },
-  { id: "defis",      label: "🏆 Défis",          nav: "defis"   },
-  { id: "evenements", label: "📅 Événements",     nav: "sorties" },
+  { id: "all",        label: "Tout le fil",        nav: null      },
+  { id: "nearby",     label: "📍 Autour de moi",   nav: null      },
+  { id: "chope",      label: "Chope",               nav: null      },
+  { id: "lieux",      label: "Lieux",               nav: null      },
+  { id: "bons_plans", label: "Bons plans",          nav: null      },
+  { id: "tuvalides",  label: "🤔 Tu valides !!!",   nav: null      },
+  { id: "defis",      label: "🏆 Défis photos",     nav: null      },
+  { id: "evenements", label: "📅 Événements",       nav: "sorties" },
 ];
 
 function FilDropdown({ active, onToggle, setPage }) {
@@ -1359,7 +1360,7 @@ function BandeauTuValides({ user }) {
         fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
         letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
       }}>
-        🤔 Tu valides ?!
+        🤔 Tu valides !!!
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
       {posts.map(p => <TuValidesCard key={p.id} post={p} user={user} />)}
@@ -1446,41 +1447,53 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
 
   const loadPosts = async () => {
     setLoading(true);
+    setFetchError(null);
     const nearbyOn = activeFilters.has("nearby");
 
-    // IDs des défis voisins (leurs photos apparaissent dans le fil)
+    // ── Filtre "Tu valides !!!" : uniquement les posts tuvalides ──
+    if (activeFilters.has("tuvalides")) {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*, profiles(id, pseudo, avatar_url, role), link_url")
+        .eq("post_type", "tuvalides")
+        .order("created_at", { ascending: false });
+      if (error) setFetchError(error.message);
+      setPosts(data || []);
+      setLoading(false);
+      return;
+    }
+
+    // ── Filtre "Défis photos" : uniquement les photos soumises aux défis ──
+    if (activeFilters.has("defis")) {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*, profiles(id, pseudo, avatar_url, role), link_url")
+        .eq("post_type", "defi_photo")
+        .order("created_at", { ascending: false });
+      if (error) setFetchError(error.message);
+      setPosts(data || []);
+      setLoading(false);
+      return;
+    }
+
+    // ── Fil normal (exclut tuvalides et defi_photo du flux principal) ──
+    // IDs des défis voisins (leurs photos sont exclues du fil normal)
     const { data: voisinDefis } = await supabase
       .from("defis").select("id").eq("type", "voisin");
     const voisinDefiIds = (voisinDefis || []).map(d => d.id);
 
-    // Posts normaux (sans defi_photo, sans événement)
     let q = supabase
       .from("posts")
       .select("*, profiles(id, pseudo, avatar_url, role), link_url")
       .neq("post_type", "defi_photo")
+      .neq("post_type", "tuvalides")
       .is("evenement_id", null)
       .order("created_at", { ascending: false });
     if (nearbyOn) q = q.in("location", BASIN_CITIES);
     const { data: mainPosts, error } = await q;
 
-    // Photos soumises aux défis voisins
-    let voisinPosts = [];
-    if (voisinDefiIds.length > 0) {
-      const { data: vp } = await supabase
-        .from("posts")
-        .select("*, profiles(id, pseudo, avatar_url, role), link_url")
-        .eq("post_type", "defi_photo")
-        .in("defi_id", voisinDefiIds)
-        .order("created_at", { ascending: false });
-      voisinPosts = vp || [];
-    }
-
-    // Fusionner et trier par date
-    const all = [...(mainPosts || []), ...voisinPosts]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
     if (error) { setFetchError(error.message); console.error("Posts error:", error); }
-    setPosts(all);
+    setPosts(mainPosts || []);
     setLoading(false);
   };
 
@@ -1539,9 +1552,11 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
             <div style={{ fontSize: 13, color: C.ink2 }}>Sois le premier à partager une trouvaille de ton quartier !</div>
           </div>
         ) : (
-          filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} user={user} requireAuth={requireAuth} />
-          ))
+          filteredPosts.map((post) =>
+            post.post_type === "tuvalides"
+              ? <TuValidesCard key={post.id} post={post} user={user} />
+              : <PostCard key={post.id} post={post} setPage={setPage} userId={user?.id} setSelectedVoisinId={setSelectedVoisinId} user={user} requireAuth={requireAuth} />
+          )
         )}
       </div>
       <BottomNav active="fil" onNavigate={setPage} onFab={() => setPage("nouveau")} />

@@ -910,11 +910,13 @@ const VITRINE_MODES = [
   { id: "cartes",  label: "🃏 Cartes" },
   { id: "promos",  label: "🎁 Promos" },
   { id: "defis",   label: "🏆 Défis" },
+  { id: "postes",  label: "📬 Posts liés", ownerOnly: true },
 ];
 
-function VitrineDropdown({ activeMode, onChange }) {
+function VitrineDropdown({ activeMode, onChange, isOwner }) {
   const [open, setOpen] = useState(false);
-  const current = VITRINE_MODES.find(m => m.id === activeMode) || VITRINE_MODES[0];
+  const visibleModes = VITRINE_MODES.filter(m => !m.ownerOnly || isOwner);
+  const current = visibleModes.find(m => m.id === activeMode) || visibleModes[0];
   return (
     <div style={{ position: "relative", padding: "12px 16px 8px", zIndex: 20 }}>
       <button
@@ -937,7 +939,7 @@ function VitrineDropdown({ activeMode, onChange }) {
             background: C.card, borderRadius: 14, border: `1px solid ${C.border}`,
             boxShadow: "0 4px 20px rgba(0,0,0,0.1)", overflow: "hidden",
           }}>
-            {VITRINE_MODES.map((m, i) => (
+            {visibleModes.map((m, i) => (
               <div
                 key={m.id}
                 onClick={() => { onChange(m.id); setOpen(false); }}
@@ -947,7 +949,7 @@ function VitrineDropdown({ activeMode, onChange }) {
                   color: m.id === activeMode ? C.accent : C.ink,
                   background: m.id === activeMode ? "rgba(255,87,51,0.05)" : "transparent",
                   cursor: "pointer", fontFamily: dm, display: "flex", alignItems: "center", justifyContent: "space-between",
-                  borderBottom: i < VITRINE_MODES.length - 1 ? `1px solid ${C.border}` : "none",
+                  borderBottom: i < visibleModes.length - 1 ? `1px solid ${C.border}` : "none",
                 }}
               >
                 {m.label}
@@ -1021,6 +1023,8 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const [enrichingPost, setEnrichingPost] = useState(null);
   const [defis, setDefis] = useState(demoDefis || []);
   const [loadingDefis, setLoadingDefis] = useState(false);
+  const [linkedPosts, setLinkedPosts] = useState([]);
+  const [loadingLinked, setLoadingLinked] = useState(false);
   const touchXVit = useRef(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
@@ -1034,6 +1038,53 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
       .order("created_at", { ascending: false })
       .then(({ data }) => { setDefis(data || []); setLoadingDefis(false); });
   }, [activeMode, com.id]);
+
+  // Charger les posts liés quand on passe en mode "postes" (owner seulement)
+  useEffect(() => {
+    if (com.isDemo || activeMode !== "postes") return;
+    setLoadingLinked(true);
+    supabase.from("posts")
+      .select("*, profiles(id, pseudo, avatar_url)")
+      .eq("magasin_id", com.id)
+      .in("linked_status", ["pending", "accepted"])
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { setLinkedPosts(data || []); setLoadingLinked(false); });
+  }, [activeMode, com.id]);
+
+  const handleAcceptPost = async (post) => {
+    // 1. Mettre à jour le statut du post
+    await supabase.from("posts").update({ linked_status: "accepted" }).eq("id", post.id);
+    // 2. Créditer 10 XP dans le wallet merchant
+    const { data: existing } = await supabase
+      .from("merchant_xp_wallet")
+      .select("id, points")
+      .eq("user_id", post.author_id)
+      .eq("merchant_id", com.id)
+      .maybeSingle();
+    if (existing) {
+      await supabase.from("merchant_xp_wallet")
+        .update({ points: existing.points + 10, updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("merchant_xp_wallet")
+        .insert({ user_id: post.author_id, merchant_id: com.id, points: 10 });
+    }
+    // 3. Notifier l'auteur
+    await supabase.from("notifications").insert({
+      user_id: post.author_id,
+      from_user_id: com.id,
+      type: "linked_accepted",
+      reference_id: post.id,
+      read: false,
+    });
+    // 4. Mettre à jour l'état local
+    setLinkedPosts(prev => prev.map(p => p.id === post.id ? { ...p, linked_status: "accepted" } : p));
+  };
+
+  const handleRejectPost = async (post) => {
+    await supabase.from("posts").update({ linked_status: "rejected" }).eq("id", post.id);
+    setLinkedPosts(prev => prev.filter(p => p.id !== post.id));
+  };
 
   const isOwner = user?.id === com.id;
 
@@ -1050,7 +1101,84 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   return (
     <div style={{ padding: "0 0 100px" }}>
       {/* Dropdown mode */}
-      <VitrineDropdown activeMode={activeMode} onChange={setActiveMode} />
+      <VitrineDropdown activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} />
+
+      {/* ── Mode POSTS LIÉS (owner seulement) ── */}
+      {activeMode === "postes" && isOwner && (
+        <div style={{ padding: "0 16px" }}>
+          {loadingLinked ? (
+            <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+          ) : linkedPosts.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 16px" }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>📬</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun post lié pour l'instant</div>
+              <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Quand un voisin vous mentionne dans un post, il apparaîtra ici pour validation.</div>
+            </div>
+          ) : (
+            <>
+              {/* Compteur en attente */}
+              {linkedPosts.filter(p => p.linked_status === "pending").length > 0 && (
+                <div style={{ background: "rgba(255,87,51,0.08)", border: "1.5px solid rgba(255,87,51,0.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: C.accent, fontWeight: 600 }}>
+                  📬 {linkedPosts.filter(p => p.linked_status === "pending").length} post{linkedPosts.filter(p => p.linked_status === "pending").length > 1 ? "s" : ""} en attente de validation
+                </div>
+              )}
+              {linkedPosts.map(post => (
+                <div key={post.id} style={{
+                  background: C.card, borderRadius: 18, border: `1.5px solid ${post.linked_status === "accepted" ? "rgba(10,61,46,0.3)" : C.border}`,
+                  marginBottom: 12, overflow: "hidden",
+                }}>
+                  {post.image_url && (
+                    <div style={{ width: "100%", height: 160, overflow: "hidden", position: "relative" }}>
+                      <img src={post.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      {post.post_type && (
+                        <div style={{ position: "absolute", top: 8, left: 8, background: "rgba(0,0,0,0.55)", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700, color: "#fff" }}>
+                          {post.post_type === "tuvalides" ? "🤔 Tu valides !!!" : post.post_type === "decouverte" ? "🛍️ Chope" : "💡 Post"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ padding: "12px 14px" }}>
+                    {/* Auteur */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+                        {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} /> : "👤"}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink }}>{post.profiles?.pseudo || "Voisin·e"}</div>
+                        <div style={{ fontSize: 10, color: C.ink2 }}>
+                          {new Date(post.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                        </div>
+                      </div>
+                      {/* Badge statut */}
+                      {post.linked_status === "accepted" && (
+                        <div style={{ background: C.proBg, color: C.pro, fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 8 }}>✓ Accepté · +10 XP</div>
+                      )}
+                    </div>
+                    {post.content && (
+                      <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5, marginBottom: 10 }}>{post.content}</div>
+                    )}
+                    {/* Actions */}
+                    {post.linked_status === "pending" && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <button onClick={() => handleAcceptPost(post)} style={{
+                          border: "none", borderRadius: 12, padding: "10px 0",
+                          background: C.pro, color: "#fff",
+                          fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: dm,
+                        }}>✓ Accepter · +10 XP</button>
+                        <button onClick={() => handleRejectPost(post)} style={{
+                          border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 0",
+                          background: C.card, color: C.ink2,
+                          fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: dm,
+                        }}>✕ Refuser</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── Mode DÉFIS ── */}
       {activeMode === "defis" && (

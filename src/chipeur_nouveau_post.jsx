@@ -617,7 +617,7 @@ function SuccessScreen({ type, onBack }) {
 // ─── FORM TU VALIDES ?! ───
 const TV_CATS = ["👗 Mode","👟 Chaussures","🏠 Déco","💄 Beauté","📱 Tech","🎒 Accessoires","🍳 Cuisine","✨ Autre"];
 
-function FormTuValides({ content, onChange, onPhotoSelect, photoPreview, tvCat, onCatChange }) {
+function FormTuValides({ content, onChange, onPhotoSelect, photoPreview, tvCat, onCatChange, magasinId, magasinNom, onMagasinSelect, onMagasinNom }) {
   return (
     <div>
       <div style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#6D28D9", lineHeight: 1.5 }}>
@@ -625,7 +625,7 @@ function FormTuValides({ content, onChange, onPhotoSelect, photoPreview, tvCat, 
       </div>
       <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-tuvalides" externalPreview={photoPreview} />
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 8, display: "block" }}>Catégorie</label>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 8, display: "block" }}>Catégorie (optionnel)</label>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {TV_CATS.map(cat => {
             const on = tvCat === cat;
@@ -640,6 +640,10 @@ function FormTuValides({ content, onChange, onPhotoSelect, photoPreview, tvCat, 
             );
           })}
         </div>
+      </div>
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
+        <MagLink selectedId={magasinId} selectedNom={magasinNom} onSelect={onMagasinSelect} onSelectNom={onMagasinNom} />
       </div>
       <div>
         <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Dis-nous en plus (optionnel)</label>
@@ -759,7 +763,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
     { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir autour de toi",        grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
   ] : [
     { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un achat, un instant sympa, une trouvaille du jour",         grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
-    { id: "tuvalides",   icon: "🤔", name: "Tu valides ?", desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "linear-gradient(135deg,#8B5CF6,#C4B5FD)", light: "#F5F3FF" },
+    { id: "tuvalides",   icon: "🤔", name: "Tu valides !!!", desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "linear-gradient(135deg,#8B5CF6,#C4B5FD)", light: "#F5F3FF" },
     { id: "recherche",   icon: "🔍", name: "Je cherche",   desc: "Tu cherches un artisan, un service, un produit ?",           grad: "linear-gradient(135deg,#0EA5E9,#38BDF8)", light: "#F0F9FF" },
     { id: "bonplan",     icon: "💡", name: "Je recommande",desc: "Une adresse top, un bon plan à ne pas rater",                grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
     { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir aux voisins",          grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
@@ -874,6 +878,9 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
         post_type: "tuvalides",
         location: profile?.quartier || "Saint-Dié-des-Vosges",
         tags: tvCat ? [tvCat] : [],
+        magasin_id: magasinId || null,
+        magasin_nom: magasinNom || null,
+        linked_status: magasinId ? "pending" : null,
       });
       setPublishing(false);
       if (error) { setPublishError("Erreur : " + error.message); return; }
@@ -1016,6 +1023,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       post_type: selectedType, // "decouverte" ou "bonplan"
       magasin_id: magasinId || null,
       magasin_nom: magasinNom || null,
+      linked_status: magasinId ? "pending" : null,
       link_url: (linkUrl.trim().startsWith("http://") || linkUrl.trim().startsWith("https://")) ? linkUrl.trim() : null,
     });
     setPublishing(false);
@@ -1089,6 +1097,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       content={content} onChange={setContent}
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
       tvCat={tvCat} onCatChange={setTvCat}
+      magasinId={magasinId} magasinNom={magasinNom} onMagasinSelect={setMagasinId} onMagasinNom={setMagasinNom}
     />,
     recherche: <FormRecherche
       content={content} onChange={setContent}

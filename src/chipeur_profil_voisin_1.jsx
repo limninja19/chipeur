@@ -466,6 +466,75 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
           <div style={{ background: C.accent, color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 10, flexShrink: 0 }}>→</div>
         </div>
       </div>
+
+      {/* Crédits locaux */}
+      <MesCreditsLocaux userId={user?.id} />
+    </div>
+  );
+}
+
+// ─── MES CRÉDITS LOCAUX ───
+function MesCreditsLocaux({ userId }) {
+  const [wallet, setWallet] = useState([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("merchant_xp_wallet")
+      .select("points, merchant_id, profiles:merchant_id(pseudo, avatar_url)")
+      .eq("user_id", userId)
+      .gt("points", 0)
+      .order("points", { ascending: false })
+      .then(({ data }) => setWallet(data || []));
+  }, [userId]);
+
+  if (!wallet.length) return null;
+
+  return (
+    <div style={{ padding: "10px 16px 0" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        🏪 Mes crédits locaux
+        <div style={{ flex: 1, height: 1, background: "rgba(26,23,20,0.08)" }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {wallet.map((w, i) => {
+          const euros = (w.points / 100).toFixed(2);
+          const disponible = w.points >= 100;
+          return (
+            <div key={i} style={{
+              background: disponible ? C.proBg : C.card,
+              border: `1.5px solid ${disponible ? "rgba(10,61,46,0.25)" : "rgba(26,23,20,0.08)"}`,
+              borderRadius: 14, padding: "10px 14px",
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: disponible ? C.pro : C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                🏪
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {w.profiles?.pseudo || "Commerce"}
+                </div>
+                <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>
+                  {w.points} XP accumulés
+                </div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 15, color: disponible ? C.pro : C.ink }}>
+                  {euros} €
+                </div>
+                {disponible && (
+                  <div style={{ fontSize: 9, fontWeight: 700, color: C.pro, background: "rgba(10,61,46,0.12)", borderRadius: 6, padding: "2px 6px", marginTop: 2 }}>
+                    DISPONIBLE
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", paddingBottom: 4 }}>
+          100 XP = 1 € · Présente ton profil en boutique pour en bénéficier
+        </div>
+      </div>
     </div>
   );
 }
