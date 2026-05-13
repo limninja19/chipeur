@@ -367,7 +367,10 @@ function FormDecouverte({ content, onChange, onPhotoSelect, photoPreview, active
         </div>
       </div>
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2 }}>Lier à un magasin (optionnel)</label>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#B45309", background: "#FFF8E8", padding: "2px 8px", borderRadius: 10 }}>🏅 +10 XP si accepté</span>
+        </div>
         <MagLink selectedId={magasinId} selectedNom={magasinNom} onSelect={onMagasinSelect} onSelectNom={onMagasinNom} />
       </div>
       <div style={{ marginBottom: 14 }}>
@@ -491,7 +494,10 @@ function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTag
         }} />
       </div>
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: C.ink2 }}>Lier à un magasin (optionnel)</label>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#B45309", background: "#FFF8E8", padding: "2px 8px", borderRadius: 10 }}>🏅 +10 XP si accepté</span>
+        </div>
         <MagLink selectedId={magasinId} selectedNom={magasinNom} onSelect={onMagasinSelect} onSelectNom={onMagasinNom} />
       </div>
       <div style={{ marginBottom: 14 }}>
@@ -643,7 +649,10 @@ function FormTuValides({ content, onChange, onPhotoSelect, photoPreview, tvCat, 
         </div>
       </div>
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Lier à un magasin (optionnel)</label>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560" }}>Lier à un magasin (optionnel)</label>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#B45309", background: "#FFF8E8", padding: "2px 8px", borderRadius: 10 }}>🏅 +10 XP si accepté</span>
+        </div>
         <MagLink selectedId={magasinId} selectedNom={magasinNom} onSelect={onMagasinSelect} onSelectNom={onMagasinNom} />
       </div>
       <div>
