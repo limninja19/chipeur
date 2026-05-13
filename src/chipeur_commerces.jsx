@@ -369,7 +369,6 @@ function FeaturedCard({ com, onClick }) {
         <img src={com.cover} alt={com.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, rgba(26,23,20,0.6))" }} />
         <div style={{ position: "absolute", top: 10, left: 10, background: "rgba(255,87,51,0.9)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8 }}>✦ Sponsorisé</div>
-        <div style={{ position: "absolute", top: 10, right: 10, background: com.planBg, color: com.planColor, fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8 }}>{com.plan}</div>
         <div style={{ position: "absolute", bottom: 10, left: 12 }}>
           <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", lineHeight: 1 }}>{com.name}</div>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", marginTop: 3 }}>{com.shortCat}</div>
@@ -391,22 +390,76 @@ function FeaturedCard({ com, onClick }) {
 
 // ─── CARTE COMMERCE ───
 function ComCard({ com, onClick }) {
+  // Chips de spécialités (max 3) depuis le champ metier stocké en CSV
+  const specs = com.metier
+    ? com.metier.split(",").map(s => s.trim()).filter(Boolean).slice(0, 3)
+    : [];
+
+  // Emoji du thème détecté
+  const themeEmoji = (() => {
+    const h = [com.categorie, com.category, com.metier].filter(Boolean).join(" ").toLowerCase();
+    for (const t of THEMES) {
+      if (t.key === "Tous" || t.isAutre) continue;
+      if (t.match.some(m => h.includes(m))) return t.emoji;
+    }
+    return "🏪";
+  })();
+
+  const catShort = catLabel(com.categorie || com.category || "");
+
   return (
-    <div onClick={onClick} style={{ background: C.card, borderRadius: 18, marginBottom: 10, overflow: "hidden", border: `1px solid ${C.border}`, cursor: "pointer", display: "flex" }}>
-      <div style={{ width: 88, minWidth: 88, height: 88, overflow: "hidden" }}>
+    <div onClick={onClick} style={{ background: C.card, borderRadius: 20, marginBottom: 12, overflow: "hidden", border: `1px solid ${C.border}`, cursor: "pointer", boxShadow: "0 2px 10px rgba(26,23,20,0.05)" }}>
+      {/* Cover photo */}
+      <div style={{ position: "relative", width: "100%", height: 140, overflow: "hidden" }}>
         <img src={com.cover} alt={com.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </div>
-      <div style={{ flex: 1, padding: "11px 12px 10px", minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6, marginBottom: 2 }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, lineHeight: 1.2 }}>{com.name}</div>
-          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0, background: com.planBg, color: com.planColor }}>{com.plan}</span>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 45%, rgba(26,23,20,0.62))" }} />
+
+        {/* Badge thème (haut droite) */}
+        <div style={{ position: "absolute", top: 10, right: 10, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontSize: 13 }}>{themeEmoji}</span>
+          <span style={{ fontSize: 10, color: C.ink2, fontFamily: dm, fontWeight: 600 }}>{catShort}</span>
         </div>
-        <div style={{ fontSize: 10, color: C.ink2, marginBottom: 4 }}>{com.shortCat}</div>
-        <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{com.shortDesc}</div>
-        <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 9, color: C.ink2 }}>👁 {com.vues}</span>
-          <span style={{ fontSize: 9, color: C.ink2 }}>📸 {com.posts} posts</span>
-          <span style={{ fontSize: 9, background: C.pill, color: C.ink2, padding: "2px 7px", borderRadius: 6 }}>{com.tag}</span>
+
+        {/* Posts count (haut gauche) si dispo */}
+        {com.posts !== "—" && (
+          <div style={{ position: "absolute", top: 10, left: 10, background: "rgba(0,0,0,0.5)", borderRadius: 10, padding: "4px 9px", fontSize: 10, color: "#fff", fontFamily: dm, fontWeight: 600 }}>
+            📸 {com.posts}
+          </div>
+        )}
+
+        {/* Nom + quartier en bas de la cover */}
+        <div style={{ position: "absolute", bottom: 10, left: 12, right: 12 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", lineHeight: 1.1 }}>{com.name}</div>
+          {com.adresse && (
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)", marginTop: 3 }}>📍 {com.adresse}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Corps de la carte */}
+      <div style={{ padding: "12px 14px 14px" }}>
+        {/* Bio courte */}
+        {com.shortDesc && (
+          <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5, marginBottom: 10, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            {com.shortDesc}
+          </div>
+        )}
+
+        {/* Chips de spécialités */}
+        {specs.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
+            {specs.map(s => (
+              <span key={s} style={{ fontSize: 10, fontWeight: 600, background: C.pill, color: C.ink2, padding: "3px 10px", borderRadius: 10 }}>{s}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Footer : stat + CTA */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 10, color: C.ink2 }}>👁 {com.vues} vues</span>
+          <div style={{ background: C.ink, color: "#fff", borderRadius: 10, padding: "6px 16px", fontSize: 11, fontWeight: 700, fontFamily: syne }}>
+            Voir →
+          </div>
         </div>
       </div>
     </div>
@@ -1077,7 +1130,6 @@ function VitrineScreen({ com, onBack, user }) {
           <img src={com.cover} alt={com.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%, rgba(26,23,20,0.7) 100%)" }} />
           <button onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>‹</button>
-          <div style={{ position: "absolute", top: 14, right: 14, background: com.planBg, color: com.planColor, fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8 }}>{com.plan}</div>
           <div style={{ position: "absolute", bottom: 14, left: 16 }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff", lineHeight: 1 }}>{com.name}</div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>{com.cat}</div>
