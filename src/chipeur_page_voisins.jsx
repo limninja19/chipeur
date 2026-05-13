@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { THEMES, miniDefisAll } from "./chipeur_univers_data";
 import { getLevel as getXPLevel } from "./chipeur_xp";
@@ -198,6 +198,111 @@ function VoisinCard({ v, followed, onToggleFollow, onOpen }) {
   );
 }
 
+// ─── LIGHTBOX LECTURE SEULE ─────────────────────────────────────
+function VoisinLightbox({ photos, startIndex, onClose }) {
+  const [index, setIndex] = useState(startIndex);
+  const touchX = useRef(null);
+  const photo = photos[index];
+  const prev = () => setIndex(i => Math.max(0, i - 1));
+  const next = () => setIndex(i => Math.min(photos.length - 1, i + 1));
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.97)", display: "flex", flexDirection: "column" }}
+      onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
+      onTouchEnd={e => {
+        if (touchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        touchX.current = null;
+        if (dx > 60) prev(); else if (dx < -60) next();
+      }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", flexShrink: 0 }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff" }}>{index + 1} / {photos.length}</div>
+        <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+      </div>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+        {index > 0 && <button onClick={prev} style={{ position: "absolute", left: 12, zIndex: 10, background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>}
+        {photo.image_url
+          ? <img src={photo.image_url} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+          : <div style={{ padding: 24, textAlign: "center" }}><div style={{ fontSize: 36, marginBottom: 12 }}>📝</div><div style={{ fontSize: 14, color: "#fff", lineHeight: 1.6 }}>{photo.content}</div></div>
+        }
+        {index < photos.length - 1 && <button onClick={next} style={{ position: "absolute", right: 12, zIndex: 10, background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>}
+      </div>
+      <div style={{ padding: "14px 16px 32px", flexShrink: 0 }}>
+        {photo.content && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, marginBottom: 10 }}>{photo.content}</div>}
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: photos.length > 1 ? 12 : 0 }}>
+          {new Date(photo.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+        </div>
+        {photos.length > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", gap: 5 }}>
+            {photos.map((_, i) => <div key={i} onClick={() => setIndex(i)} style={{ width: i === index ? 18 : 6, height: 6, borderRadius: 3, cursor: "pointer", background: i === index ? C.accent : "rgba(255,255,255,0.3)", transition: "all 0.2s" }} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── PHOTO THUMB LECTURE SEULE ───────────────────────────────────
+function VoisinPhotoThumb({ p, onOpen }) {
+  return (
+    <div style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "zoom-in", background: C.pill }} onClick={onOpen}>
+      {p.image_url
+        ? <img src={p.image_url} alt={p.content} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        : <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 10, boxSizing: "border-box" }}>
+            <div style={{ fontSize: 22, marginBottom: 5 }}>📝</div>
+            <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 60)}{p.content?.length > 60 ? "…" : ""}</div>
+          </div>
+      }
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.65))", padding: "16px 8px 7px" }}>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>
+          {new Date(p.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── GROUP COLORS ────────────────────────────────────────────────
+const GROUP_COLORS = {
+  "Souvenirs d'événements": { bg: "#EEF2FF", border: "#6366F1", dot: "#6366F1" },
+  "Photos de défis":        { bg: "#FFF7ED", border: "#F97316", dot: "#F97316" },
+  "Chopes":                 { bg: "#FFF0EB", border: "#FF5733", dot: "#FF5733" },
+  "Bons plans":             { bg: "#FFFBEB", border: "#F59E0B", dot: "#B45309" },
+  "Lieux":                  { bg: "#F0FDF9", border: "#0F766E", dot: "#0F766E" },
+  "Autres":                 { bg: C.bg,      border: C.border,  dot: C.ink2    },
+};
+
+function VoisinPostGroup({ icon, label, posts }) {
+  const [open, setOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  if (posts.length === 0) return null;
+  const colors = GROUP_COLORS[label] || GROUP_COLORS["Autres"];
+  const previews = posts.filter(p => p.image_url).slice(0, 2);
+  return (
+    <div style={{ marginBottom: 12 }}>
+      {lightboxIndex !== null && (
+        <VoisinLightbox photos={posts} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+      <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 10, background: colors.bg, borderRadius: open ? "16px 16px 0 0" : 16, border: `1.5px solid ${colors.border}`, padding: "12px 14px", cursor: "pointer" }}>
+        <div style={{ width: 32, height: 32, borderRadius: 10, background: colors.border + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{icon}</div>
+        <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, flex: 1 }}>{label}</span>
+        {!open && previews.length > 0 && (
+          <div style={{ display: "flex", gap: 4 }}>
+            {previews.map(p => <img key={p.id} src={p.image_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: `1.5px solid ${colors.border}` }} />)}
+            {posts.length > 2 && <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.border + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: colors.dot }}>+{posts.length - 2}</div>}
+          </div>
+        )}
+        <span style={{ fontSize: 11, color: colors.dot, background: colors.border + "22", borderRadius: 20, padding: "2px 10px", fontWeight: 700, marginLeft: 4 }}>{posts.length}</span>
+        <span style={{ fontSize: 14, color: C.ink2, marginLeft: 4 }}>{open ? "▾" : "▸"}</span>
+      </div>
+      {open && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, background: colors.bg, border: `1.5px solid ${colors.border}`, borderTop: "none", borderRadius: "0 0 16px 16px", padding: "10px" }}>
+          {posts.map((p, i) => <VoisinPhotoThumb key={p.id} p={p} onOpen={() => setLightboxIndex(i)} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Questions univers (même ordre que dans chipeur_profil_voisin_1.jsx)
 const UNIVERS_DEFS = [
   { emoji: "🐾", q: "Animal de compagnie" },
@@ -336,7 +441,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
           });
         })()}
 
-        {/* ─ POSTS ─ */}
+        {/* ─ POSTS PAR THÈME ─ */}
         {tab === "posts" && (
           postsLoading ? (
             <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2 }}>Chargement…</div>
@@ -346,21 +451,21 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun post pour l'instant</div>
               <div style={{ fontSize: 12, color: C.ink2 }}>{v.pseudo || "Ce voisin"} n'a pas encore publié.</div>
             </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-              {vPosts.map(p => (
-                <div key={p.id} style={{ borderRadius: 10, aspectRatio: "1", overflow: "hidden", background: C.pill, position: "relative" }}>
-                  {p.image_url ? (
-                    <img src={p.image_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 6, boxSizing: "border-box" }}>
-                      <div style={{ fontSize: 9, color: C.ink2, textAlign: "center", lineHeight: 1.4 }}>{p.content?.slice(0, 40)}</div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )
+          ) : (() => {
+            const groupes = [
+              { icon: "📅", label: "Souvenirs d'événements", posts: vPosts.filter(p => p.evenement_id) },
+              { icon: "🏆", label: "Photos de défis",        posts: vPosts.filter(p => p.defi_id && !p.evenement_id) },
+              { icon: "🛍️", label: "Chopes",                 posts: vPosts.filter(p => p.post_type === "decouverte") },
+              { icon: "💡", label: "Bons plans",             posts: vPosts.filter(p => p.post_type === "bonplan") },
+              { icon: "📍", label: "Lieux",                  posts: vPosts.filter(p => p.post_type === "lieu") },
+              { icon: "📝", label: "Autres",                 posts: vPosts.filter(p => !p.evenement_id && !p.defi_id && !["decouverte","bonplan","lieu"].includes(p.post_type)) },
+            ];
+            return (
+              <div>
+                {groupes.map(g => <VoisinPostGroup key={g.label} icon={g.icon} label={g.label} posts={g.posts} />)}
+              </div>
+            );
+          })()
         )}
 
         {/* ─ TROPHÉES ─ */}
