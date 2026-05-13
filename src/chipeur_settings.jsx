@@ -150,6 +150,11 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
         quartier: null,
         phone: null,
         website: null,
+        instagram: null,
+        facebook: null,
+        role: null,
+        categorie: null,
+        metier: null,
         deleted_at: new Date().toISOString(),
       }).eq("id", user.id);
     }

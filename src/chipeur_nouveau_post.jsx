@@ -204,6 +204,8 @@ function MagLink({ selectedId, selectedNom, onSelect, onSelectNom }) {
     supabase.from("profiles")
       .select("id, pseudo, avatar_url")
       .in("role", ["magasin", "artisan", "commercant"])
+      .neq("pseudo", "[Compte supprimé]")
+      .is("deleted_at", null)
       .order("pseudo")
       .then(({ data }) => setMerchants(data || []));
   }, []);

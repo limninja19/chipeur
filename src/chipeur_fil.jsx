@@ -1209,7 +1209,10 @@ function RechercheRecommandations({ post, user, requireAuth }) {
     if (!user) { requireAuth?.(() => {}); return; }
     if (!merchants.length) {
       supabase.from("profiles").select("id, pseudo, avatar_url")
-        .in("role", ["magasin", "artisan"]).order("pseudo")
+        .in("role", ["magasin", "artisan"])
+        .neq("pseudo", "[Compte supprimé]")
+        .is("deleted_at", null)
+        .order("pseudo")
         .then(({ data }) => setMerchants(data || []));
     }
     setDupError(""); setShowPicker(true);
