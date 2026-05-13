@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { addXP } from "./chipeur_xp";
 import Avatar from "./Avatar";
@@ -97,10 +97,102 @@ function profileToCommerce(p, postCount) {
   };
 }
 
+// ─── LIGHTBOX SWIPEABLE PHOTOS BOUTIQUES ───
+function ShopPhotosLightbox({ photos, merchants, startIndex = 0, onOpenShop, onClose }) {
+  const [index, setIndex] = useState(startIndex);
+  const touchX = useRef(null);
+
+  const photo = photos[index];
+  const shop = photo ? merchants.find(m => m.id === photo.author_id || m.id === photo.magasin_id) : null;
+
+  const prev = () => setIndex(i => Math.max(0, i - 1));
+  const next = () => setIndex(i => Math.min(photos.length - 1, i + 1));
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 200, background: "#000", display: "flex", flexDirection: "column" }}
+      onTouchStart={e => { touchX.current = e.touches[0].clientX; }}
+      onTouchEnd={e => {
+        if (touchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        touchX.current = null;
+        if (dx > 60) prev();
+        else if (dx < -60) next();
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", flexShrink: 0, zIndex: 10 }}>
+        <button onClick={onClose} style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "#fff" }}>
+          {index + 1} / {photos.length}
+        </div>
+        <div style={{ width: 36 }} />
+      </div>
+
+      {/* Photo */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        {photo?.image_url && (
+          <img
+            src={photo.image_url}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+          />
+        )}
+
+        {/* Flèches navigation */}
+        {index > 0 && (
+          <button onClick={prev} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>‹</button>
+        )}
+        {index < photos.length - 1 && (
+          <button onClick={next} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "rgba(255,255,255,0.18)", border: "none", borderRadius: "50%", width: 42, height: 42, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>›</button>
+        )}
+
+        {/* Dots */}
+        {photos.length > 1 && (
+          <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 4 }}>
+            {photos.map((_, i) => (
+              <div key={i} onClick={() => setIndex(i)} style={{ width: i === index ? 18 : 6, height: 6, borderRadius: 3, background: i === index ? C.accent : "rgba(255,255,255,0.35)", transition: "all 0.2s", cursor: "pointer" }} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Fiche boutique en bas */}
+      {shop && (
+        <div style={{ background: C.card, borderRadius: "20px 20px 0 0", padding: "16px 18px 36px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            {/* Avatar / cover shop */}
+            <div style={{ width: 46, height: 46, borderRadius: 12, overflow: "hidden", background: C.pill, flexShrink: 0 }}>
+              <img src={shop.cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>{shop.name}</div>
+              <div style={{ fontSize: 11, color: C.ink2, marginTop: 2 }}>{shop.metier || shop.category || "Commerce local"}</div>
+            </div>
+            {photo?.content && (
+              <div style={{ fontSize: 10, color: C.ink2, maxWidth: 90, textAlign: "right", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{photo.content}</div>
+            )}
+          </div>
+
+          <button
+            onClick={() => { onOpenShop(shop); onClose(); }}
+            style={{ width: "100%", background: C.pro, color: "#fff", border: "none", borderRadius: 14, padding: "13px 0", fontFamily: syne, fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+          >
+            Voir la boutique {shop.name} →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── BANDEAU PHOTOS RÉCENTES DES BOUTIQUES ───
+const PREVIEW_COUNT = 5;
+
 function RecentShopPhotos({ onOpenShop, merchants }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   useEffect(() => {
     if (!merchants || merchants.length === 0) return;
@@ -111,43 +203,69 @@ function RecentShopPhotos({ onOpenShop, merchants }) {
       .not("image_url", "is", null)
       .or(`author_id.in.(${merchantIds.join(",")}),magasin_id.in.(${merchantIds.join(",")})`)
       .order("created_at", { ascending: false })
-      .limit(20)
+      .limit(60)
       .then(({ data }) => {
-        setPhotos(data || []);
+        setPhotos((data || []).filter(p => merchants.some(m => m.id === p.author_id || m.id === p.magasin_id)));
         setLoading(false);
       });
   }, [merchants.length]);
 
   if (loading || photos.length === 0) return null;
 
+  const preview = photos.slice(0, PREVIEW_COUNT);
+  const remaining = photos.length - PREVIEW_COUNT;
+
   return (
-    <div style={{ padding: "0 0 4px", flexShrink: 0 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6, padding: "0 16px" }}>
-        📸 Dernières photos des boutiques
-        <div style={{ flex: 1, height: 1, background: C.border }} />
-      </div>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 16px 4px", scrollbarWidth: "none" }}>
-        {photos.map(photo => {
-          const shop = merchants.find(m => m.id === photo.author_id || m.id === photo.magasin_id);
-          if (!shop) return null;
-          return (
-            <div
-              key={photo.id}
-              onClick={() => onOpenShop(shop)}
-              style={{ flexShrink: 0, width: 130, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill, boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }}
-            >
-              <img src={photo.image_url} alt="" style={{ width: "100%", height: 130, objectFit: "cover", display: "block" }} />
-              {/* Overlay dégradé + nom du shop */}
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, rgba(26,23,20,0.8) 100%)" }} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 10px" }}>
-                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{shop.name}</div>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 1 }}>{shop.metier || shop.category}</div>
+    <>
+      {lightboxIndex !== null && (
+        <ShopPhotosLightbox
+          photos={photos}
+          merchants={merchants}
+          startIndex={lightboxIndex}
+          onOpenShop={onOpenShop}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+
+      <div style={{ padding: "0 0 4px", flexShrink: 0 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6, padding: "0 16px" }}>
+          📸 Dernières photos des boutiques
+          <div style={{ flex: 1, height: 1, background: C.border }} />
+        </div>
+
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 16px 4px", scrollbarWidth: "none" }}>
+          {preview.map((photo, i) => {
+            const shop = merchants.find(m => m.id === photo.author_id || m.id === photo.magasin_id);
+            if (!shop) return null;
+            return (
+              <div
+                key={photo.id}
+                onClick={() => setLightboxIndex(i)}
+                style={{ flexShrink: 0, width: 130, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill, boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }}
+              >
+                <img src={photo.image_url} alt="" style={{ width: "100%", height: 130, objectFit: "cover", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, rgba(26,23,20,0.8) 100%)" }} />
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 10px" }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{shop.name}</div>
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 1 }}>{shop.metier || shop.category}</div>
+                </div>
               </div>
+            );
+          })}
+
+          {/* Tuile "+ voir toutes" → ouvre le lightbox à la suite */}
+          {remaining > 0 && (
+            <div
+              onClick={() => setLightboxIndex(PREVIEW_COUNT)}
+              style={{ flexShrink: 0, width: 130, height: 130, borderRadius: 16, cursor: "pointer", background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 2px 10px rgba(0,0,0,0.12)" }}
+            >
+              <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 28, color: "#fff" }}>+{remaining}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.9)", textAlign: "center", lineHeight: 1.3 }}>Voir toutes<br />les photos</div>
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
