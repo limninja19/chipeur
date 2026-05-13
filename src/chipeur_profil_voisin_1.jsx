@@ -1440,6 +1440,9 @@ function TabRewards({ user }) {
         </button>
       </div>
 
+      {/* Crédits locaux */}
+      <MesCreditsLocaux userId={user?.id} />
+
       {/* Bientôt dispo */}
       <div style={{ textAlign: "center", padding: "24px 20px" }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🎖️</div>
