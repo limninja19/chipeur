@@ -151,6 +151,75 @@ function RecentShopPhotos({ onOpenShop, merchants }) {
   );
 }
 
+// ─── DROPDOWN FILTRE BOUTIQUES (multi-sélection, style fil) ───
+function BoutiquesDropdown({ active, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const isAll = active.size === 0 || (active.size === 1 && active.has("Tous"));
+  const label = isAll
+    ? "Toutes les boutiques"
+    : THEMES.filter(t => t.key !== "Tous" && active.has(t.key)).map(t => `${t.emoji} ${t.short}`).join(", ");
+
+  return (
+    <div style={{ padding: "2px 14px 10px", flexShrink: 0, position: "relative" }}>
+      {/* Bouton dérouleur */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+          width: "100%", boxSizing: "border-box",
+          background: isAll ? C.pill : C.ink,
+          color: isAll ? C.ink2 : "#fff",
+          border: "none", borderRadius: 20,
+          padding: "9px 16px",
+          fontFamily: dm, fontSize: 12, fontWeight: 600,
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>
+          {label}
+        </span>
+        <svg width="14" height="18" viewBox="0 0 72 90" fill="none" style={{ flexShrink: 0 }} xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="pinDropC" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#FF5733"/><stop offset="100%" stopColor="#FF8C42"/></linearGradient></defs>
+          <path d="M36 4C22 4 11 15 11 29C11 46 36 82 36 82C36 82 61 46 61 29C61 15 50 4 36 4Z" fill={isAll ? "#BBBAB8" : "rgba(255,255,255,0.7)"}/>
+          <circle cx="36" cy="29" r="11" fill={isAll ? "#F5F2EE" : "rgba(255,255,255,0.25)"}/>
+        </svg>
+      </button>
+
+      {/* Panneau déroulé */}
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 50 }} />
+          <div style={{
+            position: "absolute", top: "calc(100% + 4px)", left: 14, right: 14,
+            background: C.card, border: `1px solid ${C.border}`, borderRadius: 18,
+            padding: "12px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            zIndex: 51, display: "flex", flexWrap: "wrap", gap: 8,
+          }}>
+            {THEMES.map(t => {
+              const isOn = t.key === "Tous" ? isAll : active.has(t.key);
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => { onToggle(t.key); if (t.key === "Tous") setOpen(false); }}
+                  style={{
+                    fontSize: 12, fontWeight: 600, padding: "8px 16px", borderRadius: 20,
+                    border: "none", cursor: "pointer", whiteSpace: "nowrap",
+                    background: isOn ? C.ink : C.pill,
+                    color: isOn ? "#fff" : C.ink2,
+                    fontFamily: dm, transition: "all 0.15s",
+                  }}
+                >
+                  {t.emoji} {t.short}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── BOTTOM NAV ───
 function BottomNav({ active, onNavigate, onFab }) {
   const items = [
@@ -932,8 +1001,19 @@ function VitrineScreen({ com, onBack, user }) {
 export default function ChipeurCommerces({ setPage, user }) {
   const [screen, setScreen] = useState("list");
   const [selectedCom, setSelectedCom] = useState(null);
-  const [activeCat, setActiveCat] = useState("Tous");
+  const [activeCats, setActiveCats] = useState(new Set(["Tous"]));
   const [search, setSearch] = useState("");
+
+  const toggleCat = (key) => {
+    setActiveCats(prev => {
+      const next = new Set(prev);
+      if (key === "Tous") return new Set(["Tous"]);
+      next.delete("Tous");
+      if (next.has(key)) { next.delete(key); if (next.size === 0) return new Set(["Tous"]); }
+      else next.add(key);
+      return next;
+    });
+  };
   const [realMerchants, setRealMerchants] = useState([]);
   const [loadingMerchants, setLoadingMerchants] = useState(true);
 
@@ -967,9 +1047,10 @@ export default function ChipeurCommerces({ setPage, user }) {
   // Fusionner vrais marchands + statiques (pas de doublons)
   const allCommerces = [...realMerchants, ...STATIC_COMMERCES];
 
-  // Filtrer par thème + recherche
+  // Filtrer par thèmes (multi) + recherche
+  const isAllCats = activeCats.has("Tous");
   const filtered = allCommerces.filter(c => {
-    if (!matchesTheme(c, activeCat)) return false;
+    if (!isAllCats && !Array.from(activeCats).some(k => matchesTheme(c, k))) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       const haystack = [c.name, c.desc, c.cat, c.metier, c.categorie].filter(Boolean).join(" ").toLowerCase();
@@ -1012,20 +1093,8 @@ export default function ChipeurCommerces({ setPage, user }) {
               {search && <span onClick={() => setSearch("")} style={{ fontSize: 13, cursor: "pointer", color: C.ink2 }}>✕</span>}
             </div>
 
-            {/* Filtres thèmes */}
-            <div style={{ display: "flex", gap: 6, padding: "0 14px 10px", overflowX: "auto", scrollbarWidth: "none" }}>
-              {THEMES.map(t => (
-                <button key={t.key} onClick={() => setActiveCat(t.key)} style={{
-                  padding: "6px 13px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-                  border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                  fontFamily: dm, transition: "all 0.15s",
-                  background: activeCat === t.key ? C.ink : C.pill,
-                  color: activeCat === t.key ? "#fff" : C.ink2,
-                }}>
-                  {t.emoji} {t.short}
-                </button>
-              ))}
-            </div>
+            {/* Dropdown filtres thèmes */}
+            <BoutiquesDropdown active={activeCats} onToggle={toggleCat} />
           </div>
 
           <div style={{ flex: 1, overflowY: "auto" }}>
@@ -1034,7 +1103,7 @@ export default function ChipeurCommerces({ setPage, user }) {
             ) : (
               <>
                 {/* ── Bandeau photos récentes ── */}
-                {activeCat === "Tous" && !search && (
+                {isAllCats && !search && (
                   <div style={{ padding: "12px 0 8px" }}>
                     <RecentShopPhotos
                       merchants={realMerchants}
