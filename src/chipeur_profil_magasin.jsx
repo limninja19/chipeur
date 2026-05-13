@@ -502,6 +502,57 @@ const REACTION_TYPES = [
   { type: "recommande", emoji: "👍", label: "Je recommande", color: "#1565C0", bg: "#E8F4FD" },
 ];
 
+// ─── BLOC XP CRÉDITS LOCAUX (réutilisable) ──────────────────────
+function MerchantXpBlock({ userId, merchantName }) {
+  const [xpStats, setXpStats] = useState({ totalXp: 0, voisinCount: 0, acceptedCount: 0 });
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("merchant_xp_wallet").select("points, user_id")
+      .eq("merchant_id", userId)
+      .then(({ data }) => {
+        if (!data) return;
+        const totalXp = data.reduce((s, r) => s + (r.points || 0), 0);
+        const voisinCount = new Set(data.map(r => r.user_id)).size;
+        setXpStats(prev => ({ ...prev, totalXp, voisinCount }));
+      });
+    supabase.from("posts").select("id", { count: "exact", head: true })
+      .eq("magasin_id", userId).eq("linked_status", "accepted")
+      .then(({ count }) => setXpStats(prev => ({ ...prev, acceptedCount: count || 0 })));
+  }, [userId]);
+
+  return (
+    <>
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "6px 0 6px" }}>
+        🏅 Crédits locaux générés
+      </div>
+      <div style={{ background: "linear-gradient(135deg,#0A3D2E,#1a6647)", borderRadius: 16, padding: "14px 16px", marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
+            <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.totalXp}</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>XP distribués</div>
+          </div>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
+            <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.acceptedCount}</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>posts acceptés</div>
+          </div>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
+            <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.voisinCount}</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>voisins récompensés</div>
+          </div>
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#FFD700", marginBottom: 6 }}>💡 Comment ça marche ?</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>
+            Quand un voisin publie un post en vous mentionnant, vous pouvez l'<b style={{ color: "#fff" }}>accepter</b> depuis l'onglet <b style={{ color: "#fff" }}>Mentions</b>.<br />
+            Chaque post accepté = <b style={{ color: "#FFD700" }}>+10 XP</b> pour le voisin.<br />
+            100 XP = <b style={{ color: "#FFD700" }}>5 € de bon d'achat</b> à utiliser chez vous !
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
   const [period, setPeriod] = useState("semaine");
   const [chartData, setChartData] = useState([]);
@@ -512,24 +563,6 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
   const [reactionsByType, setReactionsByType] = useState({});
   const [uniqueUsers, setUniqueUsers] = useState(0);
   const [topPosts, setTopPosts] = useState([]);
-  // Crédits XP
-  const [xpStats, setXpStats] = useState({ totalXp: 0, voisinCount: 0, acceptedCount: 0 });
-  useEffect(() => {
-    if (!userId) return;
-    // XP distribués depuis le wallet
-    supabase.from("merchant_xp_wallet").select("points, user_id")
-      .eq("merchant_id", userId)
-      .then(({ data }) => {
-        if (!data) return;
-        const totalXp = data.reduce((s, r) => s + (r.points || 0), 0);
-        const voisinCount = new Set(data.map(r => r.user_id)).size;
-        setXpStats(prev => ({ ...prev, totalXp, voisinCount }));
-      });
-    // Posts acceptés
-    supabase.from("posts").select("id", { count: "exact", head: true })
-      .eq("magasin_id", userId).eq("linked_status", "accepted")
-      .then(({ count }) => setXpStats(prev => ({ ...prev, acceptedCount: count || 0 })));
-  }, [userId]);
 
   useEffect(() => { if (userId) loadData(); }, [period, userId]);
 
@@ -773,35 +806,7 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
       <MentionedPosts userId={userId} onEnrich={onEnrich} />
 
       {/* ── CRÉDITS LOCAUX XP ── */}
-      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "6px 0 6px" }}>
-        🏅 Crédits locaux générés
-      </div>
-      <div style={{ background: "linear-gradient(135deg,#0A3D2E,#1a6647)", borderRadius: 16, padding: "14px 16px", marginBottom: 10 }}>
-        {/* Stats */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-          <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
-            <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.totalXp}</div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>XP distribués</div>
-          </div>
-          <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
-            <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.acceptedCount}</div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>posts acceptés</div>
-          </div>
-          <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
-            <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.voisinCount}</div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>voisins récompensés</div>
-          </div>
-        </div>
-        {/* Explication */}
-        <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#FFD700", marginBottom: 6 }}>💡 Comment ça marche ?</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>
-            Quand un voisin publie un post en vous mentionnant, vous pouvez l'<b style={{ color: "#fff" }}>accepter</b> depuis l'onglet <b style={{ color: "#fff" }}>Posts liés</b> de votre vitrine.<br />
-            Chaque post accepté = <b style={{ color: "#FFD700" }}>+10 XP</b> pour le voisin.<br />
-            100 XP = <b style={{ color: "#FFD700" }}>5 € de bon d'achat</b> à utiliser chez vous !
-          </div>
-        </div>
-      </div>
+      <MerchantXpBlock userId={userId} merchantName={merchantName} />
 
       {/* ── PRO LAYER TIP ── */}
       <div style={{ background: "#FFF8F6", border: "1px solid rgba(255,87,51,0.15)", borderRadius: 14, padding: "10px 14px", marginBottom: 10 }}>
@@ -1149,7 +1154,7 @@ function BottomNav({ onNavigate }) {
 }
 
 // ─── ONGLET MENTIONS ────────────────────────────────────────────
-function TabMentions({ pseudo, userId }) {
+function TabMentions({ pseudo, userId, merchantName }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(null);
@@ -1202,9 +1207,12 @@ function TabMentions({ pseudo, userId }) {
 
   return (
     <div style={{ padding: "16px 0 32px" }}>
+      {/* Bloc XP — contexte pour le commerçant */}
+      <MerchantXpBlock userId={userId} merchantName={merchantName} />
+
       <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 4 }}>Posts te mentionnant</div>
       <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16, lineHeight: 1.5 }}>
-        Des voisins ont associé des posts à ton commerce avant que tu sois inscrit. Tu peux les revendiquer pour qu'ils apparaissent dans ton profil.
+        Des voisins ont associé des posts à ton commerce. Accepte-les pour leur offrir des crédits locaux — ou revendique ceux postés avant ton inscription.
       </div>
 
       {loading ? (
@@ -1647,7 +1655,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
           {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} />}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
-          {activeTab === "mentions" && <TabMentions pseudo={localProfile?.pseudo} userId={user?.id} />}
+          {activeTab === "mentions" && <TabMentions pseudo={localProfile?.pseudo} userId={user?.id} merchantName={localProfile?.pseudo} />}
           {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} setPage={setPage} user={user} />}
           {activeTab === "defis" && <TabMesDefis userId={user?.id} />}
           {activeTab === "plan" && <TabPlan profile={localProfile} />}
