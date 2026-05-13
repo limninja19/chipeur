@@ -298,6 +298,7 @@ function BandeauDefis({ setPage, user }) {
   const [defis, setDefis]       = useState([]);
   const [voteDefi, setVoteDefi] = useState(null);
   const [showMerchantInfo, setShowMerchantInfo] = useState(false);
+  const [infoTab, setInfoTab] = useState("voisin");
 
   useEffect(() => {
     supabase.from("defis")
@@ -381,51 +382,101 @@ function BandeauDefis({ setPage, user }) {
 
       {/* ── MODALE EXPLICATION DÉFIS COMMERÇANTS ── */}
       {showMerchantInfo && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.6)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={() => setShowMerchantInfo(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#F5F2EE", borderRadius: "24px 24px 0 0", padding: "24px 20px 48px", width: "100%", boxSizing: "border-box" }}>
-            {/* Poignée */}
-            <div style={{ width: 36, height: 4, background: "rgba(26,23,20,0.15)", borderRadius: 2, margin: "0 auto 20px" }} />
+          <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.6)", display: "flex", alignItems: "flex-end", zIndex: 200 }} onClick={() => setShowMerchantInfo(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#F5F2EE", borderRadius: "24px 24px 0 0", padding: "24px 20px 40px", width: "100%", boxSizing: "border-box", maxHeight: "88vh", overflowY: "auto" }}>
+              {/* Poignée */}
+              <div style={{ width: 36, height: 4, background: "rgba(26,23,20,0.15)", borderRadius: 2, margin: "0 auto 16px" }} />
 
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#0A3D2E,#1a6b4a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🏪</div>
-              <div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: "#1A1714", lineHeight: 1.2 }}>Les défis commerçants arrivent !</div>
-                <div style={{ fontSize: 12, color: "#6B6660", marginTop: 2 }}>Comment ça marche ?</div>
-              </div>
-            </div>
-
-            {/* Étapes */}
-            {[
-              { emoji: "📣", title: "Un commerçant lance un défi", desc: "Un commerce de ton quartier propose un thème photo et une récompense à gagner." },
-              { emoji: "📸", title: "Tu participes avec une photo", desc: "Publie ta photo en réponse au défi. Elle apparaît dans le fil et les autres voisins peuvent voter pour toi." },
-              { emoji: "🗳️", title: "Les voisins votent", desc: "La communauté swipe et vote pour les meilleures photos pendant toute la durée du défi." },
-              { emoji: "🏆", title: "Le commerçant choisit le gagnant", desc: "À la clôture, il sélectionne le podium. Les 3 premiers gagnent des XP et une récompense locale !" },
-            ].map((step, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: "#fff", border: "1.5px solid rgba(26,23,20,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{step.emoji}</div>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#0A3D2E,#1a6b4a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🏪</div>
                 <div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: "#1A1714", marginBottom: 2 }}>{step.title}</div>
-                  <div style={{ fontSize: 12, color: "#6B6660", lineHeight: 1.5 }}>{step.desc}</div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: "#1A1714", lineHeight: 1.2 }}>Les défis commerçants arrivent !</div>
+                  <div style={{ fontSize: 12, color: "#6B6660", marginTop: 2 }}>Comment ça marche ?</div>
                 </div>
               </div>
-            ))}
 
-            {/* Récompenses XP */}
-            <div style={{ background: "#FFF8E8", border: "1.5px solid #F7A72D", borderRadius: 16, padding: "12px 14px", marginBottom: 20 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, color: "#B45309", marginBottom: 6 }}>🏆 Récompenses XP</div>
-              <div style={{ fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
-                🥇 1er : <b>50 XP</b> · 🥈 2e : <b>20 XP</b> · 🥉 3e : <b>10 XP</b><br />
-                + récompense offerte par le commerçant
+              {/* Onglets Voisin / Commerçant */}
+              <div style={{ display: "flex", background: "rgba(26,23,20,0.07)", borderRadius: 14, padding: 4, marginBottom: 20 }}>
+                {[{ id: "voisin", label: "🏘️ Je suis voisin" }, { id: "commercant", label: "🏪 Je suis commerçant" }].map(t => (
+                  <button key={t.id} onClick={() => setInfoTab(t.id)} style={{
+                    flex: 1, padding: "8px 0", border: "none", borderRadius: 11, cursor: "pointer",
+                    fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12,
+                    background: infoTab === t.id ? "#fff" : "transparent",
+                    color: infoTab === t.id ? "#1A1714" : "#6B6660",
+                    boxShadow: infoTab === t.id ? "0 1px 6px rgba(0,0,0,0.1)" : "none",
+                    transition: "all 0.2s",
+                  }}>{t.label}</button>
+                ))}
               </div>
-            </div>
 
-            <button
-              onClick={() => setShowMerchantInfo(false)}
-              style={{ width: "100%", background: "#1A1714", color: "#fff", border: "none", borderRadius: 16, padding: 14, fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-            >J'ai hâte ! 🔥</button>
+              {/* ── VUE VOISIN ── */}
+              {infoTab === "voisin" && (
+                <>
+                  {[
+                    { emoji: "📣", title: "Un commerçant lance un défi", desc: "Un commerce de ton quartier propose un thème photo et une récompense à gagner." },
+                    { emoji: "📸", title: "Tu participes avec une photo", desc: "Publie ta photo en réponse au défi. Elle apparaît dans le fil et les autres voisins peuvent voter pour toi." },
+                    { emoji: "🗳️", title: "Les voisins votent", desc: "La communauté swipe et vote pour les meilleures photos pendant toute la durée du défi." },
+                    { emoji: "🏆", title: "Le commerçant choisit le gagnant", desc: "À la clôture, il sélectionne le podium. Les 3 premiers gagnent des XP et une récompense locale !" },
+                  ].map((step, i) => (
+                    <div key={i} style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: "#fff", border: "1.5px solid rgba(26,23,20,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{step.emoji}</div>
+                      <div>
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: "#1A1714", marginBottom: 2 }}>{step.title}</div>
+                        <div style={{ fontSize: 12, color: "#6B6660", lineHeight: 1.5 }}>{step.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ background: "#FFF8E8", border: "1.5px solid #F7A72D", borderRadius: 16, padding: "12px 14px", marginBottom: 20 }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, color: "#B45309", marginBottom: 6 }}>🏆 Récompenses XP</div>
+                    <div style={{ fontSize: 12, color: "#92400E", lineHeight: 1.7 }}>
+                      🥇 1er : <b>50 XP</b> · 🥈 2e : <b>20 XP</b> · 🥉 3e : <b>10 XP</b><br />
+                      + récompense offerte par le commerçant
+                    </div>
+                  </div>
+                  <button onClick={() => setShowMerchantInfo(false)} style={{ width: "100%", background: "#1A1714", color: "#fff", border: "none", borderRadius: 16, padding: 14, fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>J'ai hâte ! 🔥</button>
+                </>
+              )}
+
+              {/* ── VUE COMMERÇANT ── */}
+              {infoTab === "commercant" && (
+                <>
+                  <div style={{ background: "linear-gradient(135deg,#0A3D2E,#1a6b4a)", borderRadius: 16, padding: "16px 14px", marginBottom: 20, color: "#fff" }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 14, marginBottom: 6 }}>Rejoins Chipeur et booste ta visibilité locale 🚀</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.6 }}>
+                      En créant un défi, tu t'inscris sur Chipeur et obtiens ta <b>vitrine gratuite</b> — visible par tous les voisins de Saint-Dié.
+                    </div>
+                  </div>
+
+                  {[
+                    { emoji: "🏪", title: "Ta vitrine sur Chipeur", desc: "Un espace dédié à ton commerce : photos, description, bons plans, lien, et tous tes défis passés et en cours." },
+                    { emoji: "📣", title: "Tu lances un défi photo", desc: "Choisis un thème, une durée et une récompense. Les voisins participent et parlent de toi dans le fil !" },
+                    { emoji: "👥", title: "La communauté s'engage", desc: "Tes clients potentiels votent, partagent et découvrent ton commerce de façon naturelle et locale." },
+                    { emoji: "🎁", title: "Tu choisis ta récompense", desc: "Bon de réduction, produit offert, invitation… Tu décides ce que tu offres au gagnant." },
+                    { emoji: "📈", title: "Tu gagnes en notoriété", desc: "Chaque défi laisse une trace dans le fil et sur ta vitrine. Plus tu t'impliques, plus tu es visible." },
+                  ].map((step, i) => (
+                    <div key={i} style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: "#EBF5F0", border: "1.5px solid #0A3D2E22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{step.emoji}</div>
+                      <div>
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: "#1A1714", marginBottom: 2 }}>{step.title}</div>
+                        <div style={{ fontSize: 12, color: "#6B6660", lineHeight: 1.5 }}>{step.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div style={{ background: "#EBF5F0", border: "1.5px solid #0A3D2E44", borderRadius: 16, padding: "12px 14px", marginBottom: 20 }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, color: "#0A3D2E", marginBottom: 4 }}>✅ Entièrement gratuit</div>
+                    <div style={{ fontSize: 12, color: "#1A5C40", lineHeight: 1.6 }}>
+                      L'inscription et la création de ta vitrine sont <b>100% gratuites</b>. Contacte-nous pour être parmi les premiers commerçants sur Chipeur !
+                    </div>
+                  </div>
+
+                  <button onClick={() => setShowMerchantInfo(false)} style={{ width: "100%", background: "#0A3D2E", color: "#fff", border: "none", borderRadius: 16, padding: 14, fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10 }}>Je veux ma vitrine ! 🏪</button>
+                  <button onClick={() => setShowMerchantInfo(false)} style={{ width: "100%", background: "transparent", color: "#6B6660", border: "none", fontSize: 13, cursor: "pointer", fontFamily: "'Syne', sans-serif" }}>Pas maintenant</button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
       )}
 
       <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
@@ -441,7 +492,7 @@ function BandeauDefis({ setPage, user }) {
         {merchantDefis.length > 0
           ? merchantDefis.map(d => <DefiCard key={d.id} d={d} />)
           : (
-            <div style={{ flexShrink: 0, width: 160 }} onClick={() => setShowMerchantInfo(true)}>
+            <div style={{ flexShrink: 0, width: 160 }} onClick={() => { setInfoTab("voisin"); setShowMerchantInfo(true); }}>
               <div style={{ borderRadius: 16, overflow: "hidden", boxShadow: "0 3px 10px rgba(0,0,0,0.08)", cursor: "pointer" }}>
                 {/* Zone visuelle */}
                 <div style={{
