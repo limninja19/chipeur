@@ -528,8 +528,12 @@ function BandeauDefis({ setPage, user }) {
                 </div>
                 {/* Bas de carte */}
                 <div style={{ background: C.card, padding: "9px 10px" }}>
-                  <div style={{ fontSize: 10, color: C.ink2, lineHeight: 1.4, textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: C.ink2, lineHeight: 1.4, textAlign: "center", marginBottom: 6 }}>
                     Les défis commerçants arrivent dans ton quartier 🛍️
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, background: "#FFF0EB", borderRadius: 10, padding: "5px 8px" }}>
+                    <span style={{ fontSize: 10 }}>👆</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: C.accent }}>Voir les règles du jeu</span>
                   </div>
                 </div>
               </div>
