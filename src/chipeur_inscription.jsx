@@ -462,7 +462,8 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
   const [focused, setFocused] = useState(null);
   const [nomMagasin, setNomMagasin] = useState("");
   const [categorie, setCategorie] = useState("");
-  const [metier, setMetier] = useState("");
+  const [metiersSelected, setMetiersSelected] = useState([]);
+  const [metierCustom, setMetierCustom] = useState("");
   const [adresse, setAdresse] = useState("");
   const [description, setDescription] = useState("");
   const [acceptCGUM, setAcceptCGUM] = useState(false);
@@ -603,32 +604,72 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
             <option>Autre</option>
           </select>
         </div>
-        {/* Métier précis */}
-        <input
-          placeholder={categorie ? "Ton métier précis (ex : Photographe, Boulangerie…)" : "Sélectionne d'abord une catégorie"}
-          value={metier}
-          disabled={!categorie}
-          onChange={e => setMetier(e.target.value)}
-          onFocus={() => setFocused("metier")}
-          onBlur={() => setFocused(null)}
-          style={{ ...inputStyle("metier"), opacity: categorie ? 1 : 0.5 }}
-        />
-        {/* Suggestions de métier selon catégorie */}
-        {categorie && (METIER_SUGGESTIONS[categorie] || []).length > 0 && !metier && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10, marginTop: -4 }}>
-            {(METIER_SUGGESTIONS[categorie] || []).map(s => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setMetier(s)}
-                style={{
-                  padding: "5px 12px", borderRadius: 20, fontSize: 11,
-                  border: `1.5px solid ${COLORS.border}`, background: COLORS.card,
-                  color: COLORS.ink2, cursor: "pointer",
-                  fontFamily: "'DM Sans', sans-serif",
+        {/* Spécialités — chips multi-sélection */}
+        {categorie && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.ink2, letterSpacing: 0.6, textTransform: "uppercase", marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>
+              Tes spécialités <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(choisis une ou plusieurs)</span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+              {(METIER_SUGGESTIONS[categorie] || []).map(s => {
+                const on = metiersSelected.includes(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setMetiersSelected(prev => on ? prev.filter(m => m !== s) : [...prev, s])}
+                    style={{
+                      padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+                      border: `1.5px solid ${on ? COLORS.accent : COLORS.border}`,
+                      background: on ? "#FFF0EB" : COLORS.card,
+                      color: on ? COLORS.accent : COLORS.ink2,
+                      cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                      transition: "all 0.15s",
+                    }}
+                  >{on ? "✓ " : ""}{s}</button>
+                );
+              })}
+            </div>
+
+            {/* Champ custom "Ajouter..." */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                placeholder="Ajouter une spécialité…"
+                value={metierCustom}
+                onChange={e => setMetierCustom(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && metierCustom.trim()) {
+                    setMetiersSelected(prev => prev.includes(metierCustom.trim()) ? prev : [...prev, metierCustom.trim()]);
+                    setMetierCustom("");
+                  }
                 }}
-              >{s}</button>
-            ))}
+                onFocus={() => setFocused("metier")}
+                onBlur={() => setFocused(null)}
+                style={{ ...inputStyle("metier"), flex: 1, marginBottom: 0 }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (metierCustom.trim()) {
+                    setMetiersSelected(prev => prev.includes(metierCustom.trim()) ? prev : [...prev, metierCustom.trim()]);
+                    setMetierCustom("");
+                  }
+                }}
+                style={{ padding: "12px 16px", borderRadius: 14, background: COLORS.accent, color: "#fff", border: "none", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer", flexShrink: 0 }}
+              >+</button>
+            </div>
+
+            {/* Tags custom ajoutés */}
+            {metiersSelected.filter(m => !(METIER_SUGGESTIONS[categorie] || []).includes(m)).length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                {metiersSelected.filter(m => !(METIER_SUGGESTIONS[categorie] || []).includes(m)).map(m => (
+                  <div key={m} style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 20, background: "#FFF0EB", border: `1.5px solid ${COLORS.accent}`, fontSize: 12, color: COLORS.accent, fontWeight: 600 }}>
+                    {m}
+                    <span onClick={() => setMetiersSelected(prev => prev.filter(x => x !== m))} style={{ cursor: "pointer", fontSize: 11, fontWeight: 700 }}>✕</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -683,7 +724,7 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
         </div>
 
         <button
-          onClick={() => onValidate({ nom: nomMagasin, cat: categorie, metier: metier.trim() || categorie, adr: adresse, desc: description, plan: selectedPlan })}
+          onClick={() => onValidate({ nom: nomMagasin, cat: categorie, metier: metiersSelected.join(", ") || categorie, adr: adresse, desc: description, plan: selectedPlan })}
           disabled={loading || !nomMagasin.trim() || !acceptCGUM}
           style={{
             width: "100%", background: loading || !nomMagasin.trim() || !acceptCGUM ? "#ccc" : COLORS.accent,
@@ -702,9 +743,10 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
 
 // ─── SCREEN 4 : SUCCESS ───
 function ScreenSuccess({ accountType, onRestart, onFinish }) {
-  const msg = accountType === "voisin"
-    ? "Ton compte Voisin·e est prêt. Rejoins le fil du quartier !"
-    : "Ton compte est prêt. Rejoins le fil du quartier et commence à partager.";
+  const isMerchant = accountType === "magasin";
+  const msg = isMerchant
+    ? "Ton compte commerçant est prêt ! Tu peux dès maintenant personnaliser ta vitrine."
+    : "Ton compte Voisin·e est prêt. Rejoins le fil du quartier !";
 
   return (
     <div style={{
@@ -713,10 +755,11 @@ function ScreenSuccess({ accountType, onRestart, onFinish }) {
       padding: "32px 24px", textAlign: "center", gap: 16,
     }}>
       <div style={{
-        width: 72, height: 72, borderRadius: "50%", background: COLORS.accent,
+        width: 72, height: 72, borderRadius: "50%",
+        background: isMerchant ? COLORS.pro : COLORS.accent,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 32, color: "#fff",
-      }}>✓</div>
+      }}>{isMerchant ? "🏪" : "✓"}</div>
       <div style={{
         fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 22, color: COLORS.ink,
       }}>Bienvenue sur Chipeur !</div>
@@ -724,11 +767,29 @@ function ScreenSuccess({ accountType, onRestart, onFinish }) {
         fontSize: 14, color: COLORS.ink2, lineHeight: 1.6,
         fontFamily: "'DM Sans', sans-serif",
       }}>{msg}</div>
-      <button onClick={() => onFinish && onFinish()} style={{
-        background: COLORS.ink, color: "#fff", border: "none",
-        borderRadius: 16, padding: "14px 32px", fontSize: 14, fontWeight: 600,
-        fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 8,
-      }}>Voir le Fil →</button>
+
+      {isMerchant ? (
+        <>
+          {/* CTA principal : créer sa vitrine */}
+          <button onClick={() => onFinish && onFinish("profil")} style={{
+            background: COLORS.pro, color: "#fff", border: "none",
+            borderRadius: 16, padding: "14px 24px", fontSize: 14, fontWeight: 700,
+            fontFamily: "'Syne', sans-serif", cursor: "pointer", marginTop: 8, width: "100%",
+          }}>Créer ma vitrine maintenant 🏪</button>
+          {/* CTA secondaire : aller au fil */}
+          <button onClick={() => onFinish && onFinish("fil")} style={{
+            background: "transparent", color: COLORS.ink2, border: `1.5px solid ${COLORS.border}`,
+            borderRadius: 16, padding: "12px 24px", fontSize: 13, fontWeight: 600,
+            fontFamily: "'DM Sans', sans-serif", cursor: "pointer", width: "100%",
+          }}>Explorer le fil d'abord →</button>
+        </>
+      ) : (
+        <button onClick={() => onFinish && onFinish("fil")} style={{
+          background: COLORS.ink, color: "#fff", border: "none",
+          borderRadius: 16, padding: "14px 32px", fontSize: 14, fontWeight: 600,
+          fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 8,
+        }}>Voir le Fil →</button>
+      )}
       <div
         onClick={onRestart}
         style={{
@@ -888,7 +949,10 @@ export default function ChipeurInscription({ setPage, onAuth }) {
           <ScreenSuccess
             accountType={accountType}
             onRestart={() => { setScreen("inscription"); setAccountType(null); }}
-            onFinish={() => onAuth ? onAuth() : setPage("fil")}
+            onFinish={(dest) => {
+              if (onAuth) { onAuth(); }
+              setPage(dest === "profil" ? "profil" : "fil");
+            }}
           />
         )}
     </div>
