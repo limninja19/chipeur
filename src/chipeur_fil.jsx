@@ -1135,47 +1135,6 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
   );
 }
 
-// ─── FAB MENU OVERLAY ───
-function FabMenu({ open, onClose, setPage }) {
-  if (!open) return null;
-  const items = [
-    { icon: "📸", label: "Nouveau post", page: "nouveau" },
-    { icon: "📅", label: "Nouvelle sortie", page: "sorties" },
-    { icon: "🏆", label: "Créer un défi", page: "defis", pro: true },
-  ];
-  return (
-    <div onClick={onClose} style={{
-      position: "absolute", inset: 0, zIndex: 100,
-      background: "rgba(26,23,20,0.4)", display: "flex",
-      flexDirection: "column", justifyContent: "flex-end",
-      padding: "0 0 90px",
-    }}>
-      <div onClick={e => e.stopPropagation()} style={{
-        display: "flex", flexDirection: "column", gap: 6,
-        alignItems: "center", padding: "0 60px 12px",
-      }}>
-        {items.map((item, i) => (
-          <button key={i} onClick={() => { onClose(); setPage(item.page); }} style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 10,
-            background: C.card, border: "none", borderRadius: 14,
-            padding: "12px 16px", cursor: "pointer",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-            fontFamily: "'DM Sans', sans-serif",
-          }}>
-            <span style={{ fontSize: 18 }}>{item.icon}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{item.label}</span>
-            {item.pro && (
-              <span style={{
-                fontSize: 8, fontWeight: 700, background: C.proBg, color: C.pro,
-                padding: "2px 6px", borderRadius: 6, marginLeft: "auto",
-              }}>PRO</span>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ─── BOTTOM NAV ───
 function BottomNav({ active, onNavigate, onFab }) {
@@ -1215,7 +1174,6 @@ function BottomNav({ active, onNavigate, onFab }) {
 
 export default function Fil({ setPage, profile, user, setSelectedVoisinId, requireAuth, setSelectedSortieId }) {
   const [activeFilters, setActiveFilters] = useState(new Set(["all"]));
-  const [fabOpen, setFabOpen] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -1353,8 +1311,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
           ))
         )}
       </div>
-      {fabOpen && <FabMenu open={fabOpen} onClose={() => setFabOpen(false)} setPage={setPage} />}
-      <BottomNav active="fil" onNavigate={setPage} onFab={() => setFabOpen(!fabOpen)} />
+      <BottomNav active="fil" onNavigate={setPage} onFab={() => setPage("nouveau")} />
     </div>
   );
 }

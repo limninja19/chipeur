@@ -672,7 +672,7 @@ function FormRecherche({ content, onChange, rechercheTag, onTagChange }) {
 
 // ─── MAIN ───
 export default function ChipeurNouveauPost({ setPage, user, profile, editPost, setEditPost, autoCreateSortie, setAutoCreateSortie }) {
-  const [screen, setScreen] = useState("form");
+  const [screen, setScreen] = useState("choose"); // "choose" | "form" | "success"
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
@@ -713,11 +713,12 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   // Je cherche fields
   const [rechercheTag, setRechercheTag] = useState("");
 
-  // ── Mode édition : pré-remplir les champs si editPost existe ──
+  // ── Mode édition : pré-remplir les champs + aller direct au formulaire ──
   useEffect(() => {
     if (!editPost) return;
     const type = editPost.post_type || "decouverte";
     setSelectedType(type);
+    setScreen("form");
     setContent(editPost.content || "");
     setActiveTags(Array.isArray(editPost.tags) ? editPost.tags : []);
     setLinkUrl(editPost.link_url || "");
@@ -1117,130 +1118,90 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       display: "flex", flexDirection: "column",
     }}>
 
-        {screen === "form" && (
+        {/* ── ÉCRAN CHOIX DU TYPE ── */}
+        {screen === "choose" && (
           <>
-            {/* Top bar */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "12px 16px", borderBottom: `1px solid ${C.border}`,
-              background: C.card, flexShrink: 0,
-            }}>
-              <button onClick={() => { setEditPost?.(null); setPage(isEditMode ? "profil" : "fil"); }} style={{
-                width: 34, height: 34, borderRadius: "50%", background: C.pill,
-                border: "none", fontSize: 16, cursor: "pointer", color: C.ink2,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>✕</button>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: C.ink }}>
-                {isEditMode ? "Modifier le post ✏️" : "Nouveau post"}
-              </div>
-              {/* Avatar utilisateur */}
-              <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
-                🧑
-              </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${C.border}`, background: C.card, flexShrink: 0 }}>
+              <button onClick={() => { setEditPost?.(null); setPage("fil"); }} style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, border: "none", fontSize: 16, cursor: "pointer", color: C.ink2, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 700, color: C.ink }}>Nouveau post</div>
+              <div style={{ width: 34 }} />
             </div>
-
-            {publishError && (
-              <div style={{ padding: "8px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 12 }}>⚠️ {publishError}</div>
-            )}
-            {/* Scroll area */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 90px" }}>
-              {/* Type selection */}
-              <div style={{
-                fontSize: 11, fontWeight: 700, color: C.ink2,
-                textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10,
-              }}>Que veux-tu partager ?</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
-                {types.map(t => {
-                  const isSelected = selectedType === t.id;
-                  return (
-                    <div key={t.id} onClick={() => {
-                      if (t.id === "promo" && isMagasin) {
-                        localStorage.setItem("chipeur_profil_tab", "creer");
-                        localStorage.setItem("chipeur_creer_mode", "remise");
-                        setPage("profil");
-                        return;
-                      }
-                      if (t.isRedirect) {
-                        // Événement → aller directement à la page sorties avec création ouverte
-                        if (setAutoCreateSortie) setAutoCreateSortie(true);
-                        setPage("sorties");
-                        return;
-                      }
-                      setSelectedType(t.id); setActiveTags([]);
-                      setPhotoFile(null); setPhotoPreview(null);
-                      setHesLabel(""); setHesPrice(""); setRechercheTag("");
-                    }} style={{
-                      borderRadius: 20, cursor: "pointer", overflow: "hidden",
-                      border: `2px solid ${isSelected ? "transparent" : C.border}`,
-                      background: isSelected ? t.grad : C.card,
-                      transition: "all 0.2s",
-                      boxShadow: isSelected ? "0 4px 16px rgba(0,0,0,0.12)" : "none",
-                      transform: isSelected ? "scale(1.02)" : "scale(1)",
-                    }}>
-                      {/* Icône avec fond coloré */}
-                      <div style={{
-                        padding: "18px 16px 10px",
-                        display: "flex", flexDirection: "column", gap: 8,
-                      }}>
-                        <div style={{
-                          width: 42, height: 42, borderRadius: 14,
-                          background: isSelected ? "rgba(255,255,255,0.25)" : t.light,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 20,
-                        }}>{t.icon}</div>
-                        <div>
-                          <div style={{
-                            fontSize: 14, fontWeight: 700,
-                            fontFamily: "'Syne', sans-serif",
-                            letterSpacing: -0.2,
-                            lineHeight: 1.2,
-                            color: isSelected ? "#fff" : C.ink,
-                          }}>{t.name}</div>
-                          <div style={{
-                            fontSize: 11, lineHeight: 1.4, marginTop: 4,
-                            fontFamily: "'DM Sans', sans-serif",
-                            color: isSelected ? "rgba(255,255,255,0.82)" : C.ink2,
-                          }}>{t.desc}</div>
-                        </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px 40px" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 14 }}>Que veux-tu partager ?</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {types.map(t => (
+                  <div key={t.id} onClick={() => {
+                    if (t.id === "promo" && isMagasin) {
+                      localStorage.setItem("chipeur_profil_tab", "creer");
+                      localStorage.setItem("chipeur_creer_mode", "remise");
+                      setPage("profil"); return;
+                    }
+                    if (t.isRedirect) {
+                      if (setAutoCreateSortie) setAutoCreateSortie(true);
+                      setPage("sorties"); return;
+                    }
+                    setSelectedType(t.id);
+                    setActiveTags([]); setPhotoFile(null); setPhotoPreview(null);
+                    setHesLabel(""); setHesPrice(""); setRechercheTag("");
+                    setScreen("form");
+                  }} style={{
+                    borderRadius: 20, cursor: "pointer", overflow: "hidden",
+                    border: `1.5px solid ${C.border}`, background: C.card,
+                    transition: "transform 0.15s, box-shadow 0.15s",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    active: "transform: scale(0.97)",
+                  }}>
+                    <div style={{ padding: "16px 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 14, background: t.light, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{t.icon}</div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Syne', sans-serif", color: C.ink, lineHeight: 1.2 }}>{t.name}</div>
+                        <div style={{ fontSize: 11, color: C.ink2, marginTop: 4, lineHeight: 1.4 }}>{t.desc}</div>
                       </div>
-                      {/* Barre indicatrice en bas */}
-                      {isSelected && (
-                        <div style={{ height: 3, background: "rgba(255,255,255,0.4)", margin: "0 16px 12px" }} />
-                      )}
                     </div>
-                  );
-                })}
+                    <div style={{ height: 4, background: t.grad }} />
+                  </div>
+                ))}
               </div>
-
-              {/* Dynamic form */}
-              {formMap[selectedType]}
-            </div>
-
-            {/* ── Barre Publier sticky en bas ── */}
-            <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              padding: "12px 16px 28px", background: C.card,
-              borderTop: `1px solid ${C.border}`,
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <button
-                onClick={handlePublishClick}
-                disabled={publishing}
-                style={{
-                  flex: 1, border: "none", borderRadius: 16, padding: "14px 0",
-                  fontSize: 14, fontWeight: 800, cursor: publishing ? "not-allowed" : "pointer",
-                  fontFamily: "'DM Sans', sans-serif",
-                  background: publishing ? "#ccc" : `linear-gradient(90deg, ${C.accent}, #FF8C42)`,
-                  color: "#fff",
-                  boxShadow: publishing ? "none" : "0 4px 16px rgba(255,87,51,0.4)",
-                  letterSpacing: 0.2,
-                }}
-              >
-                {publishing ? "Sauvegarde…" : isEditMode ? "Enregistrer les modifications ✓" : "Publier 🚀"}
-              </button>
             </div>
           </>
         )}
+
+        {/* ── ÉCRAN FORMULAIRE ── */}
+        {screen === "form" && (() => {
+          const t = types.find(ty => ty.id === selectedType) || types[0];
+          return (
+            <>
+              {/* Header */}
+              <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px 10px" }}>
+                  <button onClick={() => setScreen(isEditMode ? "form" : "choose")} style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, border: "none", fontSize: 16, cursor: "pointer", color: C.ink2, display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: C.ink }}>{isEditMode ? "Modifier le post ✏️" : "Nouveau post"}</div>
+                  <button onClick={() => { setEditPost?.(null); setPage("fil"); }} style={{ width: 34, height: 34, borderRadius: "50%", background: C.pill, border: "none", fontSize: 14, cursor: "pointer", color: C.ink2, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                </div>
+                {/* Bandeau type */}
+                <div style={{ margin: "0 14px 12px", borderRadius: 16, background: t.grad, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{t.icon}</div>
+                  <div>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 16, color: "#fff", lineHeight: 1.1 }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 3, lineHeight: 1.4 }}>{t.desc}</div>
+                  </div>
+                </div>
+              </div>
+
+              {publishError && <div style={{ padding: "8px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 12 }}>⚠️ {publishError}</div>}
+
+              <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 90px" }}>
+                {formMap[selectedType]}
+              </div>
+
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 16px 28px", background: C.card, borderTop: `1px solid ${C.border}` }}>
+                <button onClick={handlePublishClick} disabled={publishing} style={{ width: "100%", border: "none", borderRadius: 16, padding: "14px 0", fontSize: 14, fontWeight: 800, cursor: publishing ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", background: publishing ? "#ccc" : `linear-gradient(90deg, ${C.accent}, #FF8C42)`, color: "#fff", boxShadow: publishing ? "none" : "0 4px 16px rgba(255,87,51,0.4)" }}>
+                  {publishing ? "Sauvegarde…" : isEditMode ? "Enregistrer ✓" : "Publier 🚀"}
+                </button>
+              </div>
+            </>
+          );
+        })()}
 
         {screen === "success" && (
           <>
