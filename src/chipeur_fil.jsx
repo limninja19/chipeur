@@ -1334,7 +1334,16 @@ function RechercheRecommandations({ post, user, requireAuth }) {
                 <div style={{ fontSize: 10, color: C.ink2 }}>recommandé par {rec.profiles?.pseudo || "Voisin·e"}</div>
               </div>
               {isOwn && (
-                <span style={{ fontSize: 10, color: "#0369A1", fontWeight: 600, background: "#DBEAFE", padding: "2px 8px", borderRadius: 8, flexShrink: 0 }}>Ma reco</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: "#0369A1", fontWeight: 600, background: "#DBEAFE", padding: "2px 8px", borderRadius: 8 }}>Ma reco</span>
+                  <button onClick={async () => {
+                    await supabase.from("post_recommendations").delete().eq("id", rec.id).eq("user_id", user.id);
+                    loadRecs();
+                  }} style={{
+                    fontSize: 11, color: "#E53935", background: "none", border: "none",
+                    cursor: "pointer", padding: "2px 4px", lineHeight: 1,
+                  }} title="Supprimer ma recommandation">✕</button>
+                </div>
               )}
             </div>
             {/* Votes 👍/👎 — visibles sur toutes les recos sauf la sienne (elle est déjà votée implicitement) */}
