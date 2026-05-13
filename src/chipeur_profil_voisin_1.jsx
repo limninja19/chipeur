@@ -468,7 +468,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
       </div>
 
       {/* Crédits locaux */}
-      <MesCreditsLocaux userId={user?.id} />
+      <MesCreditsLocaux userId={profile?.id} />
     </div>
   );
 }
@@ -485,7 +485,9 @@ function MesCreditsLocaux({ userId }) {
       .eq("user_id", userId)
       .gt("points", 0)
       .order("points", { ascending: false })
-      .then(({ data }) => setWallet(data || []));
+      .then(({ data, error }) => {
+        if (!error) setWallet(data || []);
+      });
   }, [userId]);
 
   if (!wallet.length) return null;

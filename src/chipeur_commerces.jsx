@@ -1048,7 +1048,10 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
       .eq("magasin_id", com.id)
       .in("linked_status", ["pending", "accepted"])
       .order("created_at", { ascending: false })
-      .then(({ data }) => { setLinkedPosts(data || []); setLoadingLinked(false); });
+      .then(({ data, error }) => {
+        if (!error) setLinkedPosts(data || []);
+        setLoadingLinked(false);
+      });
   }, [activeMode, com.id]);
 
   const handleAcceptPost = async (post) => {
