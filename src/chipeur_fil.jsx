@@ -1236,7 +1236,11 @@ function RechercheRecommandations({ post, user, requireAuth }) {
     setSubmitting(false);
     if (error) {
       console.error("post_recommendations insert error:", error);
-      setDupError("Erreur : " + (error.message || "impossible d'enregistrer la recommandation."));
+      if (error.code === "23505") {
+        setDupError("Tu as déjà fait une recommandation pour ce post.");
+      } else {
+        setDupError("Erreur : " + (error.message || "impossible d'enregistrer la recommandation."));
+      }
       return;
     }
     if (isFirst) addXP(user.id, 5, "premiere_recommandation");
