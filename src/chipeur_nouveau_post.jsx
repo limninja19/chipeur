@@ -583,7 +583,7 @@ function DroitImagePopup({ onConfirm, onCancel }) {
 function SuccessScreen({ type, onBack }) {
   const msgs = {
     decouverte:  "Ta chope est maintenant visible par tous les voisins ! 📸",
-    hesitation:  "Tes voisins vont voter pour toi ! Résultat dans le fil. 🤔",
+    tuvalides:   "Tes voisins vont voter pour toi ! Résultat dans le fil. 🤔",
     recherche:   "Ta demande est publiée ! Les voisins vont te répondre. 🔍",
     lieu:        "Ton spot est partagé ! Les voisins vont adorer le découvrir. 📍",
     bonplan:     "Ta reco est partagée avec le quartier ! 💡",
@@ -614,32 +614,47 @@ function SuccessScreen({ type, onBack }) {
   );
 }
 
-// ─── FORM J'HÉSITE ───
-const RECHERCHE_CATS = ["🎨 Artisan","🍽️ Resto","👗 Mode","🔧 Services","🏠 Maison","💄 Beauté","📚 Culture","🏃 Sport","🧀 Alimentation","✨ Autre"];
+// ─── FORM TU VALIDES ?! ───
+const TV_CATS = ["👗 Mode","👟 Chaussures","🏠 Déco","💄 Beauté","📱 Tech","🎒 Accessoires","🍳 Cuisine","✨ Autre"];
 
-function FormHesitation({ content, onChange, onPhotoSelect, photoPreview, hesLabel, onLabelChange, hesPrice, onPriceChange }) {
-  const inp = { width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid rgba(26,23,20,0.08)`, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1A1714", background: "#fff", outline: "none", marginBottom: 12 };
+function FormTuValides({ content, onChange, onPhotoSelect, photoPreview, tvCat, onCatChange }) {
   return (
     <div>
       <div style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#6D28D9", lineHeight: 1.5 }}>
-        🤔 Poste ce sur quoi tu hésites — tes voisins glissent <b>oui</b> ou <b>non</b> dans le fil !
+        🤔 Montre ce sur quoi tu hésites — tes voisins valident <b>oui</b> ou <b>non</b> !
       </div>
-      <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-hesitation" externalPreview={photoPreview} />
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Ce sur quoi tu hésites *</label>
-        <input value={hesLabel} onChange={e => onLabelChange(e.target.value)} placeholder="ex : Robe fleurie, sneakers blanches, sac en cuir…" style={inp} />
-      </div>
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Prix (optionnel)</label>
-        <input value={hesPrice} onChange={e => onPriceChange(e.target.value)} placeholder="ex : 89€" style={{ ...inp, width: 120 }} />
+      <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-tuvalides" externalPreview={photoPreview} />
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 8, display: "block" }}>Catégorie</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {TV_CATS.map(cat => {
+            const on = tvCat === cat;
+            return (
+              <button key={cat} type="button" onClick={() => onCatChange(on ? "" : cat)} style={{
+                fontSize: 11, padding: "6px 12px", borderRadius: 20, border: "none",
+                background: on ? "#8B5CF6" : "#EDEBE8",
+                color: on ? "#fff" : "#6B6560",
+                fontWeight: on ? 700 : 500,
+                cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s",
+              }}>{cat}</button>
+            );
+          })}
+        </div>
       </div>
       <div>
-        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Ton hésitation en quelques mots</label>
-        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="ex : J'adore mais le prix me retient… Qu'est-ce que vous en pensez ?" rows={3} style={{ ...inp, resize: "none", lineHeight: 1.5, marginBottom: 0 }} />
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Dis-nous en plus (optionnel)</label>
+        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="ex : J'adore mais le prix me retient… Qu'est-ce que vous en pensez ?" rows={3} style={{
+          width: "100%", boxSizing: "border-box", padding: "11px 14px",
+          borderRadius: 14, border: "1.5px solid rgba(26,23,20,0.08)",
+          fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1A1714",
+          background: "#fff", outline: "none", resize: "none", lineHeight: 1.5,
+        }} />
       </div>
     </div>
   );
 }
+
+const RECHERCHE_CATS = ["🎨 Artisan","🍽️ Resto","👗 Mode","🔧 Services","🏠 Maison","💄 Beauté","📚 Culture","🏃 Sport","🧀 Alimentation","✨ Autre"];
 
 // ─── FORM JE CHERCHE ───
 function FormRecherche({ content, onChange, rechercheTag, onTagChange }) {
@@ -707,9 +722,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   const [linkUrl, setLinkUrl] = useState("");
   // Photo pour lieu (séparée de la photo post normal)
   const [lieuPhotoFile, setLieuPhotoFile] = useState(null);
-  // J'hésite fields
-  const [hesLabel, setHesLabel] = useState("");
-  const [hesPrice, setHesPrice] = useState("");
+  // Tu valides ?! fields
+  const [tvCat, setTvCat] = useState("");
   // Je cherche fields
   const [rechercheTag, setRechercheTag] = useState("");
 
@@ -745,7 +759,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
     { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir autour de toi",        grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
   ] : [
     { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un achat, un instant sympa, une trouvaille du jour",         grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
-    { id: "hesitation",  icon: "🤔", name: "J'hésite",     desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "linear-gradient(135deg,#8B5CF6,#C4B5FD)", light: "#F5F3FF" },
+    { id: "tuvalides",   icon: "🤔", name: "Tu valides ?", desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "linear-gradient(135deg,#8B5CF6,#C4B5FD)", light: "#F5F3FF" },
     { id: "recherche",   icon: "🔍", name: "Je cherche",   desc: "Tu cherches un artisan, un service, un produit ?",           grad: "linear-gradient(135deg,#0EA5E9,#38BDF8)", light: "#F0F9FF" },
     { id: "bonplan",     icon: "💡", name: "Je recommande",desc: "Une adresse top, un bon plan à ne pas rater",                grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
     { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir aux voisins",          grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
@@ -836,11 +850,11 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       return;
     }
 
-    // ── CAS J'HÉSITE ──
-    if (selectedType === "hesitation") {
-      if (!hesLabel.trim() && !content.trim()) {
+    // ── CAS TU VALIDES ?! ──
+    if (selectedType === "tuvalides") {
+      if (!photoFile && !content.trim()) {
         setPublishing(false);
-        setPublishError("Décris ce sur quoi tu hésites !");
+        setPublishError("Ajoute une photo ou dis-nous en plus !");
         return;
       }
       let image_url = null;
@@ -855,17 +869,15 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       }
       const { error } = await supabase.from("posts").insert({
         author_id: user.id,
-        content: content.trim() || hesLabel.trim(),
+        content: content.trim() || null,
         image_url,
-        post_type: "hesitation",
-        product_label: hesLabel.trim() || null,
-        product_price: hesPrice.trim() || null,
+        post_type: "tuvalides",
         location: profile?.quartier || "Saint-Dié-des-Vosges",
-        tags: ["J'hésite 🤔"],
+        tags: tvCat ? [tvCat] : [],
       });
       setPublishing(false);
       if (error) { setPublishError("Erreur : " + error.message); return; }
-      addXP(user.id, 10, "hesitation_publie");
+      addXP(user.id, 10, "tuvalides_publie");
       setScreen("success");
       return;
     }
@@ -1073,11 +1085,10 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   );
 
   const formMap = {
-    hesitation: <FormHesitation
+    tuvalides: <FormTuValides
       content={content} onChange={setContent}
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
-      hesLabel={hesLabel} onLabelChange={setHesLabel}
-      hesPrice={hesPrice} onPriceChange={setHesPrice}
+      tvCat={tvCat} onCatChange={setTvCat}
     />,
     recherche: <FormRecherche
       content={content} onChange={setContent}
@@ -1142,7 +1153,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
                     }
                     setSelectedType(t.id);
                     setActiveTags([]); setPhotoFile(null); setPhotoPreview(null);
-                    setHesLabel(""); setHesPrice(""); setRechercheTag("");
+                    setTvCat(""); setRechercheTag("");
                     setScreen("form");
                   }} style={{
                     borderRadius: 20, cursor: "pointer", overflow: "hidden",

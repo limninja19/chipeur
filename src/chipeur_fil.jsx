@@ -1136,6 +1136,237 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
 }
 
 
+// ─── TU VALIDES ?! — NOTIF BANNER ───
+function TuValidesNotif({ user }) {
+  const [post, setPost] = useState(null);
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem("chipeur_tuvalides_notif_off") === "1"
+  );
+
+  useEffect(() => {
+    if (dismissed) return;
+    const lastSeen = localStorage.getItem("chipeur_tuvalides_last_seen") || "";
+    supabase.from("posts")
+      .select("id, created_at, profiles(pseudo), tags, image_url")
+      .eq("post_type", "tuvalides")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        if (!lastSeen || data.created_at > lastSeen) setPost(data);
+      });
+  }, [dismissed]);
+
+  if (dismissed || !post) return null;
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg,#8B5CF6,#A78BFA)",
+      borderRadius: 14, padding: "10px 14px", marginBottom: 10,
+      display: "flex", alignItems: "center", gap: 10,
+    }}>
+      <span style={{ fontSize: 24, flexShrink: 0 }}>🤔</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>
+          {post.profiles?.pseudo} a posté un « Tu valides ?! »
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>
+          {post.tags?.[0] ? post.tags[0] + " · " : ""}Donne ton avis !
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+        <button onClick={() => {
+          localStorage.setItem("chipeur_tuvalides_last_seen", post.created_at);
+          setPost(null);
+        }} style={{
+          background: "rgba(255,255,255,0.25)", border: "none", borderRadius: 20,
+          padding: "4px 10px", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer",
+        }}>✕</button>
+        <button onClick={() => {
+          localStorage.setItem("chipeur_tuvalides_notif_off", "1");
+          setDismissed(true);
+        }} style={{
+          background: "none", border: "none", color: "rgba(255,255,255,0.7)",
+          fontSize: 9, cursor: "pointer", padding: "2px 0", fontFamily: "'DM Sans', sans-serif",
+        }}>Ne plus m'alerter</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── TU VALIDES ?! — CARD ───
+function TuValidesCard({ post, user }) {
+  const [ouiCount, setOuiCount] = useState(0);
+  const [nonCount, setNonCount] = useState(0);
+  const [myVote, setMyVote] = useState(null); // "tv_oui" | "tv_non" | null
+
+  useEffect(() => {
+    supabase.from("post_reactions")
+      .select("type, user_id")
+      .eq("post_id", post.id)
+      .in("type", ["tv_oui", "tv_non"])
+      .then(({ data }) => {
+        let oui = 0, non = 0;
+        (data || []).forEach(r => {
+          if (r.type === "tv_oui") oui++;
+          else non++;
+          if (user?.id && r.user_id === user.id) setMyVote(r.type);
+        });
+        setOuiCount(oui);
+        setNonCount(non);
+      });
+  }, [post.id, user?.id]);
+
+  const handleVote = async (type) => {
+    if (!user?.id) return;
+    const prev = myVote;
+    // Optimistic update
+    if (prev === type) {
+      setMyVote(null);
+      if (type === "tv_oui") setOuiCount(c => Math.max(0, c - 1));
+      else setNonCount(c => Math.max(0, c - 1));
+    } else {
+      if (prev) {
+        if (prev === "tv_oui") setOuiCount(c => Math.max(0, c - 1));
+        else setNonCount(c => Math.max(0, c - 1));
+      }
+      setMyVote(type);
+      if (type === "tv_oui") setOuiCount(c => c + 1);
+      else setNonCount(c => c + 1);
+    }
+    // Supprimer l'ancien vote, puis insérer le nouveau si différent
+    await supabase.from("post_reactions")
+      .delete()
+      .eq("post_id", post.id)
+      .eq("user_id", user.id)
+      .in("type", ["tv_oui", "tv_non"]);
+    if (prev !== type) {
+      await supabase.from("post_reactions")
+        .insert({ post_id: post.id, user_id: user.id, type });
+    }
+  };
+
+  const total = ouiCount + nonCount;
+  const ouiPct = total > 0 ? Math.round((ouiCount / total) * 100) : 50;
+
+  return (
+    <div style={{
+      background: C.card, borderRadius: 18,
+      border: `1px solid ${C.border}`, overflow: "hidden", marginBottom: 10,
+    }}>
+      {post.image_url && (
+        <div style={{ width: "100%", paddingTop: "65%", position: "relative", overflow: "hidden" }}>
+          <img src={post.image_url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          {/* Author badge */}
+          <div style={{
+            position: "absolute", top: 8, left: 8,
+            background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)",
+            borderRadius: 20, padding: "4px 10px",
+            fontSize: 11, fontWeight: 700, color: "#fff",
+          }}>👤 {post.profiles?.pseudo || "Voisin·e"}</div>
+          {/* Category chips overlay */}
+          {post.tags?.length > 0 && (
+            <div style={{ position: "absolute", bottom: 8, left: 8, display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {post.tags.map(t => (
+                <span key={t} style={{
+                  background: "rgba(139,92,246,0.85)", color: "#fff",
+                  fontSize: 10, fontWeight: 700, padding: "3px 8px",
+                  borderRadius: 10, backdropFilter: "blur(4px)",
+                }}>{t}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div style={{ padding: "12px 14px" }}>
+        {!post.image_url && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: C.ink }}>
+              👤 {post.profiles?.pseudo || "Voisin·e"}
+            </span>
+            {post.tags?.map(t => (
+              <span key={t} style={{ background: "#F5F3FF", color: "#7C3AED", fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 10 }}>{t}</span>
+            ))}
+          </div>
+        )}
+        {post.content && (
+          <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.5, marginBottom: 10 }}>{post.content}</div>
+        )}
+        {/* Barre de progression */}
+        {total > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.ink2, marginBottom: 4 }}>
+              <span style={{ color: "#16A34A", fontWeight: 700 }}>✅ Oui {ouiPct}%</span>
+              <span>{total} vote{total > 1 ? "s" : ""}</span>
+              <span style={{ color: "#DC2626", fontWeight: 700 }}>❌ Non {100 - ouiPct}%</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: "#FFE4E4", overflow: "hidden" }}>
+              <div style={{
+                height: "100%", width: `${ouiPct}%`,
+                background: "linear-gradient(90deg,#22C55E,#86EFAC)",
+                borderRadius: 3, transition: "width 0.4s",
+              }} />
+            </div>
+          </div>
+        )}
+        {/* Boutons vote */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <button onClick={() => handleVote("tv_oui")} style={{
+            border: "none", borderRadius: 14, padding: "12px 0",
+            background: myVote === "tv_oui" ? "#22C55E" : "#F0FDF4",
+            color: myVote === "tv_oui" ? "#fff" : "#16A34A",
+            fontWeight: 700, fontSize: 14, cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s",
+            boxShadow: myVote === "tv_oui" ? "0 4px 12px rgba(34,197,94,0.35)" : "none",
+          }}>
+            ✅ Oui{ouiCount > 0 ? ` (${ouiCount})` : ""}
+          </button>
+          <button onClick={() => handleVote("tv_non")} style={{
+            border: "none", borderRadius: 14, padding: "12px 0",
+            background: myVote === "tv_non" ? "#EF4444" : "#FFF1F2",
+            color: myVote === "tv_non" ? "#fff" : "#DC2626",
+            fontWeight: 700, fontSize: 14, cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s",
+            boxShadow: myVote === "tv_non" ? "0 4px 12px rgba(239,68,68,0.35)" : "none",
+          }}>
+            ❌ Non{nonCount > 0 ? ` (${nonCount})` : ""}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TU VALIDES ?! — BANDEAU ───
+function BandeauTuValides({ user }) {
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    supabase.from("posts")
+      .select("id, content, image_url, created_at, tags, profiles(pseudo, avatar_url)")
+      .eq("post_type", "tuvalides")
+      .order("created_at", { ascending: false })
+      .limit(3)
+      .then(({ data }) => setPosts(data || []));
+  }, []);
+
+  if (posts.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <div style={{
+        fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
+        letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
+      }}>
+        🤔 Tu valides ?!
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+      </div>
+      {posts.map(p => <TuValidesCard key={p.id} post={p} user={user} />)}
+    </div>
+  );
+}
+
 // ─── BOTTOM NAV ───
 function BottomNav({ active, onNavigate, onFab }) {
   const items = [
@@ -1286,6 +1517,8 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
         )}
         <BandeauDefis setPage={setPage} user={user} />
         <BandeauSortiesPhotos setPage={setPage} setSelectedSortieId={setSelectedSortieId} />
+        <TuValidesNotif user={user} />
+        <BandeauTuValides user={user} />
 
         {/* Séparateur discret avant le fil de posts */}
         <div style={{ height: 1, background: C.border, margin: "4px 0 8px" }} />
