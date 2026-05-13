@@ -1135,10 +1135,12 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
             </div>
           )}
         </div>
-        {/* Actions */}
-        <div style={{ padding: "8px 12px 10px" }}>
-          <Reactions postId={post.id} userId={userId} authorId={post.author_id || post.profiles?.id} user={user} />
-        </div>
+        {/* Actions — masquées pour "Je cherche" */}
+        {post.post_type !== "recherche" && (
+          <div style={{ padding: "8px 12px 10px" }}>
+            <Reactions postId={post.id} userId={userId} authorId={post.author_id || post.profiles?.id} user={user} />
+          </div>
+        )}
         {/* Section recommandations pour "Je cherche" */}
         {post.post_type === "recherche" && (
           <RechercheRecommandations post={post} user={user} requireAuth={requireAuth} />
@@ -1151,14 +1153,17 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
 
 // ─── RECOMMANDATIONS SUR "JE CHERCHE" ───
 function RechercheRecommandations({ post, user, requireAuth }) {
-  const [recs, setRecs]           = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [recs, setRecs]             = useState([]);
+  const [loading, setLoading]       = useState(true);
   const [showPicker, setShowPicker] = useState(false);
-  const [merchants, setMerchants] = useState([]);
-  const [search, setSearch]       = useState("");
-  const [myVotes, setMyVotes]     = useState({});
+  const [merchants, setMerchants]   = useState([]);
+  const [search, setSearch]         = useState("");
+  const [myVotes, setMyVotes]       = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [dupError, setDupError]     = useState("");
   const isAuthor = user?.id === post.author_id;
+
+  const normalize = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
   const loadRecs = async () => {
     const { data } = await supabase
@@ -1196,6 +1201,10 @@ function RechercheRecommandations({ post, user, requireAuth }) {
   useEffect(() => { loadRecs(); }, [post.id]);
   useEffect(() => { if (user?.id) loadMyVotes(); }, [user?.id]);
 
+  // IDs et noms déjà recommandés pour CE post (pour éviter les doublons)
+  const recommendedIds  = new Set(recs.filter(r => r.magasin_id).map(r => r.magasin_id));
+  const recommendedNoms = recs.map(r => normalize(r.magasin_nom));
+
   const handleOpenPicker = () => {
     if (!user) { requireAuth?.(() => {}); return; }
     if (!merchants.length) {
@@ -1203,11 +1212,18 @@ function RechercheRecommandations({ post, user, requireAuth }) {
         .in("role", ["magasin", "artisan"]).order("pseudo")
         .then(({ data }) => setMerchants(data || []));
     }
-    setShowPicker(true);
+    setDupError(""); setShowPicker(true);
   };
 
   const handleRecommend = async (magasinId, magasinNom) => {
     if (!user?.id || submitting) return;
+    // Bloquer si ce commerce est déjà recommandé sur ce post
+    if (magasinId && recommendedIds.has(magasinId)) {
+      setDupError("Ce commerce a déjà été recommandé pour ce post."); return;
+    }
+    if (recommendedNoms.includes(normalize(magasinNom))) {
+      setDupError(`"${magasinNom}" a déjà été recommandé pour ce post.`); return;
+    }
     setSubmitting(true);
     const isFirst = recs.length === 0;
     const { error } = await supabase.from("post_recommendations").insert({
@@ -1215,8 +1231,9 @@ function RechercheRecommandations({ post, user, requireAuth }) {
       magasin_id: magasinId || null, magasin_nom: magasinNom,
     });
     if (!error && isFirst) addXP(user.id, 5, "premiere_recommandation");
-    setShowPicker(false); setSearch(""); setSubmitting(false);
+    setShowPicker(false); setSearch(""); setDupError(""); setSubmitting(false);
     loadRecs();
+    if (user?.id) loadMyVotes();
   };
 
   const handleVote = async (recId, voteType) => {
@@ -1236,15 +1253,21 @@ function RechercheRecommandations({ post, user, requireAuth }) {
   };
 
   const myRec = recs.find(r => r.user_id === user?.id);
-  const normalize = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
-  const filtered = search.trim()
-    ? merchants.filter(m => normalize(m.pseudo).includes(normalize(search)))
-    : merchants;
+
+  // Liste filtrée : exclut les commerces déjà recommandés + applique la recherche
+  const filtered = merchants.filter(m => {
+    if (recommendedIds.has(m.id)) return false; // déjà recommandé → masqué
+    if (search.trim()) return normalize(m.pseudo).includes(normalize(search));
+    return true;
+  });
+
+  // Pour la saisie libre : vérifier si le nom est déjà utilisé
+  const freeTextAlreadyUsed = search.trim() && recommendedNoms.includes(normalize(search.trim()));
 
   return (
     <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 12px 12px" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: recs.length > 0 ? 8 : 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: recs.length > 0 ? 8 : 4 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#0369A1" }}>
           🤝 {loading ? "…" : recs.length === 0 ? "Sois le premier à recommander !" : `${recs.length} recommandation${recs.length > 1 ? "s" : ""}`}
         </div>
@@ -1253,44 +1276,60 @@ function RechercheRecommandations({ post, user, requireAuth }) {
             fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20,
             border: "none", background: "#0EA5E9", color: "#fff",
             cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-          }}>+ Je recommande {recs.length === 0 ? "· +5 XP ⚡" : ""}</button>
+          }}>+ Je recommande{recs.length === 0 ? " · +5 XP ⚡" : ""}</button>
         )}
       </div>
 
-      {/* Liste des recommandations */}
-      {recs.map(rec => (
-        <div key={rec.id} style={{
-          background: rec.user_id === user?.id ? "#EFF6FF" : C.pill,
-          borderRadius: 12, padding: "8px 10px", marginBottom: 6,
-          display: "flex", alignItems: "center", gap: 8,
-        }}>
-          <div style={{ fontSize: 18 }}>🏪</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rec.magasin_nom}</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>par {rec.profiles?.pseudo || "Voisin·e"}</div>
-          </div>
-          {/* Votes — pas sur sa propre reco */}
-          {rec.user_id !== user?.id && (
-            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-              <button onClick={() => handleVote(rec.id, "up")} style={{
-                background: myVotes[rec.id] === "up" ? "#D1FAE5" : C.card,
-                border: `1px solid ${myVotes[rec.id] === "up" ? "#34C759" : C.border}`,
-                borderRadius: 10, padding: "3px 8px", cursor: "pointer",
-                fontSize: 11, fontWeight: 600, color: "#16a34a", display: "flex", alignItems: "center", gap: 3,
-              }}>👍 {rec.up_count || 0}</button>
-              <button onClick={() => handleVote(rec.id, "down")} style={{
-                background: myVotes[rec.id] === "down" ? "#FEE2E2" : C.card,
-                border: `1px solid ${myVotes[rec.id] === "down" ? "#E53935" : C.border}`,
-                borderRadius: 10, padding: "3px 8px", cursor: "pointer",
-                fontSize: 11, fontWeight: 600, color: "#E53935", display: "flex", alignItems: "center", gap: 3,
-              }}>👎 {rec.down_count || 0}</button>
+      {/* Liste des recommandations — chacune avec ses propres 👍/👎 */}
+      {recs.map(rec => {
+        const isOwn = rec.user_id === user?.id;
+        return (
+          <div key={rec.id} style={{
+            background: isOwn ? "#EFF6FF" : C.pill,
+            borderRadius: 12, padding: "8px 10px", marginBottom: 6,
+          }}>
+            {/* Ligne commerce + auteur */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: isOwn ? 0 : 6 }}>
+              <span style={{ fontSize: 18 }}>🏪</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rec.magasin_nom}</div>
+                <div style={{ fontSize: 10, color: C.ink2 }}>recommandé par {rec.profiles?.pseudo || "Voisin·e"}</div>
+              </div>
+              {isOwn && (
+                <span style={{ fontSize: 10, color: "#0369A1", fontWeight: 600, background: "#DBEAFE", padding: "2px 8px", borderRadius: 8, flexShrink: 0 }}>Ma reco</span>
+              )}
             </div>
-          )}
-          {rec.user_id === user?.id && (
-            <span style={{ fontSize: 10, color: "#0369A1", fontWeight: 600, background: "#DBEAFE", padding: "2px 8px", borderRadius: 8 }}>Ma reco</span>
-          )}
-        </div>
-      ))}
+            {/* Votes 👍/👎 — visibles sur toutes les recos sauf la sienne (elle est déjà votée implicitement) */}
+            {!isOwn && (
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={() => handleVote(rec.id, "up")} style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  background: myVotes[rec.id] === "up" ? "#D1FAE5" : C.card,
+                  border: `1.5px solid ${myVotes[rec.id] === "up" ? "#34C759" : C.border}`,
+                  borderRadius: 10, padding: "5px 0", cursor: "pointer",
+                  fontSize: 12, fontWeight: 700, color: myVotes[rec.id] === "up" ? "#16a34a" : C.ink2,
+                  transition: "all 0.15s",
+                }}>👍 {rec.up_count || 0}</button>
+                <button onClick={() => handleVote(rec.id, "down")} style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                  background: myVotes[rec.id] === "down" ? "#FEE2E2" : C.card,
+                  border: `1.5px solid ${myVotes[rec.id] === "down" ? "#E53935" : C.border}`,
+                  borderRadius: 10, padding: "5px 0", cursor: "pointer",
+                  fontSize: 12, fontWeight: 700, color: myVotes[rec.id] === "down" ? "#E53935" : C.ink2,
+                  transition: "all 0.15s",
+                }}>👎 {rec.down_count || 0}</button>
+              </div>
+            )}
+            {/* Afficher les compteurs même sur sa propre reco */}
+            {isOwn && (rec.up_count > 0 || rec.down_count > 0) && (
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 700, color: "#16a34a" }}>👍 {rec.up_count || 0}</div>
+                <div style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 700, color: "#E53935" }}>👎 {rec.down_count || 0}</div>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       {/* Picker inline */}
       {showPicker && (
@@ -1299,7 +1338,8 @@ function RechercheRecommandations({ post, user, requireAuth }) {
             <input
               autoFocus
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={() => { setDupError(""); }}
+              onInput={e => setSearch(e.target.value)}
               placeholder="Chercher ou taper le nom du commerce…"
               style={{
                 width: "100%", boxSizing: "border-box", padding: "8px 10px",
@@ -1309,6 +1349,9 @@ function RechercheRecommandations({ post, user, requireAuth }) {
               }}
             />
           </div>
+          {dupError && (
+            <div style={{ padding: "6px 14px", background: "#FEF2F2", fontSize: 11, color: "#E53935", fontWeight: 600 }}>⚠️ {dupError}</div>
+          )}
           <div style={{ maxHeight: 160, overflowY: "auto" }}>
             {filtered.length > 0 ? filtered.map((m, i) => (
               <div key={m.id} onClick={() => handleRecommend(m.id, m.pseudo)} style={{
@@ -1325,19 +1368,27 @@ function RechercheRecommandations({ post, user, requireAuth }) {
               </div>
             )) : search.trim() ? (
               <div style={{ padding: "10px 14px" }}>
-                <div style={{ fontSize: 11, color: C.ink2, marginBottom: 8 }}>Pas encore inscrit sur Chipeur.</div>
-                <button onClick={() => handleRecommend(null, search.trim())} disabled={submitting} style={{
-                  width: "100%", background: "#EFF6FF", border: "1.5px solid #0EA5E9",
-                  borderRadius: 10, padding: "8px", fontSize: 12, fontWeight: 700,
-                  color: "#0369A1", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-                }}>Recommander "{search.trim()}"</button>
+                {freeTextAlreadyUsed ? (
+                  <div style={{ fontSize: 11, color: "#E53935", fontWeight: 600 }}>⚠️ Ce commerce a déjà été recommandé.</div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 11, color: C.ink2, marginBottom: 8 }}>Pas encore inscrit sur Chipeur.</div>
+                    <button onClick={() => handleRecommend(null, search.trim())} disabled={submitting} style={{
+                      width: "100%", background: "#EFF6FF", border: "1.5px solid #0EA5E9",
+                      borderRadius: 10, padding: "8px", fontSize: 12, fontWeight: 700,
+                      color: "#0369A1", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                    }}>Recommander "{search.trim()}"</button>
+                  </>
+                )}
               </div>
             ) : (
-              <div style={{ padding: "12px 14px", fontSize: 12, color: C.ink2 }}>Aucun commerce inscrit pour l'instant</div>
+              <div style={{ padding: "12px 14px", fontSize: 12, color: C.ink2 }}>
+                {merchants.length === 0 ? "Aucun commerce inscrit pour l'instant" : "Tous les commerces ont déjà été recommandés !"}
+              </div>
             )}
           </div>
           <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}` }}>
-            <button onClick={() => { setShowPicker(false); setSearch(""); }} style={{
+            <button onClick={() => { setShowPicker(false); setSearch(""); setDupError(""); }} style={{
               width: "100%", background: C.pill, border: "none", borderRadius: 10,
               padding: "7px", fontSize: 12, color: C.ink2, cursor: "pointer",
               fontFamily: "'DM Sans', sans-serif",
