@@ -14,18 +14,37 @@ const dm = "'DM Sans', sans-serif";
 // ─── DONNÉES STATIQUES (modèle de démonstration uniquement) ───
 const STATIC_COMMERCES = [];
 
-// ─── CATÉGORIES : mapping DB → affichage ───
-const CATEGORIES = [
-  { key: "Tous",                      emoji: "🛍️", match: [] },
-  { key: "Mode & Prêt-à-porter",      emoji: "👗", match: ["Mode"] },
-  { key: "Beauté & Bien-être",        emoji: "💄", match: ["Beauté", "Bien-être"] },
-  { key: "Artisan",                   emoji: "🎨", match: ["Artisan"] },
-  { key: "Restauration & Traiteur",   emoji: "🍽️", match: ["Restauration", "Traiteur", "Resto"] },
-  { key: "Épicerie & Alimentation",   emoji: "🧀", match: ["Épicerie", "Alimentation"] },
-  { key: "Sport & Loisirs",           emoji: "🏃", match: ["Sport", "Loisirs"] },
-  { key: "Décoration & Maison",       emoji: "🏠", match: ["Décoration", "Maison"] },
-  { key: "Services de proximité",     emoji: "🔧", match: ["Services"] },
+// ─── THÈMES & SOUS-CATÉGORIES ───
+const THEMES = [
+  { key: "Tous",          emoji: "🛍️", match: [], short: "Tous" },
+  { key: "Mode",          emoji: "👗", match: ["mode","prêt-à-porter","vêtement","chaussure","accessoire","lingerie"], short: "Mode" },
+  { key: "Beauté",        emoji: "💄", match: ["beauté","bien-être","coiffure","esthétique","massage","spa","ongle","tatouage"], short: "Beauté" },
+  { key: "Restauration",  emoji: "🍽️", match: ["restauration","traiteur","resto","café","boulangerie","pizza","kebab"], short: "Resto" },
+  { key: "Alimentation",  emoji: "🧀", match: ["alimentation","épicerie","bio","fromagerie","boucherie","poissonnerie","fruits"], short: "Alim." },
+  { key: "Artisan",       emoji: "🎨", match: ["artisan","bijoux","poterie","couture","bois","cuir","création"], short: "Artisan" },
+  { key: "Maison",        emoji: "🏠", match: ["maison","décoration","mobilier","bricolage","jardinage"], short: "Maison" },
+  { key: "Sport",         emoji: "🏃", match: ["sport","loisirs","vélo","outdoor","jeux"], short: "Sport" },
+  { key: "Culture",       emoji: "📚", match: ["culture","librairie","papeterie","cadeaux","art","musique"], short: "Culture" },
+  { key: "Services",      emoji: "🔧", match: ["services","plomberie","électricité","informatique","pressing"], short: "Services" },
+  { key: "Autre",         emoji: "✨", match: [], short: "Autre", isAutre: true },
 ];
+
+// Pour compat avec l'ancien code
+const CATEGORIES = THEMES;
+
+function matchesTheme(commerce, themeKey) {
+  if (themeKey === "Tous") return true;
+  const theme = THEMES.find(t => t.key === themeKey);
+  if (!theme) return false;
+  const haystack = [commerce.categorie, commerce.category, commerce.metier].filter(Boolean).join(" ").toLowerCase();
+  if (theme.isAutre) {
+    // "Autre" = ne correspond à aucun thème principal
+    return !THEMES.filter(t => t.key !== "Tous" && !t.isAutre).some(t =>
+      t.match.some(m => haystack.includes(m))
+    );
+  }
+  return theme.match.some(m => haystack.includes(m));
+}
 
 function catEmoji(cat) {
   const found = CATEGORIES.find(c => c.key === cat);
@@ -76,6 +95,60 @@ function profileToCommerce(p, postCount) {
     hours: Array.isArray(p.horaires) ? p.horaires.filter(h => h.h) : [],
     products: [],
   };
+}
+
+// ─── BANDEAU PHOTOS RÉCENTES DES BOUTIQUES ───
+function RecentShopPhotos({ onOpenShop, merchants }) {
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!merchants || merchants.length === 0) return;
+    const merchantIds = merchants.map(m => m.id);
+    supabase
+      .from("posts")
+      .select("id, image_url, content, author_id, created_at, magasin_id")
+      .not("image_url", "is", null)
+      .or(`author_id.in.(${merchantIds.join(",")}),magasin_id.in.(${merchantIds.join(",")})`)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        setPhotos(data || []);
+        setLoading(false);
+      });
+  }, [merchants.length]);
+
+  if (loading || photos.length === 0) return null;
+
+  return (
+    <div style={{ padding: "0 0 4px", flexShrink: 0 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6, padding: "0 16px" }}>
+        📸 Dernières photos des boutiques
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+      </div>
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 16px 4px", scrollbarWidth: "none" }}>
+        {photos.map(photo => {
+          const shop = merchants.find(m => m.id === photo.author_id || m.id === photo.magasin_id);
+          if (!shop) return null;
+          return (
+            <div
+              key={photo.id}
+              onClick={() => onOpenShop(shop)}
+              style={{ flexShrink: 0, width: 130, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill, boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }}
+            >
+              <img src={photo.image_url} alt="" style={{ width: "100%", height: 130, objectFit: "cover", display: "block" }} />
+              {/* Overlay dégradé + nom du shop */}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, rgba(26,23,20,0.8) 100%)" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 10px" }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{shop.name}</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 1 }}>{shop.metier || shop.category}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 // ─── BOTTOM NAV ───
@@ -894,21 +967,13 @@ export default function ChipeurCommerces({ setPage, user }) {
   // Fusionner vrais marchands + statiques (pas de doublons)
   const allCommerces = [...realMerchants, ...STATIC_COMMERCES];
 
-  // Filtrer par catégorie
-  const activeCatDef = CATEGORIES.find(c => c.key === activeCat) || CATEGORIES[0];
+  // Filtrer par thème + recherche
   const filtered = allCommerces.filter(c => {
-    if (activeCat !== "Tous") {
-      const haystack = (c.categorie || c.category || "").toLowerCase();
-      if (!activeCatDef.match.some(m => haystack.includes(m.toLowerCase()))) return false;
-    }
+    if (!matchesTheme(c, activeCat)) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      const name = (c.name || "").toLowerCase();
-      const desc = (c.desc || "").toLowerCase();
-      const cat = (c.cat || "").toLowerCase();
-      const metier = (c.metier || "").toLowerCase();
-      const categorie = (c.categorie || "").toLowerCase();
-      if (!name.includes(q) && !desc.includes(q) && !cat.includes(q) && !metier.includes(q) && !categorie.includes(q)) return false;
+      const haystack = [c.name, c.desc, c.cat, c.metier, c.categorie].filter(Boolean).join(" ").toLowerCase();
+      if (!haystack.includes(q)) return false;
     }
     return true;
   });
@@ -921,47 +986,85 @@ export default function ChipeurCommerces({ setPage, user }) {
 
       {screen === "list" && (
         <>
-          <div style={{ background: C.bg, flexShrink: 0, paddingTop: 10 }}>
-            <div style={{ padding: "4px 16px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Commerces & Artisans 🏪</div>
+          {/* ── HEADER style fil ── */}
+          <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="26" height="26" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs><linearGradient id="pinGradC" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#FF5733"/><stop offset="100%" stopColor="#FF8C42"/></linearGradient></defs>
+                  <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradC)"/>
+                  <circle cx="36" cy="26" r="10" fill="white"/>
+                  <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
+                </svg>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 19, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>chi<span style={{ color: C.accent }}>p</span>eur</div>
+                  <div style={{ fontFamily: dm, fontSize: 10, color: C.accent, lineHeight: 1.5, marginTop: 3 }}>Découvre ta ville,<br />à travers tes voisins</div>
+                </div>
+              </div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Boutiques 🏪</div>
               <div style={{ fontSize: 11, color: C.ink2 }}>{filtered.length} vitrines</div>
             </div>
+
             {/* Recherche */}
-            <div style={{ margin: "0 16px 10px", display: "flex", alignItems: "center", gap: 8, background: C.card, borderRadius: 16, padding: "10px 14px", border: `1px solid ${C.border}` }}>
-              <span style={{ fontSize: 14, color: C.ink2 }}>🔍</span>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche un commerce ou artisan…" style={{ border: "none", outline: "none", fontSize: 14, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
+            <div style={{ margin: "0 14px 8px", display: "flex", alignItems: "center", gap: 8, background: C.bg, borderRadius: 14, padding: "8px 14px", border: `1px solid ${C.border}` }}>
+              <span style={{ fontSize: 13, color: C.ink2 }}>🔍</span>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche un commerce, artisan…" style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
+              {search && <span onClick={() => setSearch("")} style={{ fontSize: 13, cursor: "pointer", color: C.ink2 }}>✕</span>}
             </div>
-            {/* Catégories */}
-            <div style={{ display: "flex", gap: 6, padding: "0 16px 12px", overflowX: "auto", scrollbarWidth: "none" }}>
-              {CATEGORIES.map(c => (
-                <button
-                  key={c.key}
-                  onClick={() => setActiveCat(c.key)}
-                  style={{
-                    padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-                    border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-                    fontFamily: dm,
-                    background: activeCat === c.key ? C.ink : C.pill,
-                    color: activeCat === c.key ? "#fff" : C.ink2,
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {c.emoji} {c.key === "Tous" ? "Tous" : catLabel(c.key)}
+
+            {/* Filtres thèmes */}
+            <div style={{ display: "flex", gap: 6, padding: "0 14px 10px", overflowX: "auto", scrollbarWidth: "none" }}>
+              {THEMES.map(t => (
+                <button key={t.key} onClick={() => setActiveCat(t.key)} style={{
+                  padding: "6px 13px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                  fontFamily: dm, transition: "all 0.15s",
+                  background: activeCat === t.key ? C.ink : C.pill,
+                  color: activeCat === t.key ? "#fff" : C.ink2,
+                }}>
+                  {t.emoji} {t.short}
                 </button>
               ))}
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 12px" }}>
-            {loadingMerchants && (
-              <div style={{ textAlign: "center", padding: "16px 0", fontSize: 12, color: C.ink2 }}>
-                ⏳ Chargement des commerçants…
-              </div>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {loadingMerchants ? (
+              <div style={{ textAlign: "center", padding: "20px 0", fontSize: 12, color: C.ink2 }}>⏳ Chargement…</div>
+            ) : (
+              <>
+                {/* ── Bandeau photos récentes ── */}
+                {activeCat === "Tous" && !search && (
+                  <div style={{ padding: "12px 0 8px" }}>
+                    <RecentShopPhotos
+                      merchants={realMerchants}
+                      onOpenShop={(shop) => { setSelectedCom(shop); setScreen("vitrine"); }}
+                    />
+                  </div>
+                )}
+
+                {/* ── Liste boutiques ── */}
+                <div style={{ padding: "8px 16px 12px" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                    🏪 Les boutiques
+                    <div style={{ flex: 1, height: 1, background: C.border }} />
+                    <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{filtered.length} inscrit{filtered.length > 1 ? "s" : ""}</span>
+                  </div>
+
+                  {filtered.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 16px" }}>
+                      <div style={{ fontSize: 36, marginBottom: 10 }}>🏪</div>
+                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun commerce trouvé</div>
+                      <div style={{ fontSize: 12, color: C.ink2 }}>Essaie un autre filtre ou une autre recherche.</div>
+                    </div>
+                  ) : (
+                    filtered.map((c, i) => (
+                      <ComCard key={i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
+                    ))
+                  )}
+                </div>
+              </>
             )}
-            {featured && <FeaturedCard com={featured} onClick={() => { setSelectedCom(featured); setScreen("vitrine"); }} />}
-            {others.map((c, i) => (
-              <ComCard key={i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
-            ))}
           </div>
         </>
       )}
