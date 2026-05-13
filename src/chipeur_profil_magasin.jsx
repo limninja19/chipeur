@@ -1676,7 +1676,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
     { id: "mentions", label: "📣 Mentions" },
     { id: "creer", label: "Créer" },
     { id: "defis", label: "Mes défis" },
-    { id: "plan", label: "Mon plan" },
+    { id: "plan", label: "Mon plan", disabled: true },
   ];
 
   const [headerStats, setHeaderStats] = useState({ reactions: null, voisins: null });
@@ -1723,7 +1723,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
         <MagHeader profile={localProfile} postCount={postCount} headerStats={headerStats} onEdit={() => setScreen("edit")} onSettings={() => setSettingsOpen(true)} />
         <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
           {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, fontSize: 10, fontWeight: 600, fontFamily: dm, padding: "10px 2px 8px", border: "none", background: "transparent", cursor: "pointer", color: activeTab === t.id ? C.accent : C.ink2, borderBottom: `2px solid ${activeTab === t.id ? C.accent : "transparent"}` }}>
+            <button key={t.id} onClick={() => !t.disabled && setActiveTab(t.id)} style={{ flex: 1, fontSize: 10, fontWeight: 600, fontFamily: dm, padding: "10px 2px 8px", border: "none", background: "transparent", cursor: t.disabled ? "default" : "pointer", color: t.disabled ? "#C4C1BC" : activeTab === t.id ? C.accent : C.ink2, borderBottom: `2px solid ${activeTab === t.id ? C.accent : "transparent"}`, opacity: t.disabled ? 0.5 : 1 }}>
               {t.label}
             </button>
           ))}
