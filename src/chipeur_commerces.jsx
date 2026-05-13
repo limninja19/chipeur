@@ -51,6 +51,45 @@ function catEmoji(cat) {
   return found ? found.emoji : "🏪";
 }
 
+// ─── COVER PAR DÉFAUT PAR THÈME ───
+const THEME_COVERS = {
+  "Mode":          { grad: "linear-gradient(135deg, #C471ED 0%, #F64F59 100%)", emoji: "👗" },
+  "Beauté":        { grad: "linear-gradient(135deg, #FFAFBD 0%, #FFC3A0 100%)", emoji: "💄" },
+  "Restauration":  { grad: "linear-gradient(135deg, #F7971E 0%, #C0392B 100%)", emoji: "🍽️" },
+  "Alimentation":  { grad: "linear-gradient(135deg, #56AB2F 0%, #A8E063 100%)", emoji: "🧀" },
+  "Artisan":       { grad: "linear-gradient(135deg, #0F2027 0%, #2C5364 100%)", emoji: "🎨" },
+  "Maison":        { grad: "linear-gradient(135deg, #5D8A6B 0%, #A8C5A0 100%)", emoji: "🏠" },
+  "Sport":         { grad: "linear-gradient(135deg, #1565C0 0%, #42A5F5 100%)", emoji: "🏃" },
+  "Culture":       { grad: "linear-gradient(135deg, #4A148C 0%, #9C27B0 100%)", emoji: "📚" },
+  "Services":      { grad: "linear-gradient(135deg, #37474F 0%, #78909C 100%)", emoji: "🔧" },
+  "Autre":         { grad: "linear-gradient(135deg, #C9A96E 0%, #F5F2EE 100%)", emoji: "✨" },
+  "default":       { grad: "linear-gradient(135deg, #FF5733 0%, #C9A96E 100%)", emoji: "🏪" },
+};
+
+function getThemeCover(commerce) {
+  const h = [commerce.categorie, commerce.category].filter(Boolean).join(" ").toLowerCase();
+  for (const t of THEMES) {
+    if (t.key === "Tous") continue;
+    if (t.isAutre) continue;
+    if (t.match.some(m => h.includes(m))) return THEME_COVERS[t.key] || THEME_COVERS.default;
+  }
+  // Si la cat correspond exactement à une clé
+  const directKey = Object.keys(THEME_COVERS).find(k => h.includes(k.toLowerCase()));
+  return THEME_COVERS[directKey] || THEME_COVERS.default;
+}
+
+function CoverImage({ src, commerce, height = 140, style = {} }) {
+  if (src) {
+    return <img src={src} alt={commerce?.name || ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", ...style }} />;
+  }
+  const tc = getThemeCover(commerce || {});
+  return (
+    <div style={{ width: "100%", height: "100%", background: tc.grad, display: "flex", alignItems: "center", justifyContent: "center", ...style }}>
+      <span style={{ fontSize: 52, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.18))" }}>{tc.emoji}</span>
+    </div>
+  );
+}
+
 function catLabel(cat) {
   if (!cat) return "Commerce";
   // Raccourcir pour l'affichage dans les cards
@@ -79,7 +118,7 @@ function profileToCommerce(p, postCount) {
     shortCat: `${emoji} ${metier} · ${p.quartier || "Saint-Dié"}`,
     desc: p.bio || "",
     shortDesc: p.bio ? p.bio.substring(0, 80) + (p.bio.length > 80 ? "…" : "") : "",
-    cover: p.avatar_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=300&fit=crop",
+    cover: p.avatar_url || p.cover_url || null,
     gallery: [],
     vues: "—", int: "—",
     posts: postCount != null ? String(postCount) : "—",
@@ -163,7 +202,7 @@ function ShopPhotosLightbox({ photos, merchants, startIndex = 0, onOpenShop, onC
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
             {/* Avatar / cover shop */}
             <div style={{ width: 46, height: 46, borderRadius: 12, overflow: "hidden", background: C.pill, flexShrink: 0 }}>
-              <img src={shop.cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <CoverImage src={shop.cover} commerce={shop} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>{shop.name}</div>
@@ -366,7 +405,7 @@ function FeaturedCard({ com, onClick }) {
   return (
     <div onClick={onClick} style={{ background: C.card, borderRadius: 20, marginBottom: 12, overflow: "hidden", border: "1.5px solid rgba(255,87,51,0.25)", cursor: "pointer", boxShadow: "0 2px 12px rgba(255,87,51,0.08)" }}>
       <div style={{ position: "relative", width: "100%", height: 130, overflow: "hidden" }}>
-        <img src={com.cover} alt={com.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <CoverImage src={com.cover} commerce={com} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 40%, rgba(26,23,20,0.6))" }} />
         <div style={{ position: "absolute", top: 10, left: 10, background: "rgba(255,87,51,0.9)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8 }}>✦ Sponsorisé</div>
         <div style={{ position: "absolute", bottom: 10, left: 12 }}>
@@ -411,7 +450,7 @@ function ComCard({ com, onClick }) {
     <div onClick={onClick} style={{ background: C.card, borderRadius: 20, marginBottom: 12, overflow: "hidden", border: `1px solid ${C.border}`, cursor: "pointer", boxShadow: "0 2px 10px rgba(26,23,20,0.05)" }}>
       {/* Cover photo */}
       <div style={{ position: "relative", width: "100%", height: 140, overflow: "hidden" }}>
-        <img src={com.cover} alt={com.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <CoverImage src={com.cover} commerce={com} />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 45%, rgba(26,23,20,0.62))" }} />
 
         {/* Badge thème (haut droite) */}
@@ -1127,7 +1166,7 @@ function VitrineScreen({ com, onBack, user }) {
 
         {/* Bannière */}
         <div style={{ position: "relative", width: "100%", height: 200, overflow: "hidden" }}>
-          <img src={com.cover} alt={com.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <CoverImage src={com.cover} commerce={com} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%, rgba(26,23,20,0.7) 100%)" }} />
           <button onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>‹</button>
           <div style={{ position: "absolute", bottom: 14, left: 16 }}>
