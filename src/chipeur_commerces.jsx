@@ -136,6 +136,41 @@ function profileToCommerce(p, postCount) {
   };
 }
 
+// ─── VITRINE DÉMO ───
+const DEMO_COMMERCE = {
+  id: "__demo__", isDemo: true,
+  name: "La Petite Boutique",
+  category: "Mode & Prêt-à-porter", categorie: "Mode & Prêt-à-porter",
+  metier: "Boutique de mode, Accessoires, Prêt-à-porter femme",
+  cat: "Boutique de mode · Saint-Dié-des-Vosges",
+  shortCat: "👗 Boutique de mode · Saint-Dié",
+  desc: "Une boutique de mode indépendante au cœur de Saint-Dié, spécialisée dans les créations locales et les pièces uniques. Nous aimons les matières nobles, les coupes intemporelles et les couleurs qui font du bien.",
+  shortDesc: "Mode indépendante au cœur de Saint-Dié — créations locales et pièces uniques.",
+  cover: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop",
+  gallery: [], vues: "284", int: "47", posts: "5",
+  plan: "Mixte", planBg: "rgba(255,87,51,0.12)", planColor: "#FF5733", tag: "#Mode",
+  phone: "03 29 56 78 90", adresse: "12 rue Thiers, Saint-Dié-des-Vosges",
+  website: "https://lapetiteboutique.fr", instagram: "@lapetiteboutique_saintdie", facebook: "La Petite Boutique",
+  hours: [
+    { j: "Lundi", h: "Fermé" }, { j: "Mardi–Vendredi", h: "10h–19h" },
+    { j: "Samedi", h: "10h–18h30" }, { j: "Dimanche", h: "Fermé" },
+  ],
+  products: [],
+};
+
+const DEMO_POSTS = [
+  { id: "demo-1", author_id: "__demo__", magasin_id: "__demo__", content: "Nouvelle collection printemps-été 🌸 Des couleurs douces, des matières légères… On adore !", image_url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&fit=crop", post_type: "normal", created_at: new Date(Date.now() - 2*86400000).toISOString(), profiles: { pseudo: "La Petite Boutique", avatar_url: null }, tags: ["collection","printemps","mode"] },
+  { id: "demo-2", author_id: "__demo__", magasin_id: "__demo__", content: "Focus sur nos accessoires de saison 🌼 Sacs, bijoux, foulards — tout est fait main !", image_url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&fit=crop", post_type: "normal", product_label: "Montre dorée artisanale", product_price: "89€", product_detail: "Fabriquée par un artisan local des Vosges", created_at: new Date(Date.now() - 5*86400000).toISOString(), profiles: { pseudo: "La Petite Boutique", avatar_url: null }, tags: ["accessoires","artisanat"] },
+  { id: "demo-3", author_id: "__demo__", magasin_id: "__demo__", content: "🎁 PROMO SPÉCIALE — 20% sur toute la collection hiver jusqu'à samedi ! À venir vite 😍", image_url: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=600&fit=crop", post_type: "bonplan", created_at: new Date(Date.now() - 7*86400000).toISOString(), profiles: { pseudo: "La Petite Boutique", avatar_url: null }, tags: ["promo","soldes"] },
+  { id: "demo-4", author_id: "voisin-demo", magasin_id: "__demo__", content: "J'ai trouvé ma robe de soirée ici, le service est top et les conseils vraiment personnalisés ❤️", image_url: "https://images.unsplash.com/photo-1594938298603-c8148c4b4357?w=600&fit=crop", post_type: "normal", created_at: new Date(Date.now() - 10*86400000).toISOString(), profiles: { pseudo: "Marie_saintdie", avatar_url: null }, tags: ["avis","robe"] },
+  { id: "demo-5", author_id: "__demo__", magasin_id: "__demo__", content: "Bienvenue dans notre boutique ! Voici un aperçu de notre espace ✨", image_url: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&fit=crop", post_type: "normal", created_at: new Date(Date.now() - 14*86400000).toISOString(), profiles: { pseudo: "La Petite Boutique", avatar_url: null }, tags: ["boutique","bienvenue"] },
+];
+
+const DEMO_DEFIS = [
+  { id: "demo-defi-1", user_id: "__demo__", title: "Montre ton look avec nos créations !", description: "Poste une photo de toi habillé·e avec une pièce de notre boutique et tente de gagner un bon d'achat de 50€ !", emoji: "👗", reward: "Bon d'achat 50€", ends_at: new Date(Date.now() + 14*86400000).toISOString(), ended: false, winner_post_id: null, photo_url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&fit=crop" },
+  { id: "demo-defi-2", user_id: "__demo__", title: "Plus belle déco de Noël 🎄", description: "Quelle est la plus belle déco de Noël de notre vitrine selon vous ?", emoji: "🎄", reward: "Panier garni", ends_at: new Date(Date.now() - 30*86400000).toISOString(), ended: true, winner_post_id: "demo-winner", photo_url: null },
+];
+
 // ─── LIGHTBOX SWIPEABLE PHOTOS BOUTIQUES ───
 function ShopPhotosLightbox({ photos, merchants, startIndex = 0, onOpenShop, onClose }) {
   const [index, setIndex] = useState(startIndex);
@@ -978,21 +1013,21 @@ function DefiVitrine({ defi }) {
 }
 
 // ─── ONGLET VITRINE ───
-function TabVitrine({ com, realPosts, loadingPosts, user }) {
+function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const [posts, setPosts] = useState(realPosts);
   const [activeMode, setActiveMode] = useState("tout");
   const [selectedPost, setSelectedPost] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
-  const [defis, setDefis] = useState([]);
+  const [defis, setDefis] = useState(demoDefis || []);
   const [loadingDefis, setLoadingDefis] = useState(false);
   const touchXVit = useRef(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
 
-  // Charger les défis quand on passe en mode défis
+  // Charger les défis quand on passe en mode défis (sauf démo)
   useEffect(() => {
-    if (activeMode !== "defis" || defis.length > 0) return;
+    if (com.isDemo || activeMode !== "defis" || defis.length > 0) return;
     setLoadingDefis(true);
     supabase.from("defis").select("*")
       .eq("user_id", com.id)
@@ -1300,14 +1335,14 @@ function VitrineScreen({ com, onBack, user }) {
     }
   };
   const [activeTab, setActiveTab] = useState("vitrine");
-  const [realPosts, setRealPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
-  const [realPostCount, setRealPostCount] = useState(null);
-  const [followersCount, setFollowersCount] = useState(null);
-  const [reactionsCount, setReactionsCount] = useState(null);
+  const [realPosts, setRealPosts] = useState(com.isDemo ? DEMO_POSTS : []);
+  const [loadingPosts, setLoadingPosts] = useState(!com.isDemo);
+  const [realPostCount, setRealPostCount] = useState(com.isDemo ? DEMO_POSTS.length : null);
+  const [followersCount, setFollowersCount] = useState(com.isDemo ? 12 : null);
+  const [reactionsCount, setReactionsCount] = useState(com.isDemo ? 47 : null);
 
   useEffect(() => {
-    if (!com.id) return;
+    if (com.isDemo || !com.id) return;
     // Abonnés
     supabase.from("follows").select("id", { count: "exact", head: true })
       .eq("following_id", com.id)
@@ -1315,7 +1350,7 @@ function VitrineScreen({ com, onBack, user }) {
   }, [com.id]);
 
   useEffect(() => {
-    if (!com.id) return;
+    if (com.isDemo || !com.id) return;
     setLoadingPosts(true);
 
     async function loadPosts() {
@@ -1378,6 +1413,9 @@ function VitrineScreen({ com, onBack, user }) {
           <CoverImage src={com.cover} commerce={com} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%, rgba(26,23,20,0.7) 100%)" }} />
           <button onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>‹</button>
+          {com.isDemo && (
+            <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,87,51,0.92)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 10, letterSpacing: 0.5 }}>✨ EXEMPLE</div>
+          )}
           <div style={{ position: "absolute", bottom: 14, left: 16 }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff", lineHeight: 1 }}>{com.name}</div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>{com.cat}</div>
@@ -1408,7 +1446,20 @@ function VitrineScreen({ com, onBack, user }) {
           ))}
         </div>
 
-        {activeTab === "vitrine" && <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} user={user} />}
+        {activeTab === "vitrine" && (
+          <>
+            {com.isDemo && (
+              <div style={{ margin: "12px 16px 0", background: "rgba(255,87,51,0.07)", border: "1px solid rgba(255,87,51,0.2)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 20 }}>✨</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.accent }}>Exemple de vitrine</div>
+                  <div style={{ fontSize: 11, color: C.ink2, marginTop: 1, lineHeight: 1.4 }}>Voici à quoi ressemble une vitrine remplie — posts, promos, défis et infos.</div>
+                </div>
+              </div>
+            )}
+            <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} user={user} demoDefis={com.isDemo ? DEMO_DEFIS : undefined} />
+          </>
+        )}
         {activeTab === "infos" && <TabInfos com={com} />}
       </div>
 
@@ -1535,8 +1586,19 @@ export default function ChipeurCommerces({ setPage, user }) {
                   </div>
                 )}
 
+                {/* ── Bandeau "bientôt" si peu de contenu ── */}
+                {!search && realMerchants.length > 0 && realMerchants.length < 8 && (
+                  <div style={{ margin: "4px 16px 4px", background: C.proBg, border: `1px solid rgba(10,61,46,0.12)`, borderRadius: 16, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 24 }}>🌱</span>
+                    <div>
+                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.pro }}>Les vitrines arrivent !</div>
+                      <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>Les commerçants de Saint-Dié rejoignent Chipeur — les vitrines se mettent en place.</div>
+                    </div>
+                  </div>
+                )}
+
                 {/* ── Liste boutiques ── */}
-                <div style={{ padding: "8px 16px 12px" }}>
+                <div style={{ padding: "8px 16px 4px" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                     🏪 Les boutiques
                     <div style={{ flex: 1, height: 1, background: C.border }} />
@@ -1555,6 +1617,23 @@ export default function ChipeurCommerces({ setPage, user }) {
                     ))
                   )}
                 </div>
+
+                {/* ── Section DÉMO (toujours visible si pas de recherche) ── */}
+                {!search && (
+                  <div style={{ padding: "4px 16px 80px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                      ✨ Exemple de vitrine
+                      <div style={{ flex: 1, height: 1, background: "rgba(255,87,51,0.2)" }} />
+                      <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0, color: C.ink2 }}>aperçu</span>
+                    </div>
+                    <div style={{ position: "relative" }}>
+                      <ComCard com={DEMO_COMMERCE} onClick={() => { setSelectedCom(DEMO_COMMERCE); setScreen("vitrine"); }} />
+                      <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, background: "rgba(26,23,20,0.7)", borderRadius: 10, padding: "7px 12px", textAlign: "center" }}>
+                        <span style={{ fontSize: 11, color: "#fff", fontWeight: 600, fontFamily: dm }}>👆 Voir à quoi ressemble une vitrine complète</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
