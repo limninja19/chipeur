@@ -1114,6 +1114,14 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
             </div>
           );
         })()}
+        {/* Bandeau "Je cherche" */}
+        {post.post_type === "recherche" && (
+          <div style={{ margin: "0 12px 6px", background: "rgba(14,165,233,0.08)", border: "1px solid rgba(14,165,233,0.25)", borderRadius: 10, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 14 }}>🔍</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#0369A1" }}>Je cherche</span>
+            <span style={{ fontSize: 10, color: "#0369A1", opacity: 0.7 }}>— aide ce voisin !</span>
+          </div>
+        )}
         {/* Contenu */}
         <div style={{ padding: "10px 12px 6px" }}>
           {post.content
@@ -1123,7 +1131,7 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
           {post.link_url && <LinkPreviewCard url={post.link_url} />}
           {post.tags?.length > 0 && (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-              {post.tags.map(t => <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>)}
+              {post.tags.filter(t => t !== "Je cherche 🔍").map(t => <span key={t} style={{ fontSize: 10, background: C.pill, color: C.ink2, padding: "3px 8px", borderRadius: 10 }}>{t}</span>)}
             </div>
           )}
         </div>
@@ -1131,11 +1139,215 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
         <div style={{ padding: "8px 12px 10px" }}>
           <Reactions postId={post.id} userId={userId} authorId={post.author_id || post.profiles?.id} user={user} />
         </div>
+        {/* Section recommandations pour "Je cherche" */}
+        {post.post_type === "recherche" && (
+          <RechercheRecommandations post={post} user={user} requireAuth={requireAuth} />
+        )}
       </div>
     </>
   );
 }
 
+
+// ─── RECOMMANDATIONS SUR "JE CHERCHE" ───
+function RechercheRecommandations({ post, user, requireAuth }) {
+  const [recs, setRecs]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [showPicker, setShowPicker] = useState(false);
+  const [merchants, setMerchants] = useState([]);
+  const [search, setSearch]       = useState("");
+  const [myVotes, setMyVotes]     = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const isAuthor = user?.id === post.author_id;
+
+  const loadRecs = async () => {
+    const { data } = await supabase
+      .from("post_recommendations")
+      .select("*, profiles(pseudo, avatar_url)")
+      .eq("post_id", post.id)
+      .order("created_at", { ascending: true });
+    if (!data) { setLoading(false); return; }
+    const ids = data.map(r => r.id);
+    let votes = [];
+    if (ids.length > 0) {
+      const { data: vd } = await supabase
+        .from("recommendation_votes").select("recommendation_id, vote")
+        .in("recommendation_id", ids);
+      votes = vd || [];
+    }
+    setRecs(data.map(r => ({
+      ...r,
+      up_count:   votes.filter(v => v.recommendation_id === r.id && v.vote === "up").length,
+      down_count: votes.filter(v => v.recommendation_id === r.id && v.vote === "down").length,
+    })));
+    setLoading(false);
+  };
+
+  const loadMyVotes = async () => {
+    const { data } = await supabase.from("recommendation_votes")
+      .select("recommendation_id, vote").eq("user_id", user.id);
+    if (data) {
+      const m = {};
+      data.forEach(v => { m[v.recommendation_id] = v.vote; });
+      setMyVotes(m);
+    }
+  };
+
+  useEffect(() => { loadRecs(); }, [post.id]);
+  useEffect(() => { if (user?.id) loadMyVotes(); }, [user?.id]);
+
+  const handleOpenPicker = () => {
+    if (!user) { requireAuth?.(() => {}); return; }
+    if (!merchants.length) {
+      supabase.from("profiles").select("id, pseudo, avatar_url")
+        .in("role", ["magasin", "artisan"]).order("pseudo")
+        .then(({ data }) => setMerchants(data || []));
+    }
+    setShowPicker(true);
+  };
+
+  const handleRecommend = async (magasinId, magasinNom) => {
+    if (!user?.id || submitting) return;
+    setSubmitting(true);
+    const isFirst = recs.length === 0;
+    const { error } = await supabase.from("post_recommendations").insert({
+      post_id: post.id, user_id: user.id,
+      magasin_id: magasinId || null, magasin_nom: magasinNom,
+    });
+    if (!error && isFirst) addXP(user.id, 5, "premiere_recommandation");
+    setShowPicker(false); setSearch(""); setSubmitting(false);
+    loadRecs();
+  };
+
+  const handleVote = async (recId, voteType) => {
+    if (!user) { requireAuth?.(() => {}); return; }
+    const prev = myVotes[recId];
+    if (prev === voteType) {
+      await supabase.from("recommendation_votes")
+        .delete().eq("recommendation_id", recId).eq("user_id", user.id);
+      setMyVotes(m => { const n = { ...m }; delete n[recId]; return n; });
+    } else {
+      await supabase.from("recommendation_votes")
+        .upsert({ recommendation_id: recId, user_id: user.id, vote: voteType },
+          { onConflict: "recommendation_id,user_id" });
+      setMyVotes(m => ({ ...m, [recId]: voteType }));
+    }
+    loadRecs();
+  };
+
+  const myRec = recs.find(r => r.user_id === user?.id);
+  const normalize = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+  const filtered = search.trim()
+    ? merchants.filter(m => normalize(m.pseudo).includes(normalize(search)))
+    : merchants;
+
+  return (
+    <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 12px 12px" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: recs.length > 0 ? 8 : 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#0369A1" }}>
+          🤝 {loading ? "…" : recs.length === 0 ? "Sois le premier à recommander !" : `${recs.length} recommandation${recs.length > 1 ? "s" : ""}`}
+        </div>
+        {!isAuthor && !myRec && !showPicker && (
+          <button onClick={handleOpenPicker} style={{
+            fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20,
+            border: "none", background: "#0EA5E9", color: "#fff",
+            cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+          }}>+ Je recommande {recs.length === 0 ? "· +5 XP ⚡" : ""}</button>
+        )}
+      </div>
+
+      {/* Liste des recommandations */}
+      {recs.map(rec => (
+        <div key={rec.id} style={{
+          background: rec.user_id === user?.id ? "#EFF6FF" : C.pill,
+          borderRadius: 12, padding: "8px 10px", marginBottom: 6,
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <div style={{ fontSize: 18 }}>🏪</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rec.magasin_nom}</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>par {rec.profiles?.pseudo || "Voisin·e"}</div>
+          </div>
+          {/* Votes — pas sur sa propre reco */}
+          {rec.user_id !== user?.id && (
+            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+              <button onClick={() => handleVote(rec.id, "up")} style={{
+                background: myVotes[rec.id] === "up" ? "#D1FAE5" : C.card,
+                border: `1px solid ${myVotes[rec.id] === "up" ? "#34C759" : C.border}`,
+                borderRadius: 10, padding: "3px 8px", cursor: "pointer",
+                fontSize: 11, fontWeight: 600, color: "#16a34a", display: "flex", alignItems: "center", gap: 3,
+              }}>👍 {rec.up_count || 0}</button>
+              <button onClick={() => handleVote(rec.id, "down")} style={{
+                background: myVotes[rec.id] === "down" ? "#FEE2E2" : C.card,
+                border: `1px solid ${myVotes[rec.id] === "down" ? "#E53935" : C.border}`,
+                borderRadius: 10, padding: "3px 8px", cursor: "pointer",
+                fontSize: 11, fontWeight: 600, color: "#E53935", display: "flex", alignItems: "center", gap: 3,
+              }}>👎 {rec.down_count || 0}</button>
+            </div>
+          )}
+          {rec.user_id === user?.id && (
+            <span style={{ fontSize: 10, color: "#0369A1", fontWeight: 600, background: "#DBEAFE", padding: "2px 8px", borderRadius: 8 }}>Ma reco</span>
+          )}
+        </div>
+      ))}
+
+      {/* Picker inline */}
+      {showPicker && (
+        <div style={{ background: C.card, borderRadius: 12, border: "1.5px solid #0EA5E9", marginTop: 8, overflow: "hidden" }}>
+          <div style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Chercher ou taper le nom du commerce…"
+              style={{
+                width: "100%", boxSizing: "border-box", padding: "8px 10px",
+                borderRadius: 10, border: `1px solid ${C.border}`,
+                fontFamily: "'DM Sans', sans-serif", fontSize: 12,
+                color: C.ink, background: C.bg, outline: "none",
+              }}
+            />
+          </div>
+          <div style={{ maxHeight: 160, overflowY: "auto" }}>
+            {filtered.length > 0 ? filtered.map((m, i) => (
+              <div key={m.id} onClick={() => handleRecommend(m.id, m.pseudo)} style={{
+                padding: "9px 14px", cursor: "pointer",
+                borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none",
+                fontSize: 12, fontWeight: 600, color: C.ink,
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
+                {m.avatar_url
+                  ? <img src={m.avatar_url} alt="" style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover" }} />
+                  : <span style={{ fontSize: 14 }}>🏪</span>
+                }
+                {m.pseudo}
+              </div>
+            )) : search.trim() ? (
+              <div style={{ padding: "10px 14px" }}>
+                <div style={{ fontSize: 11, color: C.ink2, marginBottom: 8 }}>Pas encore inscrit sur Chipeur.</div>
+                <button onClick={() => handleRecommend(null, search.trim())} disabled={submitting} style={{
+                  width: "100%", background: "#EFF6FF", border: "1.5px solid #0EA5E9",
+                  borderRadius: 10, padding: "8px", fontSize: 12, fontWeight: 700,
+                  color: "#0369A1", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                }}>Recommander "{search.trim()}"</button>
+              </div>
+            ) : (
+              <div style={{ padding: "12px 14px", fontSize: 12, color: C.ink2 }}>Aucun commerce inscrit pour l'instant</div>
+            )}
+          </div>
+          <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}` }}>
+            <button onClick={() => { setShowPicker(false); setSearch(""); }} style={{
+              width: "100%", background: C.pill, border: "none", borderRadius: 10,
+              padding: "7px", fontSize: 12, color: C.ink2, cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>Annuler</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── TU VALIDES ?! — NOTIF BANNER ───
 function TuValidesNotif({ user }) {

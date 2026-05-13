@@ -8,6 +8,7 @@ const C = {
   accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
   pill: "#EDEBE8", border: "rgba(26,23,20,0.08)",
 };
+const dm = "'DM Sans', sans-serif";
 
 
 // ─── TAG PILLS ───
@@ -765,7 +766,6 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
     { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un achat, un instant sympa, une trouvaille du jour",         grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
     { id: "tuvalides",   icon: "🤔", name: "Tu valides !!!", desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "linear-gradient(135deg,#8B5CF6,#C4B5FD)", light: "#F5F3FF" },
     { id: "recherche",   icon: "🔍", name: "Je cherche",   desc: "Tu cherches un artisan, un service, un produit ?",           grad: "linear-gradient(135deg,#0EA5E9,#38BDF8)", light: "#F0F9FF" },
-    { id: "bonplan",     icon: "💡", name: "Je recommande",desc: "Une adresse top, un bon plan à ne pas rater",                grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
     { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir aux voisins",          grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
     { id: "sortie",      icon: "📅", name: "Événement",    desc: "Crée un événement et invite tes voisins à venir",            grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF", isRedirect: true },
     { id: "defi_voisin", icon: "🏆", name: "Défi",         desc: "Lance un défi photo avec une récompense à la clé",          grad: "linear-gradient(135deg,#FF5733,#F7A72D)", light: "#FFF8E8" },
