@@ -1673,8 +1673,8 @@ export default function ChipeurCommerces({ setPage, user }) {
       .or("role.eq.magasin,categorie.not.is.null")
       .not("pseudo", "is", null)
       .neq("pseudo", "[Compte supprimé]")
-      .is("deleted_at", null)
-      .then(async ({ data: profiles }) => {
+      .then(async ({ data: rawProfiles }) => {
+        const profiles = (rawProfiles || []).filter(p => p.pseudo && p.pseudo !== "[Compte supprimé]");
         if (!profiles || profiles.length === 0) {
           setLoadingMerchants(false);
           return;

@@ -1211,9 +1211,9 @@ function RechercheRecommandations({ post, user, requireAuth }) {
       supabase.from("profiles").select("id, pseudo, avatar_url")
         .in("role", ["magasin", "artisan"])
         .neq("pseudo", "[Compte supprimé]")
-        .is("deleted_at", null)
+        .not("pseudo", "is", null)
         .order("pseudo")
-        .then(({ data }) => setMerchants(data || []));
+        .then(({ data }) => setMerchants((data || []).filter(m => m.pseudo && m.pseudo !== "[Compte supprimé]")));
     }
     setDupError(""); setShowPicker(true);
   };
