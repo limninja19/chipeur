@@ -1166,11 +1166,36 @@ function RechercheRecommandations({ post, user, requireAuth }) {
   const normalize = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
   const loadRecs = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("post_recommendations")
-      .select("*, profiles(pseudo, avatar_url)")
+      .select("*, profiles!post_recommendations_user_id_fkey(pseudo, avatar_url)")
       .eq("post_id", post.id)
       .order("created_at", { ascending: true });
+    if (error) {
+      // fallback : requête sans join si le FK name ne correspond pas
+      const { data: d2 } = await supabase
+        .from("post_recommendations")
+        .select("id, post_id, user_id, magasin_id, magasin_nom, created_at")
+        .eq("post_id", post.id)
+        .order("created_at", { ascending: true });
+      if (!d2) { setLoading(false); return; }
+      const ids = d2.map(r => r.id);
+      let votes = [];
+      if (ids.length > 0) {
+        const { data: vd } = await supabase
+          .from("recommendation_votes").select("recommendation_id, vote")
+          .in("recommendation_id", ids);
+        votes = vd || [];
+      }
+      setRecs(d2.map(r => ({
+        ...r,
+        profiles: null,
+        up_count:   votes.filter(v => v.recommendation_id === r.id && v.vote === "up").length,
+        down_count: votes.filter(v => v.recommendation_id === r.id && v.vote === "down").length,
+      })));
+      setLoading(false);
+      return;
+    }
     if (!data) { setLoading(false); return; }
     const ids = data.map(r => r.id);
     let votes = [];
