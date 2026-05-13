@@ -1111,11 +1111,52 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
         <div style={{ padding: "0 16px" }}>
           {loadingLinked ? (
             <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
-          ) : linkedPosts.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 16px" }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📬</div>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun post lié pour l'instant</div>
-              <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Quand un voisin vous mentionne dans un post, il apparaîtra ici pour validation.</div>
+          ) : (
+            // Toujours afficher (même si linkedPosts est vide) pour expliquer le système
+          linkedPosts.length === 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Explication système */}
+              <div style={{ background: C.proBg, border: "1.5px solid rgba(10,61,46,0.2)", borderRadius: 16, padding: "14px 16px" }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.pro, marginBottom: 8 }}>📬 Comment ça marche ?</div>
+                {[
+                  { e: "📸", t: "Un voisin poste une photo", d: "Il lie votre commerce depuis son post (Chope, Tu valides!!!, etc.)" },
+                  { e: "🔔", t: "Vous êtes notifié", d: "Le post apparaît ici en attente de validation." },
+                  { e: "✓", t: "Vous acceptez ou refusez", d: "Si vous acceptez, le post s'affiche dans votre vitrine et le voisin reçoit +10 XP." },
+                  { e: "🎁", t: "100 XP = 5 € de bon d'achat", d: "Le voisin peut utiliser ses XP comme bon d'achat dans votre boutique !" },
+                ].map((s, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, marginBottom: i < 3 ? 10 : 0 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 10, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{s.e}</div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.pro }}>{s.t}</div>
+                      <div style={{ fontSize: 11, color: "#1A5C40", lineHeight: 1.4, marginTop: 1 }}>{s.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Exemple de post fictif */}
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4 }}>Exemple de post à valider</div>
+              <div style={{
+                background: C.card, borderRadius: 18, border: `1.5px dashed rgba(26,23,20,0.15)`,
+                overflow: "hidden", opacity: 0.8,
+              }}>
+                <div style={{ height: 120, background: "linear-gradient(135deg,#C471ED,#F64F59)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>👗</div>
+                <div style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>👤</div>
+                    <div>
+                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink }}>Marie_SDV</div>
+                      <div style={{ fontSize: 10, color: C.ink2 }}>Il y a 2h · 🤔 Tu valides !!!</div>
+                    </div>
+                    <div style={{ marginLeft: "auto", fontSize: 9, fontWeight: 700, background: C.pill, color: C.ink2, borderRadius: 5, padding: "2px 6px" }}>EXEMPLE</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10 }}>J'hésite sur cette robe, vous en pensez quoi ? 👗</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <button disabled style={{ border: "none", borderRadius: 12, padding: "10px 0", background: "rgba(10,61,46,0.15)", color: C.pro, fontWeight: 700, fontSize: 13, cursor: "not-allowed", fontFamily: dm }}>✓ Accepter · +10 XP</button>
+                    <button disabled style={{ border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 0", background: C.card, color: C.ink2, fontWeight: 600, fontSize: 13, cursor: "not-allowed", fontFamily: dm }}>✕ Refuser</button>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <>
@@ -1179,7 +1220,8 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                 </div>
               ))}
             </>
-          )}
+          )
+        )}
         </div>
       )}
 

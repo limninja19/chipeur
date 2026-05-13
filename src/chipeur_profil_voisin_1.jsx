@@ -474,6 +474,8 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
 }
 
 // ─── MES CRÉDITS LOCAUX ───
+const XP_TO_EUROS = (xp) => (xp / 20).toFixed(2); // 100 XP = 5 €
+
 function MesCreditsLocaux({ userId }) {
   const [wallet, setWallet] = useState([]);
 
@@ -490,7 +492,44 @@ function MesCreditsLocaux({ userId }) {
       });
   }, [userId]);
 
-  if (!wallet.length) return null;
+  const WalletRow = ({ nom, points, isDemo }) => {
+    const euros = XP_TO_EUROS(points);
+    const disponible = points >= 100;
+    return (
+      <div style={{
+        background: isDemo ? "#FAFAFA" : (disponible ? C.proBg : C.card),
+        border: `1.5px solid ${isDemo ? "rgba(26,23,20,0.06)" : disponible ? "rgba(10,61,46,0.25)" : "rgba(26,23,20,0.08)"}`,
+        borderRadius: 14, padding: "10px 14px",
+        display: "flex", alignItems: "center", gap: 10,
+        opacity: isDemo ? 0.85 : 1,
+      }}>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: isDemo ? C.pill : (disponible ? C.pro : C.pill), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+          🏪
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {nom}
+            </div>
+            {isDemo && (
+              <span style={{ fontSize: 8, fontWeight: 700, background: C.pill, color: C.ink2, borderRadius: 5, padding: "2px 5px", flexShrink: 0 }}>EXEMPLE</span>
+            )}
+          </div>
+          <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{points} XP accumulés</div>
+        </div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 15, color: isDemo ? C.ink2 : (disponible ? C.pro : C.ink) }}>
+            {euros} €
+          </div>
+          {!isDemo && disponible && (
+            <div style={{ fontSize: 9, fontWeight: 700, color: C.pro, background: "rgba(10,61,46,0.12)", borderRadius: 6, padding: "2px 6px", marginTop: 2 }}>
+              DISPONIBLE
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ padding: "10px 16px 0" }}>
@@ -499,42 +538,25 @@ function MesCreditsLocaux({ userId }) {
         <div style={{ flex: 1, height: 1, background: "rgba(26,23,20,0.08)" }} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {wallet.map((w, i) => {
-          const euros = (w.points / 100).toFixed(2);
-          const disponible = w.points >= 100;
-          return (
-            <div key={i} style={{
-              background: disponible ? C.proBg : C.card,
-              border: `1.5px solid ${disponible ? "rgba(10,61,46,0.25)" : "rgba(26,23,20,0.08)"}`,
-              borderRadius: 14, padding: "10px 14px",
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: disponible ? C.pro : C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                🏪
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {w.profiles?.pseudo || "Commerce"}
-                </div>
-                <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>
-                  {w.points} XP accumulés
-                </div>
-              </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 15, color: disponible ? C.pro : C.ink }}>
-                  {euros} €
-                </div>
-                {disponible && (
-                  <div style={{ fontSize: 9, fontWeight: 700, color: C.pro, background: "rgba(10,61,46,0.12)", borderRadius: 6, padding: "2px 6px", marginTop: 2 }}>
-                    DISPONIBLE
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        <div style={{ fontSize: 10, color: C.ink2, textAlign: "center", paddingBottom: 4 }}>
-          100 XP = 1 € · Présente ton profil en boutique pour en bénéficier
+
+        {/* Entrée démo toujours visible */}
+        <WalletRow nom="La Petite Boutique" points={30} isDemo />
+
+        {/* Vrais crédits */}
+        {wallet.map((w, i) => (
+          <WalletRow key={i} nom={w.profiles?.pseudo || "Commerce"} points={w.points} isDemo={false} />
+        ))}
+
+        {/* Explication */}
+        <div style={{
+          background: "rgba(255,87,51,0.05)", border: "1px dashed rgba(255,87,51,0.25)",
+          borderRadius: 12, padding: "10px 12px",
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, marginBottom: 3 }}>💡 Comment ça marche ?</div>
+          <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.5 }}>
+            Poste une photo en liant un commerce → le commerçant accepte → <b>+10 XP</b> crédités ici.<br />
+            <b>100 XP = 5 €</b> de bon d'achat à utiliser en boutique.
+          </div>
         </div>
       </div>
     </div>
