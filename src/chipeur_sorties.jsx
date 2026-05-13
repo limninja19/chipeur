@@ -1083,13 +1083,21 @@ function BottomNav({ active, onNavigate, onFab }) {
 }
 
 // ─── MAIN ───
-export default function ChipeurSorties({ setPage, user, profile, requireAuth, selectedSortieId, setSelectedSortieId }) {
+export default function ChipeurSorties({ setPage, user, profile, requireAuth, selectedSortieId, setSelectedSortieId, autoCreateSortie, setAutoCreateSortie }) {
   const [filter, setFilter]         = useState("Tous");
   const [events, setEvents]         = useState([]);
   const [loading, setLoading]       = useState(true);
   const [fabOpen, setFabOpen]       = useState(false);
   const [screen, setScreen]         = useState("list"); // "list" | "detail" | "nouveau"
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+  // Ouvrir directement le formulaire création si on vient du nouveau post
+  useEffect(() => {
+    if (autoCreateSortie) {
+      setScreen("nouveau");
+      if (setAutoCreateSortie) setAutoCreateSortie(false);
+    }
+  }, [autoCreateSortie]);
 
   const handleDeleteSortie = async (id) => {
     await supabase.from("sorties").delete().eq("id", id);

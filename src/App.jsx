@@ -48,6 +48,7 @@ export default function App() {
   const [selectedVoisinId, setSelectedVoisinId] = useState(null);
   const [selectedSortieId, setSelectedSortieId] = useState(null);
   const [editPost, setEditPost] = useState(null);
+  const [autoCreateSortie, setAutoCreateSortie] = useState(false);
   const pageHistoryRef = useRef(["fil"]);
 
   // Wrapper setPage : pousse dans l'historique du navigateur pour que le bouton
@@ -143,6 +144,7 @@ export default function App() {
     conversationWith, setConversationWith,
     selectedVoisinId, setSelectedVoisinId,
     selectedSortieId, setSelectedSortieId,
+    autoCreateSortie, setAutoCreateSortie,
     editPost, setEditPost,
     // Permet à n'importe quelle page d'ouvrir la modale d'inscription
     requireAuth: (callback) => {

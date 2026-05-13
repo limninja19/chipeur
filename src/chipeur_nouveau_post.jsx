@@ -582,12 +582,13 @@ function DroitImagePopup({ onConfirm, onCancel }) {
 // ─── SUCCESS SCREEN ───
 function SuccessScreen({ type, onBack }) {
   const msgs = {
-    decouverte: "Ta chope est maintenant visible par tous les voisins du quartier. 🛍️",
-    lieu: "Ton spot est partagé ! Les voisins vont adorer le découvrir. 📍",
-    sortie: "L'événement est ajouté à la page Sorties. Les voisins peuvent maintenant dire qu'ils y vont !",
-    bonplan: "Ton bon plan est partagé avec le quartier ! 💡",
-    promo: "Ta promo est visible sur ta fiche commerce. Les voisins vont en profiter ! 🏷️",
-    defi_voisin: "Ton défi est lancé ! Les voisins peuvent maintenant y participer et poster leurs photos. 🏆",
+    decouverte:  "Ta chope est maintenant visible par tous les voisins ! 📸",
+    hesitation:  "Tes voisins vont voter pour toi ! Résultat dans le fil. 🤔",
+    recherche:   "Ta demande est publiée ! Les voisins vont te répondre. 🔍",
+    lieu:        "Ton spot est partagé ! Les voisins vont adorer le découvrir. 📍",
+    bonplan:     "Ta reco est partagée avec le quartier ! 💡",
+    promo:       "Ta promo est visible sur ta fiche commerce. 🏷️",
+    defi_voisin: "Ton défi est lancé ! Les voisins peuvent y participer. 🏆",
   };
   return (
     <div style={{
@@ -613,8 +614,64 @@ function SuccessScreen({ type, onBack }) {
   );
 }
 
+// ─── FORM J'HÉSITE ───
+const RECHERCHE_CATS = ["🎨 Artisan","🍽️ Resto","👗 Mode","🔧 Services","🏠 Maison","💄 Beauté","📚 Culture","🏃 Sport","🧀 Alimentation","✨ Autre"];
+
+function FormHesitation({ content, onChange, onPhotoSelect, photoPreview, hesLabel, onLabelChange, hesPrice, onPriceChange }) {
+  const inp = { width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid rgba(26,23,20,0.08)`, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1A1714", background: "#fff", outline: "none", marginBottom: 12 };
+  return (
+    <div>
+      <div style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#6D28D9", lineHeight: 1.5 }}>
+        🤔 Poste ce sur quoi tu hésites — tes voisins glissent <b>oui</b> ou <b>non</b> dans le fil !
+      </div>
+      <PhotoZone onPhotoSelect={onPhotoSelect} zoneId="photo-hesitation" externalPreview={photoPreview} />
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Ce sur quoi tu hésites *</label>
+        <input value={hesLabel} onChange={e => onLabelChange(e.target.value)} placeholder="ex : Robe fleurie, sneakers blanches, sac en cuir…" style={inp} />
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Prix (optionnel)</label>
+        <input value={hesPrice} onChange={e => onPriceChange(e.target.value)} placeholder="ex : 89€" style={{ ...inp, width: 120 }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Ton hésitation en quelques mots</label>
+        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="ex : J'adore mais le prix me retient… Qu'est-ce que vous en pensez ?" rows={3} style={{ ...inp, resize: "none", lineHeight: 1.5, marginBottom: 0 }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── FORM JE CHERCHE ───
+function FormRecherche({ content, onChange, rechercheTag, onTagChange }) {
+  const inp = { width: "100%", boxSizing: "border-box", padding: "11px 14px", borderRadius: 14, border: `1.5px solid rgba(26,23,20,0.08)`, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#1A1714", background: "#fff", outline: "none" };
+  return (
+    <div>
+      <div style={{ background: "rgba(14,165,233,0.07)", border: "1px solid rgba(14,165,233,0.2)", borderRadius: 14, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#0369A1", lineHeight: 1.5 }}>
+        🔍 Tu cherches un artisan, une adresse, un service ? Demande à tes voisins !
+      </div>
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 8, display: "block" }}>Catégorie</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {RECHERCHE_CATS.map(cat => {
+            const on = rechercheTag === cat;
+            return (
+              <button key={cat} type="button" onClick={() => onTagChange(on ? "" : cat)} style={{ fontSize: 11, padding: "6px 12px", borderRadius: 20, border: "none", background: on ? "#0EA5E9" : "#EDEBE8", color: on ? "#fff" : "#6B6560", fontWeight: on ? 700 : 500, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}>
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <label style={{ fontSize: 11, fontWeight: 600, color: "#6B6560", marginBottom: 5, display: "block" }}>Qu'est-ce que tu cherches ? *</label>
+        <textarea value={content} onChange={e => onChange(e.target.value)} placeholder="ex : Je cherche un bon plombier à Saint-Dié, quelqu'un a une adresse ? 🙏" rows={4} style={{ ...inp, resize: "none", lineHeight: 1.5 }} />
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN ───
-export default function ChipeurNouveauPost({ setPage, user, profile, editPost, setEditPost }) {
+export default function ChipeurNouveauPost({ setPage, user, profile, editPost, setEditPost, autoCreateSortie, setAutoCreateSortie }) {
   const [screen, setScreen] = useState("form");
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
@@ -650,6 +707,11 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   const [linkUrl, setLinkUrl] = useState("");
   // Photo pour lieu (séparée de la photo post normal)
   const [lieuPhotoFile, setLieuPhotoFile] = useState(null);
+  // J'hésite fields
+  const [hesLabel, setHesLabel] = useState("");
+  const [hesPrice, setHesPrice] = useState("");
+  // Je cherche fields
+  const [rechercheTag, setRechercheTag] = useState("");
 
   // ── Mode édition : pré-remplir les champs si editPost existe ──
   useEffect(() => {
@@ -676,16 +738,18 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   const isEditMode = !!editPost?.id;
   const isMagasin = profile?.role === "magasin";
   const types = isMagasin ? [
-    { id: "decouverte", icon: "🛍️", name: "Chope", desc: "Chope un instant de ta journée", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
-    { id: "lieu", icon: "📍", name: "Lieu", desc: "Un spot nature, un endroit à découvrir", grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
-    { id: "sortie", icon: "🎉", name: "Événement", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
-    { id: "promo", icon: "🏷️", name: "Promo", desc: "Une réduction, une offre spéciale pour les voisins", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
+    { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un instant, une trouvaille, une nouveauté à partager",       grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
+    { id: "promo",       icon: "🏷️", name: "Promo",        desc: "Une réduction ou une offre spéciale pour tes voisins",       grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
+    { id: "sortie",      icon: "📅", name: "Événement",    desc: "Crée un événement et invite tes voisins à venir",            grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF", isRedirect: true },
+    { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir autour de toi",        grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
   ] : [
-    { id: "decouverte", icon: "🛍️", name: "Chope", desc: "Chope un instant de ta journée", grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
-    { id: "lieu", icon: "📍", name: "Lieu", desc: "Un spot nature, un endroit à découvrir", grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
-    { id: "sortie", icon: "🎉", name: "Événement", desc: "Un événement, une sortie à partager", grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF" },
-    { id: "bonplan", icon: "💡", name: "Bon plan", desc: "Un conseil, une adresse à ne pas rater", grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
-    { id: "defi_voisin", icon: "🏆", name: "Défi", desc: "Lance un défi photo à ta communauté", grad: "linear-gradient(135deg,#FF5733,#F7A72D)", light: "#FFF8E8" },
+    { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un achat, un instant sympa, une trouvaille du jour",         grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
+    { id: "hesitation",  icon: "🤔", name: "J'hésite",     desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "linear-gradient(135deg,#8B5CF6,#C4B5FD)", light: "#F5F3FF" },
+    { id: "recherche",   icon: "🔍", name: "Je cherche",   desc: "Tu cherches un artisan, un service, un produit ?",           grad: "linear-gradient(135deg,#0EA5E9,#38BDF8)", light: "#F0F9FF" },
+    { id: "bonplan",     icon: "💡", name: "Je recommande",desc: "Une adresse top, un bon plan à ne pas rater",                grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
+    { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir aux voisins",          grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
+    { id: "sortie",      icon: "📅", name: "Événement",    desc: "Crée un événement et invite tes voisins à venir",            grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF", isRedirect: true },
+    { id: "defi_voisin", icon: "🏆", name: "Défi",         desc: "Lance un défi photo avec une récompense à la clé",          grad: "linear-gradient(135deg,#FF5733,#F7A72D)", light: "#FFF8E8" },
   ];
 
   const handlePublishClick = () => {
@@ -767,6 +831,61 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       }
       // ✅ Fix : XP pour création d'une sortie
       addXP(user.id, 10, "sortie_publiee");
+      setScreen("success");
+      return;
+    }
+
+    // ── CAS J'HÉSITE ──
+    if (selectedType === "hesitation") {
+      if (!hesLabel.trim() && !content.trim()) {
+        setPublishing(false);
+        setPublishError("Décris ce sur quoi tu hésites !");
+        return;
+      }
+      let image_url = null;
+      if (photoFile) {
+        const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+        const safeExt = ["jpg","jpeg","png","gif","webp"].includes(ext) ? ext : "jpg";
+        const path = `posts/${user.id}/${Date.now()}.${safeExt}`;
+        const { error: upErr } = await supabase.storage.from("images").upload(path, photoFile, { contentType: photoFile.type || "image/jpeg", upsert: false });
+        if (upErr) { setPublishing(false); setPublishError("❌ Upload photo échoué : " + upErr.message); return; }
+        const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+        image_url = urlData.publicUrl;
+      }
+      const { error } = await supabase.from("posts").insert({
+        author_id: user.id,
+        content: content.trim() || hesLabel.trim(),
+        image_url,
+        post_type: "hesitation",
+        product_label: hesLabel.trim() || null,
+        product_price: hesPrice.trim() || null,
+        location: profile?.quartier || "Saint-Dié-des-Vosges",
+        tags: ["J'hésite 🤔"],
+      });
+      setPublishing(false);
+      if (error) { setPublishError("Erreur : " + error.message); return; }
+      addXP(user.id, 10, "hesitation_publie");
+      setScreen("success");
+      return;
+    }
+
+    // ── CAS JE CHERCHE ──
+    if (selectedType === "recherche") {
+      if (!content.trim()) {
+        setPublishing(false);
+        setPublishError("Décris ce que tu cherches !");
+        return;
+      }
+      const { error } = await supabase.from("posts").insert({
+        author_id: user.id,
+        content: content.trim(),
+        post_type: "recherche",
+        location: profile?.quartier || "Saint-Dié-des-Vosges",
+        tags: rechercheTag ? [rechercheTag, "Je cherche 🔍"] : ["Je cherche 🔍"],
+      });
+      setPublishing(false);
+      if (error) { setPublishError("Erreur : " + error.message); return; }
+      addXP(user.id, 5, "recherche_publie");
       setScreen("success");
       return;
     }
@@ -953,6 +1072,16 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   );
 
   const formMap = {
+    hesitation: <FormHesitation
+      content={content} onChange={setContent}
+      onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
+      hesLabel={hesLabel} onLabelChange={setHesLabel}
+      hesPrice={hesPrice} onPriceChange={setHesPrice}
+    />,
+    recherche: <FormRecherche
+      content={content} onChange={setContent}
+      rechercheTag={rechercheTag} onTagChange={setRechercheTag}
+    />,
     decouverte: <FormDecouverte
       content={content} onChange={setContent}
       onPhotoSelect={handlePhotoSelect} photoPreview={photoPreview}
@@ -1025,14 +1154,21 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
                   const isSelected = selectedType === t.id;
                   return (
                     <div key={t.id} onClick={() => {
-                      if (t.id === "promo") {
+                      if (t.id === "promo" && isMagasin) {
                         localStorage.setItem("chipeur_profil_tab", "creer");
                         localStorage.setItem("chipeur_creer_mode", "remise");
                         setPage("profil");
                         return;
                       }
+                      if (t.isRedirect) {
+                        // Événement → aller directement à la page sorties avec création ouverte
+                        if (setAutoCreateSortie) setAutoCreateSortie(true);
+                        setPage("sorties");
+                        return;
+                      }
                       setSelectedType(t.id); setActiveTags([]);
-                      setPhotoFile(null); setPhotoPreview(null); // reset photo à chaque changement de type
+                      setPhotoFile(null); setPhotoPreview(null);
+                      setHesLabel(""); setHesPrice(""); setRechercheTag("");
                     }} style={{
                       borderRadius: 20, cursor: "pointer", overflow: "hidden",
                       border: `2px solid ${isSelected ? "transparent" : C.border}`,
