@@ -1233,8 +1233,14 @@ function RechercheRecommandations({ post, user, requireAuth }) {
       post_id: post.id, user_id: user.id,
       magasin_id: magasinId || null, magasin_nom: magasinNom,
     });
-    if (!error && isFirst) addXP(user.id, 5, "premiere_recommandation");
-    setShowPicker(false); setSearch(""); setDupError(""); setSubmitting(false);
+    setSubmitting(false);
+    if (error) {
+      console.error("post_recommendations insert error:", error);
+      setDupError("Erreur : " + (error.message || "impossible d'enregistrer la recommandation."));
+      return;
+    }
+    if (isFirst) addXP(user.id, 5, "premiere_recommandation");
+    setShowPicker(false); setSearch(""); setDupError("");
     loadRecs();
     if (user?.id) loadMyVotes();
   };
