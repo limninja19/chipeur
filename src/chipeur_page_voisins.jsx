@@ -136,32 +136,59 @@ function Avatar({ v, size = 48, borderColor }) {
   );
 }
 
+// ─── SECTION LABEL (même style que le fil) ───
+function SectionLabel({ icon, label }) {
+  return (
+    <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+      {icon} {label}
+      <div style={{ flex: 1, height: 1, background: C.border }} />
+    </div>
+  );
+}
+
 function VoisinCard({ v, followed, onToggleFollow, onOpen }) {
   return (
     <div onClick={onOpen} style={{
-      background: v.isMe ? "#FFF8F6" : C.card, borderRadius: 18, padding: "12px 14px", marginBottom: 8,
-      border: `1px solid ${v.isMe ? "rgba(232,73,10,0.2)" : C.border}`,
+      background: v.isMe ? "#FFF8F6" : C.card,
+      borderRadius: 18,
+      padding: "12px 14px",
+      marginBottom: 8,
+      border: `1px solid ${v.isMe ? "rgba(255,87,51,0.2)" : C.border}`,
       display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
+      borderLeft: v.isMe ? `3px solid ${C.accent}` : `1px solid ${C.border}`,
     }}>
-      <Avatar v={v} size={48} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>{v.pseudo || "Voisin·e"}{v.isMe && <span style={{ fontSize: 9, color: C.accent }}> (toi)</span>}</div>
-          <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 7, whiteSpace: "nowrap", background: v.levelBg, color: v.levelColor }}>{v.level}</span>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <Avatar v={v} size={50} />
+        {/* Badge niveau en bas de l'avatar */}
+        <div style={{
+          position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)",
+          background: v.levelBg, color: v.levelColor,
+          fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 6,
+          whiteSpace: "nowrap", boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
+        }}>{v.level}</div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink }}>
+            {v.pseudo || "Voisin·e"}
+            {v.isMe && <span style={{ fontSize: 9, color: C.accent, marginLeft: 4 }}>toi 👋</span>}
+          </div>
         </div>
-        {v.quartier && <div style={{ fontSize: 11, color: C.ink2 }}>📍 {v.quartier}</div>}
-        <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.bio || "Pas encore de bio"}</div>
-        <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
-          <span style={{ fontSize: 10, color: C.ink2 }}>{v.postCount} post{v.postCount > 1 ? "s" : ""}</span>
-          <span style={{ fontSize: 10, color: C.ink2 }}>· {v.xp} XP</span>
+        {v.quartier && <div style={{ fontSize: 11, color: C.ink2, marginBottom: 2 }}>📍 {v.quartier}</div>}
+        <div style={{ fontSize: 11, color: C.ink2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {v.bio || "Pas encore de bio"}
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 5 }}>
+          <span style={{ fontSize: 10, color: C.ink2, fontWeight: 600 }}>{v.postCount} post{v.postCount > 1 ? "s" : ""}</span>
+          <span style={{ fontSize: 10, color: C.accent, fontWeight: 700 }}>{v.xp} XP</span>
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+      <div style={{ flexShrink: 0 }}>
         {v.isMe ? (
-          <span style={{ fontSize: 10, color: C.ink2 }}>C'est toi 👋</span>
+          <span style={{ fontSize: 10, color: C.ink2 }}>C'est toi</span>
         ) : (
           <button onClick={e => { e.stopPropagation(); onToggleFollow(v.id); }} style={{
-            border: "none", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700,
+            border: "none", borderRadius: 10, padding: "7px 13px", fontSize: 11, fontWeight: 700,
             cursor: "pointer", fontFamily: dm, whiteSpace: "nowrap", transition: "all 0.2s",
             background: followed ? C.pill : C.accent, color: followed ? C.ink2 : "#fff",
           }}>{followed ? "Suivi ✓" : "+ Suivre"}</button>
@@ -467,33 +494,69 @@ export default function ChipeurPageVoisins({ setPage, user, profile, setConversa
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", display: "flex", flexDirection: "column", fontFamily: dm, color: C.ink }}>
 
         {screen === "list" && <>
-          <div style={{ padding: "14px 18px 0", flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <button onClick={() => setPage("profil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2 }}>←</button>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Voisins 🫣</div>
+          {/* ─── HEADER style fil ─── */}
+          <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px 8px" }}>
+              {/* Gauche : logo + tagline */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <svg width="26" height="26" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="pinGradV" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#FF5733"/><stop offset="100%" stopColor="#FF8C42"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradV)"/>
+                  <circle cx="36" cy="26" r="10" fill="white"/>
+                  <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
+                </svg>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 19, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
+                    chi<span style={{ color: C.accent }}>p</span>eur
+                  </div>
+                  <div style={{ fontFamily: dm, fontSize: 10, color: C.accent, lineHeight: 1.5, marginTop: 3 }}>
+                    Découvre ta ville,<br />à travers tes voisins
+                  </div>
+                </div>
+              </div>
+              {/* Centre : titre page */}
+              {profile?.pseudo && (
+                <div style={{ flex: 1, textAlign: "center", fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>
+                  Voisins 🫂
+                </div>
+              )}
+              {/* Droite : back */}
+              <button onClick={() => setPage("profil")} style={{
+                background: C.pill, border: "none", borderRadius: 20,
+                padding: "6px 12px", fontSize: 11, fontWeight: 600,
+                cursor: "pointer", color: C.ink2, fontFamily: dm,
+              }}>← Retour</button>
             </div>
-            <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10 }}>
-              {loading ? "Chargement…" : `${voisins.length} voisin${voisins.length > 1 ? "s" : ""} inscrit${voisins.length > 1 ? "s" : ""}`}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.card, borderRadius: 14, padding: "9px 14px", border: `1px solid ${C.border}`, marginBottom: 10 }}>
+
+            {/* Barre de recherche */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.bg, borderRadius: 14, padding: "8px 14px", margin: "0 14px 10px", border: `1px solid ${C.border}` }}>
               <span style={{ fontSize: 13, color: C.ink2 }}>🔍</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche un voisin…" style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
+              {search && <span onClick={() => setSearch("")} style={{ fontSize: 13, cursor: "pointer", color: C.ink2 }}>✕</span>}
             </div>
+
             {/* Filtres */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 12, overflowX: "auto", scrollbarWidth: "none" }}>
+            <div style={{ display: "flex", gap: 6, padding: "0 14px 10px", overflowX: "auto", scrollbarWidth: "none" }}>
               {["Tous", "Mon quartier 📍"].map(f => (
                 <button key={f} onClick={() => setFilter(f)} style={{
-                  fontSize: 12, fontWeight: 600, padding: "7px 16px", borderRadius: 20,
+                  fontSize: 11, fontWeight: 600, padding: "6px 14px", borderRadius: 20,
                   border: "none", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
                   background: filter === f ? C.ink : C.pill,
                   color: filter === f ? "#fff" : C.ink2,
                   fontFamily: dm, transition: "all 0.15s",
                 }}>{f}</button>
               ))}
+              <div style={{ marginLeft: "auto", fontSize: 11, color: C.ink2, alignSelf: "center", whiteSpace: "nowrap" }}>
+                {loading ? "" : `${filtered.length} inscrit${filtered.length > 1 ? "s" : ""}`}
+              </div>
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 12px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 12px" }}>
             {loading ? (
               <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2 }}>Chargement des voisins…</div>
             ) : filtered.length === 0 ? (
@@ -504,11 +567,13 @@ export default function ChipeurPageVoisins({ setPage, user, profile, setConversa
               </div>
             ) : (
               <>
-                {top3.length >= 3 && <Podium voisins={top3} onOpen={openVoisin} />}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Tous les voisins</div>
-                  <div style={{ fontSize: 11, color: C.ink2 }}>{filtered.length} inscrits</div>
-                </div>
+                {top3.length >= 3 && (
+                  <>
+                    <SectionLabel icon="🏆" label="Top du quartier" />
+                    <Podium voisins={top3} onOpen={openVoisin} />
+                  </>
+                )}
+                <SectionLabel icon="🫂" label="Tous les voisins" />
                 {filtered.map(v => (
                   <VoisinCard key={v.id} v={v} followed={!!follows[v.id]} onToggleFollow={toggleFollow} onOpen={() => openVoisin(v.id)} />
                 ))}
