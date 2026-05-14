@@ -128,10 +128,9 @@ export default function App() {
 
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
 
-  // Onboarding : après le chargement, avant tout le reste
-  // Visiteur : basé sur localStorage / Inscrit : basé sur profile.has_seen_onboarding
-  const dbDone = profile?.has_seen_onboarding === true;
-  if (!onboardingDone && !dbDone) {
+  // Onboarding : uniquement basé sur localStorage v2
+  // → tout utilisateur sans la clé v2 voit l'onboarding, peu importe la base
+  if (!onboardingDone) {
     return <Onboarding onDone={handleOnboardingDone} />;
   }
 
