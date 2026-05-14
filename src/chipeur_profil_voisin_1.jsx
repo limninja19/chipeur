@@ -370,7 +370,7 @@ function EditProfileScreen({ onBack, profile, updateProfile, user }) {
 }
 
 // ─── PARTIE SCROLLABLE : bannière + avatar + stats + réductions ───
-function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, univers, rank }) {
+function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, univers, rank, onTabChange }) {
   return (
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
@@ -440,23 +440,24 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
         })()}
       </div>
 
-      {/* Stats row */}
+      {/* Stats row — chaque cellule est cliquable */}
       <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "10px 0" }}>
-        {(() => {
-          const currentMonth = new Date().toISOString().slice(0, 7);
-          const xpMonth = profile?.xp_month_label === currentMonth ? (profile?.xp_month || 0) : 0;
-          return [
-            { n: String(postCount), l: "publications" },
-            { n: rank ? `#${rank}` : "#—", l: "classement", color: C.gold },
-            { n: String(profile?.xp || 0), l: "⚡ XP gloire", color: C.accent },
-            { n: String(profile?.xp_shop || 0), l: "🏪 XP Shop", color: "#0A3D2E" },
-          ].map((s, i) => (
-            <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: s.color || C.ink }}>{s.n}</div>
-              <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
-            </div>
-          ));
-        })()}
+        {[
+          { n: String(postCount),           l: "publications",  color: C.ink,     onClick: () => onTabChange?.("Publications") },
+          { n: rank ? `#${rank}` : "#—",    l: "classement",    color: C.gold,    onClick: () => setPage("voisins") },
+          { n: String(profile?.xp || 0),    l: "⚡ XP gloire",  color: C.accent,  onClick: () => onTabChange?.("Récompenses") },
+          { n: String(profile?.xp_shop||0), l: "🏪 XP Shop",    color: "#0A3D2E", onClick: () => setPage("reductions") },
+        ].map((s, i) => (
+          <div key={i} onClick={s.onClick} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none", cursor: "pointer", padding: "4px 0", transition: "background 0.15s" }}
+            onMouseDown={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+            onMouseUp={e => e.currentTarget.style.background = ""}
+            onTouchStart={e => e.currentTarget.style.background = "rgba(0,0,0,0.04)"}
+            onTouchEnd={e => e.currentTarget.style.background = ""}
+          >
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: s.color }}>{s.n}</div>
+            <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
+          </div>
+        ))}
       </div>
 
       {/* Bandeau réductions */}
@@ -471,8 +472,6 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
         </div>
       </div>
 
-      {/* Crédits locaux */}
-      <MesCreditsLocaux userId={profile?.id} />
     </div>
   );
 }
@@ -1447,20 +1446,30 @@ function TabRewards({ user }) {
         </button>
       </div>
 
-      {/* Crédits locaux */}
-      <MesCreditsLocaux userId={user?.id} />
+      {/* XP gloire — explication */}
+      <div style={{ background: "#F5F2EE", borderRadius: 16, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 8 }}>⚡ Comment gagner de l'XP gloire ?</div>
+        {[
+          { e: "📸", t: "Publier un post", x: "+10 XP" },
+          { e: "❤️", t: "Recevoir une réaction", x: "+2 XP" },
+          { e: "🏆", t: "Participer à un défi", x: "+15 XP" },
+          { e: "👥", t: "Inviter un ami (lien ci-dessus)", x: "+20 XP" },
+          { e: "🔥", t: "Connexion quotidienne (streak)", x: "+1 à +5 XP" },
+        ].map((r, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: i < 4 ? `1px solid rgba(26,23,20,0.06)` : "none" }}>
+            <span style={{ fontSize: 16 }}>{r.e}</span>
+            <span style={{ flex: 1, fontSize: 12, color: C.ink2 }}>{r.t}</span>
+            <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.accent }}>{r.x}</span>
+          </div>
+        ))}
+      </div>
 
-      {/* Bientôt dispo */}
-      <div style={{ textAlign: "center", padding: "24px 20px" }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🎖️</div>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 8 }}>
-          Récompenses — Bientôt disponible
-        </div>
-        <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 16 }}>
-          Le classement, les trophées et les bons d'achat arrivent prochainement.<br />Continue à publier et à interagir pour accumuler des XP dès maintenant !
-        </div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF8E8", color: "#B45309", fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>
-          ⚡ En cours de développement
+      {/* Trophées — bientôt */}
+      <div style={{ textAlign: "center", padding: "20px 16px", background: "#F5F2EE", borderRadius: 16 }}>
+        <div style={{ fontSize: 36, marginBottom: 8 }}>🎖️</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Trophées — Bientôt disponible</div>
+        <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>
+          Continue à publier et interagir pour accumuler un maximum d'XP gloire !
         </div>
       </div>
     </div>
@@ -1563,7 +1572,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         <>
           {/* Zone scroll : bannière + avatar + stats + réductions + onglets sticky + contenu */}
           <div style={{ flex: 1, overflowY: "auto" }}>
-            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} rank={rank} />
+            <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} rank={rank} onTabChange={setActiveTab} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
               {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} onEdit={p => { setEditPost?.(p); setPage("nouveau"); }} loading={postsLoading} />}

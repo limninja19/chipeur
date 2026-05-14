@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
+import { addXP } from "./chipeur_xp";
 
 const syne = "'Syne', sans-serif";
 const dm   = "'DM Sans', sans-serif";
@@ -12,6 +13,8 @@ export default function SwipeVoteModal({ d, user, onClose }) {
   const [done, setDone]         = useState(false);
   const [swipeDir, setSwipeDir] = useState(null);
   const [voteError, setVoteError] = useState(null);
+  const [xpEarned, setXpEarned] = useState(0);
+  const xpGivenRef = useRef(false);
 
   const touchRef = { x: null };
 
@@ -76,6 +79,16 @@ export default function SwipeVoteModal({ d, user, onClose }) {
     }, 320);
   }
 
+  // Donner 5 XP gloire une seule fois quand le vote est complété
+  useEffect(() => {
+    if (done && user?.id && !xpGivenRef.current) {
+      xpGivenRef.current = true;
+      const gain = 5;
+      addXP(user.id, gain, "defi_vote");
+      setXpEarned(gain);
+    }
+  }, [done, user?.id]);
+
   const likeCount = Object.values(votes).filter(v => v === "like").length;
   const topPhotos = photos.filter(p => votes[p.id] === "like").slice(0, 6);
 
@@ -125,9 +138,14 @@ export default function SwipeVoteModal({ d, user, onClose }) {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "0 20px 20px", overflowY: "auto", width: "100%" }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
           <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: "#fff", marginBottom: 4 }}>Vote terminé !</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginBottom: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginBottom: 12, textAlign: "center" }}>
             Tu as liké <strong style={{ color: "#FF5733" }}>{likeCount} photo{likeCount > 1 ? "s" : ""}</strong> sur {photos.length}
           </div>
+          {xpEarned > 0 && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,248,232,0.15)", border: "1px solid rgba(247,167,45,0.4)", color: "#F7A72D", fontSize: 14, fontWeight: 700, padding: "8px 18px", borderRadius: 20, marginBottom: 20, fontFamily: syne }}>
+              ⚡ +{xpEarned} XP gloire gagnés !
+            </div>
+          )}
           {topPhotos.length > 0 && (
             <>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,0.85)", marginBottom: 12, alignSelf: "flex-start" }}>❤️ Tes coups de cœur</div>
