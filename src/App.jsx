@@ -21,6 +21,8 @@ import Notifications from "./chipeur_notifications";
 import Messages from "./chipeur_messages";
 import SignupModal from "./SignupModal";
 import Onboarding from "./chipeur_onboarding";
+import InstallPWAModal from "./InstallPWAModal";
+import FilTourModal from "./FilTourModal";
 
 function SplashScreen() {
   return (
@@ -112,6 +114,26 @@ export default function App() {
 
   const [showSignup, setShowSignup] = useState(false);
 
+  // ── Modales post-inscription ─────────────────────────────────────────────
+  const [showInstall, setShowInstall] = useState(
+    () => localStorage.getItem("chipeur_install_shown_v1") !== "true"
+  );
+  const [showFilTour, setShowFilTour] = useState(false);
+
+  function handleCloseInstall() {
+    localStorage.setItem("chipeur_install_shown_v1", "true");
+    setShowInstall(false);
+    // Enchaîner le tour du fil si pas encore vu
+    if (localStorage.getItem("chipeur_fil_tour_v1") !== "true") {
+      setShowFilTour(true);
+    }
+  }
+
+  function handleCloseFilTour() {
+    localStorage.setItem("chipeur_fil_tour_v1", "true");
+    setShowFilTour(false);
+  }
+
   // ── Onboarding première visite ──────────────────────────────────────────
   const [onboardingDone, setOnboardingDone] = useState(
     () => localStorage.getItem("chipeur_onboarding_done_v2") === "true"
@@ -170,6 +192,16 @@ export default function App() {
           onClose={() => setShowSignup(false)}
           onSuccess={() => { setShowSignup(false); }}
         />
+      )}
+
+      {/* Pop-up "Installe l'appli" — une seule fois */}
+      {!showSignup && showInstall && (
+        <InstallPWAModal onClose={handleCloseInstall} />
+      )}
+
+      {/* Tour du fil — juste après la modale d'install */}
+      {!showInstall && showFilTour && (
+        <FilTourModal onClose={handleCloseFilTour} setPage={setPage} />
       )}
 
       {page === "defis"        && <Defis        {...sharedProps} />}

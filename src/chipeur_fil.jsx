@@ -1926,7 +1926,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
         .eq("post_type", "tuvalides")
         .order("created_at", { ascending: false });
       if (error) setFetchError(error.message);
-      setPosts(data || []);
+      setPosts((data || []).filter(p => p.profiles && p.profiles.pseudo !== "[Compte supprimé]"));
       setLoading(false);
       return;
     }
@@ -1939,7 +1939,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
         .eq("post_type", "defi_photo")
         .order("created_at", { ascending: false });
       if (error) setFetchError(error.message);
-      setPosts(data || []);
+      setPosts((data || []).filter(p => p.profiles && p.profiles.pseudo !== "[Compte supprimé]"));
       setLoading(false);
       return;
     }
@@ -1961,7 +1961,9 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     const { data: mainPosts, error } = await q;
 
     if (error) { setFetchError(error.message); console.error("Posts error:", error); }
-    setPosts(mainPosts || []);
+    // Filtrer les posts de comptes supprimés
+    const filtered = (mainPosts || []).filter(p => p.profiles && p.profiles.pseudo !== "[Compte supprimé]");
+    setPosts(filtered);
     setLoading(false);
   };
 
