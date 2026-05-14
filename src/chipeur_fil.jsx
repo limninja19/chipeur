@@ -129,16 +129,17 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
   );
 }
 
-// ─── FIL DROPDOWN FILTRE (multi-sélection) ───
+// ─── FIL DROPDOWN FILTRE ───────────────────────────────────────
+// nav: null  → filtre dans le fil (chip sélectionnable)
+// nav: "xxx" → navigation vers une autre page (pas de sélection)
 const CHIPS = [
-  { id: "all",        label: "Tout le fil",        nav: null      },
-  { id: "nearby",     label: "📍 Autour de moi",   nav: null      },
-  { id: "chope",      label: "Chope",               nav: null      },
-  { id: "lieux",      label: "Lieux",               nav: null      },
-  { id: "bons_plans", label: "Bons plans",          nav: null      },
-  { id: "tuvalides",  label: "🤔 Tu valides !!!",   nav: null      },
-  { id: "defis",      label: "🏆 Défis photos",     nav: null      },
-  { id: "evenements", label: "📅 Événements",       nav: "sorties" },
+  { id: "all",        label: "Tout le fil",   nav: null      },
+  { id: "chope",      label: "📸 Chope !",    nav: null      },
+  { id: "lieux",      label: "📍 Lieux",       nav: null      },
+  { id: "je_cherche", label: "🔍 Je cherche", nav: null      },
+  { id: "defis",      label: "🏆 Défis",      nav: null      },
+  { id: "tuvalides",  label: "🤔 Tu valides", nav: "defis"   },
+  { id: "evenements", label: "📅 Événement",  nav: "sorties" },
 ];
 
 function FilDropdown({ active, onToggle, setPage }) {
@@ -1113,6 +1114,11 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
                   }}>{ribbon.label}</div>
                 </div>
               )}
+              {post.vote_count !== undefined && (
+                <div style={{ position: "absolute", bottom: 8, left: 8, background: "rgba(26,23,20,0.55)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 10 }}>
+                  🗳️ {post.vote_count} vote{post.vote_count !== 1 ? "s" : ""}
+                </div>
+              )}
               <div style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(26,23,20,0.45)", color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>🔍 Agrandir</div>
             </div>
           );
@@ -1921,34 +1927,31 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     setFetchError(null);
     const nearbyOn = activeFilters.has("nearby");
 
-    // ── Filtre "Tu valides !!!" : uniquement les posts tuvalides ──
-    if (activeFilters.has("tuvalides")) {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*, profiles(id, pseudo, avatar_url, role), link_url")
-        .eq("post_type", "tuvalides")
-        .order("created_at", { ascending: false });
-      if (error) setFetchError(error.message);
-      setPosts((data || []).filter(p => p.profiles && p.profiles.pseudo !== "[Compte supprimé]"));
-      setLoading(false);
-      return;
-    }
-
-    // ── Filtre "Défis photos" : uniquement les photos soumises aux défis ──
+    // ── Filtre "Défis" : photos soumises aux défis + comptage des votes ──
     if (activeFilters.has("defis")) {
       const { data, error } = await supabase
         .from("posts")
         .select("*, profiles(id, pseudo, avatar_url, role), link_url")
-        .eq("post_type", "defi_photo")
+        .not("defi_id", "is", null)
         .order("created_at", { ascending: false });
       if (error) setFetchError(error.message);
-      setPosts((data || []).filter(p => p.profiles && p.profiles.pseudo !== "[Compte supprimé]"));
+      const defiPosts = (data || []).filter(p => p.profiles && p.profiles.pseudo !== "[Compte supprimé]");
+      // Récupérer le nombre de votes pour chaque photo
+      if (defiPosts.length > 0) {
+        const ids = defiPosts.map(p => p.id);
+        const { data: votesData } = await supabase
+          .from("defi_votes").select("post_id").in("post_id", ids);
+        const vc = {};
+        (votesData || []).forEach(v => { vc[v.post_id] = (vc[v.post_id] || 0) + 1; });
+        setPosts(defiPosts.map(p => ({ ...p, vote_count: vc[p.id] || 0 })));
+      } else {
+        setPosts(defiPosts);
+      }
       setLoading(false);
       return;
     }
 
-    // ── Fil normal (exclut tuvalides et defi_photo du flux principal) ──
-    // IDs des défis voisins (leurs photos sont exclues du fil normal)
+    // ── Fil normal (exclut defi_photo du flux principal ; tuvalides y apparaît) ──
     const { data: voisinDefis } = await supabase
       .from("defis").select("id").eq("type", "voisin");
     const voisinDefiIds = (voisinDefis || []).map(d => d.id);
@@ -1957,7 +1960,6 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       .from("posts")
       .select("*, profiles(id, pseudo, avatar_url, role), link_url")
       .neq("post_type", "defi_photo")
-      .neq("post_type", "tuvalides")
       .is("evenement_id", null)
       .order("created_at", { ascending: false });
     if (nearbyOn) q = q.in("location", BASIN_CITIES);
@@ -1973,7 +1975,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
   useEffect(() => { loadPosts(); }, [activeFilters]);
 
   // Filtrage client-side selon les chips actifs
-  const TYPE_MAP = { chope: "decouverte", lieux: "lieu", bons_plans: "bonplan" };
+  const TYPE_MAP = { chope: "decouverte", lieux: "lieu", je_cherche: "recherche" };
   const activeTypes = Object.entries(TYPE_MAP)
     .filter(([id]) => activeFilters.has(id))
     .map(([, type]) => type);
