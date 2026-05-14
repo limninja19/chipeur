@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const syne = "'Syne', sans-serif";
 const dm   = "'DM Sans', sans-serif";
@@ -132,16 +132,15 @@ function IlluDesktop() {
 export default function InstallPWAModal({ onClose }) {
   const platform = detectPlatform();
   const [step, setStep] = useState(0);
+  const shouldSkip = isAlreadyInstalled() || platform === "desktop";
 
-  if (isAlreadyInstalled()) {
-    onClose?.();
-    return null;
-  }
+  // ⚠️ Ne jamais appeler onClose() pendant le rendu : ça provoquerait une erreur React.
+  // On utilise useEffect pour fermer proprement après le premier rendu.
+  useEffect(() => {
+    if (shouldSkip) onClose?.();
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (platform === "desktop") {
-    onClose?.();
-    return null;
-  }
+  if (shouldSkip) return null;
 
   const isIOS = platform === "ios";
 
