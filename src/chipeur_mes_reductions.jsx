@@ -5,6 +5,7 @@ const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
   accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
   pill: "#EDEBE8", border: "rgba(26,23,20,0.08)",
+  shopOrange: "#FF5733", shopBg: "#FFF4F1",
 };
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
@@ -50,16 +51,14 @@ function formatAmount(valeur, type_remise) {
 function DetailScreen({ item, onBack }) {
   const [copied, setCopied] = useState(false);
   const amount = formatAmount(item.valeur, item.type_remise);
-  const expiry = formatExpiry(item.expires_at);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
         <button onClick={onBack} style={{ background: C.pill, border: "none", borderRadius: 10, width: 34, height: 34, fontSize: 16, cursor: "pointer" }}>←</button>
-        <span style={{ fontFamily: syne, fontSize: 15, fontWeight: 700, color: C.ink }}>Ma réduction</span>
+        <span style={{ fontFamily: syne, fontSize: 15, fontWeight: 700, color: C.ink }}>Bon plan du quartier</span>
       </div>
 
-      {/* Bannière */}
       <div style={{ background: C.proBg, padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>🏪</div>
         <div style={{ fontFamily: syne, fontSize: 17, fontWeight: 700, color: C.pro }}>{item.merchant_name || "Commerce"}</div>
@@ -68,7 +67,6 @@ function DetailScreen({ item, onBack }) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: 14 }}>
-        {/* Code promo */}
         {item.code && (
           <div style={{ background: C.bg, border: "1.5px dashed rgba(26,23,20,0.2)", borderRadius: 16, padding: 16, textAlign: "center", marginBottom: 14 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Ton code promo</div>
@@ -82,7 +80,6 @@ function DetailScreen({ item, onBack }) {
           </div>
         )}
 
-        {/* Infos */}
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 14 }}>
           {[
             ["Enseigne", item.merchant_name || "—"],
@@ -101,8 +98,185 @@ function DetailScreen({ item, onBack }) {
   );
 }
 
-// ─── PAGE PRINCIPALE ───────────────────────────────────────────
-export default function MesReductions({ setPage, user }) {
+// ─── TAB 1 : MES XP SHOP ──────────────────────────────────────
+function MesXPShop({ user, setPage }) {
+  const [wallets, setWallets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadWallets();
+  }, [user?.id]);
+
+  async function loadWallets() {
+    if (!user?.id) { setLoading(false); return; }
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("merchant_xp_wallet")
+      .select("*, profiles:merchant_id(pseudo, avatar_url)")
+      .eq("user_id", user.id)
+      .order("points", { ascending: false });
+
+    if (error) { console.error("wallets:", error); setLoading(false); return; }
+    setWallets(data || []);
+    setLoading(false);
+  }
+
+  const totalShop = wallets.reduce((sum, w) => sum + (w.points || 0), 0);
+  const disponibles = wallets.filter(w => (w.points || 0) >= 100);
+  const enCours = wallets.filter(w => (w.points || 0) < 100 && (w.points || 0) > 0);
+
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.ink2, fontSize: 13 }}>
+        ⏳ Chargement…
+      </div>
+    );
+  }
+
+  if (wallets.length === 0) {
+    return (
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px" }}>
+        {/* Hero vide */}
+        <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 20, padding: "24px 20px", textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 44, marginBottom: 8 }}>🏪</div>
+          <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 6 }}>Tes XP Shop t'attendent !</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginBottom: 16 }}>
+            Poste une photo d'un article en magasin. Si le commerçant l'accepte, tu gagnes 10 XP Shop chez lui — transformables en bon d'achat dès 100 XP !
+          </div>
+          <button onClick={() => setPage("nouveau")}
+            style={{ background: "#fff", color: C.accent, fontFamily: syne, fontWeight: 800, fontSize: 13, border: "none", borderRadius: 14, padding: "11px 24px", cursor: "pointer" }}>
+            📸 Poster une photo maintenant
+          </button>
+        </div>
+        <div style={{ background: C.card, borderRadius: 16, padding: "16px 14px", border: `1px solid ${C.border}`, textAlign: "center" }}>
+          <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6 }}>
+            <b style={{ color: C.ink }}>Comment ça marche ?</b><br />
+            1. Tu prends une photo d'un article<br />
+            2. Tu la postes en la reliant au commerce<br />
+            3. Le commerçant accepte → <b style={{ color: C.accent }}>+10 XP Shop</b><br />
+            4. À 100 XP Shop = <b style={{ color: C.pro }}>5€ de bon d'achat</b> chez lui 🎁
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px 20px" }}>
+
+      {/* Total banner */}
+      <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 18, padding: "16px 18px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontFamily: syne, fontSize: 26, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{totalShop}</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>XP Shop total</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
+            100 XP Shop = <b style={{ color: "#fff" }}>5€ de bon d'achat</b><br />
+            utilisable chez le commerce concerné
+          </div>
+        </div>
+      </div>
+
+      {/* Section : bons disponibles */}
+      {disponibles.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.pro, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            🎁 Bons disponibles · {disponibles.length}
+          </div>
+          {disponibles.map(w => {
+            const pts = w.points || 0;
+            const bons = Math.floor(pts / 100);
+            const reste = pts % 100;
+            const merchant = w.profiles?.pseudo || "Commerce";
+            const avatar = w.profiles?.avatar_url;
+            return (
+              <div key={w.id} style={{ background: C.card, borderRadius: 18, border: `2px solid ${C.pro}`, marginBottom: 10, overflow: "hidden" }}>
+                <div style={{ background: C.proBg, padding: "8px 14px 6px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: C.pro, textTransform: "uppercase", letterSpacing: 0.5 }}>✅ BON D'ACHAT DISPONIBLE</span>
+                  <span style={{ fontFamily: syne, fontSize: 16, fontWeight: 800, color: C.pro }}>{bons * 5}€</span>
+                </div>
+                <div style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
+                      {avatar ? <img src={avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🏪"}
+                    </div>
+                    <div>
+                      <div style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: C.ink }}>{merchant}</div>
+                      <div style={{ fontSize: 11, color: C.ink2 }}>{pts} XP Shop accumulés</div>
+                    </div>
+                  </div>
+                  {/* Barre de progression */}
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ height: 8, background: C.pill, borderRadius: 8, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${Math.min(100, reste)}%`, background: `linear-gradient(90deg, ${C.pro}, #22c55e)`, borderRadius: 8, transition: "width 0.8s ease" }} />
+                    </div>
+                    {reste > 0 && (
+                      <div style={{ fontSize: 10, color: C.ink2, marginTop: 4 }}>+ encore {100 - reste} XP pour un {bons + 1}e bon de 5€</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.ink2, background: C.bg, borderRadius: 10, padding: "8px 10px" }}>
+                    💡 Montre ce bon au caissier pour l'utiliser chez <b>{merchant}</b>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ height: 8 }} />
+        </>
+      )}
+
+      {/* Section : en cours */}
+      {enCours.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            ⚡ En cours · {enCours.length}
+          </div>
+          {enCours.map(w => {
+            const pts = w.points || 0;
+            const pct = Math.round((pts / 100) * 100);
+            const reste = 100 - pts;
+            const merchant = w.profiles?.pseudo || "Commerce";
+            const avatar = w.profiles?.avatar_url;
+            return (
+              <div key={w.id} style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, padding: "14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: C.shopBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, overflow: "hidden" }}>
+                    {avatar ? <img src={avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🏪"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: C.ink }}>{merchant}</div>
+                    <div style={{ fontSize: 11, color: C.ink2 }}>{pts} / 100 XP Shop</div>
+                  </div>
+                  <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 800, color: C.accent }}>{pts}</div>
+                </div>
+                {/* Barre de progression */}
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ height: 10, background: C.pill, borderRadius: 10, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.accent}, ${C.accent2})`, borderRadius: 10, transition: "width 0.8s ease" }} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                    <div style={{ fontSize: 11, color: C.accent, fontWeight: 600 }}>Plus que {reste} XP pour débloquer 5€ 🎁</div>
+                    <div style={{ fontSize: 10, color: C.ink2 }}>{pct}%</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* CTA */}
+      <button onClick={() => setPage("nouveau")}
+        style={{ width: "100%", padding: "14px 0", background: "linear-gradient(135deg, #FF5733, #F7A72D)", color: "#fff", fontFamily: syne, fontWeight: 800, fontSize: 14, border: "none", borderRadius: 16, cursor: "pointer", marginTop: 8 }}>
+        📸 Gagner plus de XP Shop →
+      </button>
+    </div>
+  );
+}
+
+// ─── TAB 2 : BONS PLANS DU QUARTIER ────────────────────────────
+function BonsPlans({ setPage }) {
   const [screen, setScreen] = useState("list");
   const [selectedItem, setSelectedItem] = useState(null);
   const [filter, setFilter] = useState("tous");
@@ -115,7 +289,6 @@ export default function MesReductions({ setPage, user }) {
 
   async function loadRemises() {
     setLoading(true);
-    // Charge toutes les remises actives + le profil du commerçant
     const { data, error } = await supabase
       .from("remises")
       .select("*, profiles:user_id(pseudo, avatar_url, categorie)")
@@ -142,116 +315,152 @@ export default function MesReductions({ setPage, user }) {
     { id: "all",       label: "Pour tous" },
   ];
 
-  const dispo = remises.filter(r =>
-    !r.isExpired && (filter === "tous" || r.ciblage === filter)
-  );
+  const dispo = remises.filter(r => !r.isExpired && (filter === "tous" || r.ciblage === filter));
   const expirees = remises.filter(r => r.isExpired);
+
+  if (screen === "detail" && selectedItem) {
+    return <DetailScreen item={selectedItem} onBack={() => setScreen("list")} />;
+  }
+
+  return (
+    <>
+      {/* Filtres */}
+      <div style={{ display: "flex", gap: 6, padding: "8px 12px", overflowX: "auto", flexShrink: 0, background: C.card, borderBottom: `1px solid ${C.border}` }}>
+        {filters.map(f => (
+          <button key={f.id} onClick={() => setFilter(f.id)} style={{ fontSize: 11, fontWeight: 600, padding: "5px 14px", borderRadius: 20, border: "none", cursor: "pointer", whiteSpace: "nowrap", background: filter === f.id ? C.ink : C.pill, color: filter === f.id ? "#fff" : C.ink2, fontFamily: dm }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px 12px" }}>
+        {loading && (
+          <div style={{ textAlign: "center", padding: "50px 20px", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+        )}
+
+        {!loading && dispo.length === 0 && (
+          <div style={{ textAlign: "center", padding: "50px 20px" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🏷️</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 6 }}>Aucun bon plan pour l'instant</div>
+            <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.5 }}>Les commerçants du quartier publieront bientôt leurs offres ici.</div>
+          </div>
+        )}
+
+        {!loading && dispo.length > 0 && <>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 8px" }}>
+            Disponibles · {dispo.length}
+          </div>
+          {dispo.map(r => {
+            const amount = formatAmount(r.valeur, r.type_remise);
+            const expiry = formatExpiry(r.expires_at);
+            return (
+              <div key={r.id} onClick={() => { setSelectedItem(r); setScreen("detail"); }}
+                style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden", cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 12px 8px" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, overflow: "hidden" }}>
+                    {r.merchant_avatar
+                      ? <img src={r.merchant_avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
+                      : "🏪"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ display: "inline-block", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 8, marginBottom: 3, background: r.ciblage === "interesse" ? "#E8F4FD" : C.proBg, color: r.ciblage === "interesse" ? "#1565C0" : C.pro }}>
+                      {r.ciblage === "interesse" ? "Ciblée" : "Pour tous"}
+                    </span>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{r.merchant_name}</div>
+                    <div style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>{r.title}</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
+                    <div style={{ fontFamily: syne, fontSize: 26, fontWeight: 800, color: C.accent, lineHeight: 1 }}>{amount}</div>
+                    {expiry && <div style={{ fontSize: 9, color: C.ink2, marginTop: 3 }}>{expiry}</div>}
+                  </div>
+                </div>
+                {r.conditions && (
+                  <div style={{ fontSize: 11, color: C.ink2, padding: "0 12px 8px", lineHeight: 1.4 }}>{r.conditions}</div>
+                )}
+                <div style={{ display: "flex", gap: 6, padding: "0 12px 12px" }}>
+                  <button onClick={e => { e.stopPropagation(); setSelectedItem(r); setScreen("detail"); }}
+                    style={{ flex: 1, padding: 9, borderRadius: 12, fontSize: 12, fontWeight: 600, fontFamily: dm, border: "none", cursor: "pointer", background: C.accent, color: "#fff" }}>
+                    Voir le code
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </>}
+
+        {!loading && expirees.length > 0 && (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "8px 0" }}>
+              Expirées · {expirees.length}
+            </div>
+            {expirees.map(r => (
+              <div key={r.id} style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, opacity: 0.45 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏪</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{r.merchant_name}</div>
+                    <div style={{ fontSize: 11, color: C.ink2 }}>{r.title}</div>
+                  </div>
+                  <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: C.ink2 }}>{formatAmount(r.valeur, r.type_remise)}</div>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─── PAGE PRINCIPALE ───────────────────────────────────────────
+export default function MesReductions({ setPage, user }) {
+  const [tab, setTab] = useState("xpshop");
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
-      {screen === "list" && <>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 8px", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
-          <button onClick={() => setPage("profil")} style={{ background: C.pill, border: "none", borderRadius: 10, width: 34, height: 34, fontSize: 16, cursor: "pointer" }}>←</button>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontFamily: syne, fontSize: 18, fontWeight: 700, margin: 0 }}>Bons plans</h1>
-            <p style={{ fontSize: 10, color: C.ink2, margin: 0 }}>Offres des commerces du quartier</p>
-          </div>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 8px", borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card }}>
+        <button onClick={() => setPage("profil")} style={{ background: C.pill, border: "none", borderRadius: 10, width: 34, height: 34, fontSize: 16, cursor: "pointer" }}>←</button>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontFamily: syne, fontSize: 18, fontWeight: 700, margin: 0 }}>Mes réductions</h1>
+          <p style={{ fontSize: 10, color: C.ink2, margin: 0 }}>XP Shop & bons plans du quartier</p>
         </div>
+      </div>
 
-        {/* Filtres */}
-        <div style={{ display: "flex", gap: 6, padding: "8px 12px", overflowX: "auto", flexShrink: 0, background: C.card, borderBottom: `1px solid ${C.border}` }}>
-          {filters.map(f => (
-            <button key={f.id} onClick={() => setFilter(f.id)} style={{ fontSize: 11, fontWeight: 600, padding: "5px 14px", borderRadius: 20, border: "none", cursor: "pointer", whiteSpace: "nowrap", background: filter === f.id ? C.ink : C.pill, color: filter === f.id ? "#fff" : C.ink2, fontFamily: dm }}>
-              {f.label}
-            </button>
-          ))}
-        </div>
+      {/* Onglets */}
+      <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+        <button
+          onClick={() => setTab("xpshop")}
+          style={{
+            flex: 1, padding: "12px 0", fontSize: 13, fontWeight: 700, fontFamily: syne,
+            border: "none", background: "none", cursor: "pointer",
+            color: tab === "xpshop" ? C.accent : C.ink2,
+            borderBottom: tab === "xpshop" ? `2.5px solid ${C.accent}` : "2.5px solid transparent",
+            transition: "color 0.2s"
+          }}
+        >
+          🏪 Mes XP Shop
+        </button>
+        <button
+          onClick={() => setTab("bonsplans")}
+          style={{
+            flex: 1, padding: "12px 0", fontSize: 13, fontWeight: 700, fontFamily: syne,
+            border: "none", background: "none", cursor: "pointer",
+            color: tab === "bonsplans" ? C.accent : C.ink2,
+            borderBottom: tab === "bonsplans" ? `2.5px solid ${C.accent}` : "2.5px solid transparent",
+            transition: "color 0.2s"
+          }}
+        >
+          🏷️ Bons plans
+        </button>
+      </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px 12px" }}>
-
-          {loading && (
-            <div style={{ textAlign: "center", padding: "50px 20px", color: C.ink2, fontSize: 13 }}>
-              ⏳ Chargement…
-            </div>
-          )}
-
-          {!loading && dispo.length === 0 && (
-            <div style={{ textAlign: "center", padding: "50px 20px" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🏷️</div>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink, marginBottom: 6 }}>Aucun bon plan pour l'instant</div>
-              <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.5 }}>Les commerçants du quartier publieront bientôt leurs offres ici.</div>
-            </div>
-          )}
-
-          {!loading && dispo.length > 0 && <>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "0 0 8px" }}>
-              Disponibles · {dispo.length}
-            </div>
-            {dispo.map(r => {
-              const amount = formatAmount(r.valeur, r.type_remise);
-              const expiry = formatExpiry(r.expires_at);
-              return (
-                <div key={r.id} onClick={() => { setSelectedItem(r); setScreen("detail"); }}
-                  style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden", cursor: "pointer" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 12px 8px" }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-                      {r.merchant_avatar
-                        ? <img src={r.merchant_avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }} />
-                        : "🏪"}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <span style={{ display: "inline-block", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 8, marginBottom: 3, background: r.ciblage === "interesse" ? "#E8F4FD" : C.proBg, color: r.ciblage === "interesse" ? "#1565C0" : C.pro }}>
-                        {r.ciblage === "interesse" ? "Ciblée" : "Pour tous"}
-                      </span>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{r.merchant_name}</div>
-                      <div style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>{r.title}</div>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }}>
-                      <div style={{ fontFamily: syne, fontSize: 26, fontWeight: 800, color: C.accent, lineHeight: 1 }}>{amount}</div>
-                      {expiry && <div style={{ fontSize: 9, color: C.ink2, marginTop: 3 }}>{expiry}</div>}
-                    </div>
-                  </div>
-                  {r.conditions && (
-                    <div style={{ fontSize: 11, color: C.ink2, padding: "0 12px 8px", lineHeight: 1.4 }}>{r.conditions}</div>
-                  )}
-                  <div style={{ display: "flex", gap: 6, padding: "0 12px 12px" }}>
-                    <button onClick={e => { e.stopPropagation(); setSelectedItem(r); setScreen("detail"); }}
-                      style={{ flex: 1, padding: 9, borderRadius: 12, fontSize: 12, fontWeight: 600, fontFamily: dm, border: "none", cursor: "pointer", background: C.accent, color: "#fff" }}>
-                      Voir le code
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </>}
-
-          {!loading && expirees.length > 0 && (
-            <>
-              <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "8px 0" }}>
-                Expirées · {expirees.length}
-              </div>
-              {expirees.map(r => (
-                <div key={r.id} style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, opacity: 0.45 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px" }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: C.proBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🏪</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>{r.merchant_name}</div>
-                      <div style={{ fontSize: 11, color: C.ink2 }}>{r.title}</div>
-                    </div>
-                    <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: C.ink2 }}>{formatAmount(r.valeur, r.type_remise)}</div>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-      </>}
-
-      {screen === "detail" && selectedItem &&
-        <DetailScreen item={selectedItem} onBack={() => setScreen("list")} />
-      }
+      {/* Contenu des onglets */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {tab === "xpshop"    && <MesXPShop user={user} setPage={setPage} />}
+        {tab === "bonsplans" && <BonsPlans setPage={setPage} />}
+      </div>
 
       <BottomNav active="profil" onNavigate={setPage} onFab={() => setPage("nouveau")} />
     </div>
