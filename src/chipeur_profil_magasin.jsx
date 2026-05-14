@@ -529,7 +529,7 @@ function MerchantXpBlock({ userId, merchantName }) {
         <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
           <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
             <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.totalXp}</div>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>XP distribués</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>XP Shop distribués</div>
           </div>
           <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
             <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.acceptedCount}</div>
@@ -544,8 +544,8 @@ function MerchantXpBlock({ userId, merchantName }) {
           <div style={{ fontSize: 11, fontWeight: 700, color: "#FFD700", marginBottom: 6 }}>💡 Comment ça marche ?</div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}>
             Quand un voisin publie un post en vous mentionnant, vous pouvez l'<b style={{ color: "#fff" }}>accepter</b> depuis l'onglet <b style={{ color: "#fff" }}>Mentions</b>.<br />
-            Chaque post accepté = <b style={{ color: "#FFD700" }}>+10 XP</b> pour le voisin.<br />
-            100 XP = <b style={{ color: "#FFD700" }}>5 € de bon d'achat</b> à utiliser chez vous !
+            Chaque post accepté = <b style={{ color: "#FFD700" }}>+10 XP Shop</b> pour le voisin.<br />
+            100 XP Shop = <b style={{ color: "#FFD700" }}>5 € de bon d'achat</b> utilisable uniquement chez vous !
           </div>
         </div>
       </div>

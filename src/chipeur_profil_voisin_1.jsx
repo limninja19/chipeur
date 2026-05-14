@@ -519,7 +519,7 @@ function MesCreditsLocaux({ userId }) {
               <span style={{ fontSize: 8, fontWeight: 700, background: C.pill, color: C.ink2, borderRadius: 5, padding: "2px 5px", flexShrink: 0 }}>EXEMPLE</span>
             )}
           </div>
-          <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{points} XP accumulés</div>
+          <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>{points} XP Shop accumulés</div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 15, color: isDemo ? C.ink2 : (disponible ? C.pro : C.ink) }}>
@@ -558,8 +558,8 @@ function MesCreditsLocaux({ userId }) {
         }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, marginBottom: 3 }}>💡 Comment ça marche ?</div>
           <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.5 }}>
-            Poste une photo en liant un commerce → le commerçant accepte → <b>+10 XP</b> crédités ici.<br />
-            <b>100 XP = 5 €</b> de bon d'achat à utiliser en boutique.
+            Poste une photo en liant un commerce → le commerçant accepte → <b>+10 XP Shop</b> crédités ici.<br />
+            <b>100 XP Shop = 5 €</b> de bon d'achat utilisable uniquement chez ce commerçant.
           </div>
         </div>
       </div>
