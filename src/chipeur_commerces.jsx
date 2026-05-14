@@ -1108,8 +1108,8 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                 {[
                   { e: "📸", t: "Un voisin poste une photo", d: "Il lie votre commerce depuis son post (Chope, Tu valides!!!, etc.)" },
                   { e: "🔔", t: "Vous êtes notifié", d: "Le post apparaît ici en attente de validation." },
-                  { e: "✓", t: "Vous acceptez ou refusez", d: "Si vous acceptez, le post s'affiche dans votre vitrine et le voisin reçoit +10 XP." },
-                  { e: "🎁", t: "100 XP = 5 € de bon d'achat", d: "Le voisin peut utiliser ses XP comme bon d'achat dans votre boutique !" },
+                  { e: "✓", t: "Vous acceptez ou refusez", d: "Si vous acceptez, le post s'affiche dans votre vitrine et le voisin reçoit +10 XP Shop." },
+                  { e: "🎁", t: "100 XP Shop = 5 € de bon d'achat", d: "Le voisin peut utiliser ses XP Shop comme bon d'achat uniquement dans votre boutique !" },
                 ].map((s, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, marginBottom: i < 3 ? 10 : 0 }}>
                     <div style={{ width: 32, height: 32, borderRadius: 10, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{s.e}</div>
@@ -1139,7 +1139,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                   </div>
                   <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10 }}>J'hésite sur cette robe, vous en pensez quoi ? 👗</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    <button disabled style={{ border: "none", borderRadius: 12, padding: "10px 0", background: "rgba(10,61,46,0.15)", color: C.pro, fontWeight: 700, fontSize: 13, cursor: "not-allowed", fontFamily: dm }}>✓ Accepter · +10 XP</button>
+                    <button disabled style={{ border: "none", borderRadius: 12, padding: "10px 0", background: "rgba(10,61,46,0.15)", color: C.pro, fontWeight: 700, fontSize: 13, cursor: "not-allowed", fontFamily: dm }}>✓ Accepter · +10 XP Shop</button>
                     <button disabled style={{ border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 0", background: C.card, color: C.ink2, fontWeight: 600, fontSize: 13, cursor: "not-allowed", fontFamily: dm }}>✕ Refuser</button>
                   </div>
                 </div>
@@ -1182,7 +1182,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                       </div>
                       {/* Badge statut */}
                       {post.linked_status === "accepted" && (
-                        <div style={{ background: C.proBg, color: C.pro, fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 8 }}>✓ Accepté · +10 XP</div>
+                        <div style={{ background: C.proBg, color: C.pro, fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 8 }}>✓ Accepté · +10 XP Shop 🎁</div>
                       )}
                     </div>
                     {post.content && (
@@ -1195,7 +1195,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                           border: "none", borderRadius: 12, padding: "10px 0",
                           background: C.pro, color: "#fff",
                           fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: dm,
-                        }}>✓ Accepter · +10 XP</button>
+                        }}>✓ Accepter · +10 XP Shop</button>
                         <button onClick={() => handleRejectPost(post)} style={{
                           border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 0",
                           background: C.card, color: C.ink2,
