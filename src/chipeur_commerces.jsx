@@ -1057,9 +1057,9 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const handleAcceptPost = async (post) => {
     // 1. Mettre à jour le statut du post
     await supabase.from("posts").update({ linked_status: "accepted" }).eq("id", post.id);
-    // 2. Créditer 10 XP Shop (valeur marchande) dans le wallet + profiles.xp_shop
+    // 2. Créditer 10 XP Shop dans le wallet + profiles.xp_shop
     await addXPShop(post.author_id, com.id, 10);
-    // 3. Notifier l'auteur
+    // 3. Notifier l'auteur (post accepté)
     await supabase.from("notifications").insert({
       user_id: post.author_id,
       from_user_id: com.id,
@@ -1067,7 +1067,31 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
       reference_id: post.id,
       read: false,
     });
-    // 4. Mettre à jour l'état local
+    // 4. Vérifier si le voisin vient de franchir un palier de 100 XP Shop
+    const { data: wallet } = await supabase
+      .from("merchant_xp_wallet")
+      .select("points")
+      .eq("user_id", post.author_id)
+      .eq("merchant_id", com.id)
+      .maybeSingle();
+    if (wallet) {
+      const pts = wallet.points;
+      const prev = pts - 10;
+      // Franchissement d'un palier (100, 200, 300…)
+      if (Math.floor(pts / 100) > Math.floor(prev / 100)) {
+        const bons = Math.floor(pts / 100);
+        await supabase.from("notifications").insert({
+          user_id: post.author_id,
+          from_user_id: com.id,
+          type: "xpshop_palier",
+          reference_id: post.id,
+          read: false,
+          // On stocke le montant du bon dans le champ extra si disponible, sinon on utilise reference_id
+          extra: JSON.stringify({ bons, merchant_name: com.pseudo || "Le commerce", points: pts }),
+        });
+      }
+    }
+    // 5. Mettre à jour l'état local
     setLinkedPosts(prev => prev.map(p => p.id === post.id ? { ...p, linked_status: "accepted" } : p));
   };
 

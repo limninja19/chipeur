@@ -1739,7 +1739,7 @@ function BandeauClassement({ user, setSelectedVoisinId, setPage }) {
                   </div>
                 </div>
                 <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 13, color: C.accent }}>
-                  ⚡ {p.xp_month} XP
+                  ⚡ {p.xp_month} XP gloire
                 </div>
               </div>
             );

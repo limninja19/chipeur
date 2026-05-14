@@ -505,15 +505,21 @@ const REACTION_TYPES = [
 // ─── BLOC XP CRÉDITS LOCAUX (réutilisable) ──────────────────────
 function MerchantXpBlock({ userId, merchantName }) {
   const [xpStats, setXpStats] = useState({ totalXp: 0, voisinCount: 0, acceptedCount: 0 });
+  const [wallets, setWallets] = useState([]);
+  const [showVoisins, setShowVoisins] = useState(false);
+
   useEffect(() => {
     if (!userId) return;
-    supabase.from("merchant_xp_wallet").select("points, user_id")
+    supabase.from("merchant_xp_wallet")
+      .select("points, user_id, profiles:user_id(pseudo, avatar_url)")
       .eq("merchant_id", userId)
+      .order("points", { ascending: false })
       .then(({ data }) => {
         if (!data) return;
         const totalXp = data.reduce((s, r) => s + (r.points || 0), 0);
         const voisinCount = new Set(data.map(r => r.user_id)).size;
         setXpStats(prev => ({ ...prev, totalXp, voisinCount }));
+        setWallets(data);
       });
     supabase.from("posts").select("id", { count: "exact", head: true })
       .eq("magasin_id", userId).eq("linked_status", "accepted")
@@ -549,6 +555,49 @@ function MerchantXpBlock({ userId, merchantName }) {
           </div>
         </div>
       </div>
+
+      {/* Liste des voisins ambassadeurs */}
+      {wallets.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <button
+            onClick={() => setShowVoisins(v => !v)}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "11px 14px", cursor: "pointer", fontFamily: syne, fontSize: 13, fontWeight: 700, color: C.ink }}
+          >
+            <span>🧑‍🤝‍🧑 Vos ambassadeurs locaux ({wallets.length})</span>
+            <span style={{ fontSize: 16, color: C.ink2, transition: "transform 0.2s", transform: showVoisins ? "rotate(180deg)" : "rotate(0deg)" }}>⌄</span>
+          </button>
+
+          {showVoisins && (
+            <div style={{ background: C.card, borderRadius: "0 0 14px 14px", border: `1px solid ${C.border}`, borderTop: "none", overflow: "hidden" }}>
+              {wallets.map((w, i) => {
+                const pts = w.points || 0;
+                const pct = Math.min(100, Math.round((pts % 100)));
+                const bons = Math.floor(pts / 100);
+                const pseudo = w.profiles?.pseudo || "Voisin·e";
+                const avatar = w.profiles?.avatar_url;
+                return (
+                  <div key={w.user_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: i < wallets.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EBF5F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
+                      {avatar ? <img src={avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{pseudo}</div>
+                      <div style={{ height: 5, background: "#EEE", borderRadius: 5, marginTop: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${bons > 0 ? 100 : pct}%`, background: bons > 0 ? "#22c55e" : "linear-gradient(90deg,#FF5733,#F7A72D)", borderRadius: 5 }} />
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 14, color: bons > 0 ? "#0A3D2E" : C.accent }}>{pts}</div>
+                      <div style={{ fontSize: 9, color: C.ink2 }}>XP Shop</div>
+                      {bons > 0 && <div style={{ fontSize: 9, color: "#0A3D2E", fontWeight: 700 }}>🎁 {bons * 5}€ dispo</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }

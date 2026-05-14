@@ -11,16 +11,18 @@ const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
 const NOTIF_CONFIG = {
-  like:       { icon: "❤️",  label: "a aimé votre publication" },
-  kiffe:      { icon: "🔥",  label: "kiffe votre publication" },
-  veux:       { icon: "🛒",  label: "veut votre trouvaille" },
-  style:      { icon: "✨",  label: "trouve votre style au top" },
-  recommande: { icon: "👍",  label: "recommande votre publication" },
-  follow:     { icon: "👥",  label: "vous suit maintenant" },
-  defi:       { icon: "🏆",  label: "a participé à votre défi" },
-  xp:         { icon: "⭐",  label: "Vous avez gagné des XP" },
-  remise:     { icon: "🎁",  label: "a publié une nouvelle remise" },
-  message:    { icon: "💬",  label: "vous a envoyé un message" },
+  like:           { icon: "❤️",  label: "a aimé votre publication" },
+  kiffe:          { icon: "🔥",  label: "kiffe votre publication" },
+  veux:           { icon: "🛒",  label: "veut votre trouvaille" },
+  style:          { icon: "✨",  label: "trouve votre style au top" },
+  recommande:     { icon: "👍",  label: "recommande votre publication" },
+  follow:         { icon: "👥",  label: "vous suit maintenant" },
+  defi:           { icon: "🏆",  label: "a participé à votre défi" },
+  xp:             { icon: "⭐",  label: "Vous avez gagné des XP" },
+  remise:         { icon: "🏷️",  label: "a publié un bon plan" },
+  message:        { icon: "💬",  label: "vous a envoyé un message" },
+  linked_accepted:{ icon: "✅",  label: "a accepté votre photo · +10 XP Shop 🎁" },
+  xpshop_palier:  { icon: "🎉",  label: null }, // label dynamique
 };
 
 function timeAgo(ts) {
@@ -39,6 +41,40 @@ function NotifItem({ n, setPage, setSelectedVoisinId }) {
   const avatar = n.from_profile?.avatar_url;
   const fromId = n.from_profile?.id || n.from_user_id;
 
+  // ── Carte spéciale palier XP Shop ──────────────────────────────
+  if (n.type === "xpshop_palier") {
+    let extra = {};
+    try { extra = JSON.parse(n.extra || "{}"); } catch {}
+    const bons = extra.bons || 1;
+    const merchantName = extra.merchant_name || pseudo;
+    return (
+      <div
+        onClick={() => { supabase.from("notifications").update({ read: true }).eq("id", n.id).then(() => {}); setPage("reductions"); }}
+        style={{
+          margin: "0 12px 10px", borderRadius: 18,
+          background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)",
+          padding: "14px 16px", cursor: "pointer",
+          boxShadow: "0 4px 14px rgba(255,87,51,0.3)",
+          position: "relative", overflow: "hidden",
+        }}
+      >
+        {!n.read && <div style={{ position: "absolute", top: 10, right: 10, width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />}
+        <div style={{ fontSize: 28, marginBottom: 4 }}>🎉</div>
+        <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 15, color: "#fff", marginBottom: 3 }}>
+          Bon d'achat disponible !
+        </div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.9)", lineHeight: 1.5, marginBottom: 8 }}>
+          Tu as atteint <b style={{ color: "#fff" }}>{bons * 100} XP Shop</b> chez <b style={{ color: "#fff" }}>{merchantName}</b> !<br />
+          Tu peux utiliser <b style={{ color: "#fff" }}>{bons * 5} € de bon d'achat</b> uniquement chez eux 🎁
+        </div>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.25)", borderRadius: 12, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#fff" }}>
+          Voir mes XP Shop →
+        </div>
+        <div style={{ position: "absolute", top: -20, right: -20, fontSize: 80, opacity: 0.08 }}>🎁</div>
+      </div>
+    );
+  }
+
   const goToSubject = () => {
     supabase.from("notifications").update({ read: true }).eq("id", n.id).then(() => {});
     if (n.type === "follow") {
@@ -49,8 +85,9 @@ function NotifItem({ n, setPage, setSelectedVoisinId }) {
       setPage("commerces");
     } else if (n.type === "defi") {
       setPage("defis");
+    } else if (n.type === "linked_accepted" || n.type === "xpshop_palier") {
+      setPage("reductions");
     } else {
-      // like, kiffe, veux, style, recommande → retour au fil
       setPage("fil");
     }
   };
