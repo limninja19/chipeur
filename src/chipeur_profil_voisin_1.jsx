@@ -434,7 +434,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
               <div style={{ height: 6, background: C.pill, borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: "linear-gradient(90deg,#FF5733,#F7A72D)", transition: "width 0.8s ease" }} />
               </div>
-              <div style={{ fontSize: 9, color: C.ink2, marginTop: 3, textAlign: "right" }}>⚡ {xp} XP total</div>
+              <div style={{ fontSize: 9, color: C.ink2, marginTop: 3, textAlign: "right" }}>⚡ {xp} XP — gloire &amp; classement</div>
             </div>
           );
         })()}
@@ -448,8 +448,8 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
           return [
             { n: String(postCount), l: "publications" },
             { n: rank ? `#${rank}` : "#—", l: "classement", color: C.gold },
-            { n: String(profile?.xp || 0), l: "XP total", color: C.accent },
-            { n: String(xpMonth), l: "XP ce mois", color: "#7C3AED" },
+            { n: String(profile?.xp || 0), l: "⚡ XP gloire", color: C.accent },
+            { n: String(profile?.xp_shop || 0), l: "🏪 XP Shop", color: "#0A3D2E" },
           ].map((s, i) => (
             <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: s.color || C.ink }}>{s.n}</div>
@@ -537,9 +537,12 @@ function MesCreditsLocaux({ userId }) {
 
   return (
     <div style={{ padding: "10px 16px 0" }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-        🏪 Mes crédits locaux
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+        🏪 Mes XP Shop — Crédits locaux
         <div style={{ flex: 1, height: 1, background: "rgba(26,23,20,0.08)" }} />
+      </div>
+      <div style={{ fontSize: 10, color: C.ink2, marginBottom: 10, lineHeight: 1.4 }}>
+        Différents des XP normaux — utilisables en bons d'achat uniquement chez le commerce concerné.
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
 
