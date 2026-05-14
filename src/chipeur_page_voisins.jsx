@@ -515,6 +515,7 @@ export default function ChipeurPageVoisins({ setPage, user, profile, setConversa
       .from("profiles")
       .select("id, pseudo, bio, quartier, avatar_url, univers, bonus_xp, xp")
       .not("pseudo", "is", null)
+      .neq("pseudo", "[Compte supprimé]")
       .order("created_at", { ascending: true })
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
