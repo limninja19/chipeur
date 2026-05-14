@@ -70,9 +70,10 @@ Dans `chipeur_settings.jsx` → `handleDeleteAccount` :
 - Met `deleted_at` = now()
 - Ne supprime PAS la ligne auth (pas de CASCADE) → choix intentionnel de Jenny
 
-### Système XP commerçant
-- 10 XP par post accepté (`linked_status = "accepted"`)
-- 100 XP = 5€ de crédits locaux
+### Système XP voisin
+- Un **voisin** poste une photo d'un article de magasin et relie le post au commerce
+- Si le **magasin accepte** le lien (`linked_status = "accepted"`), le **voisin** gagne des XP
+- Les XP sont convertibles en **bons d'achat** (100 XP = 5€)
 - Stocké dans `merchant_xp_wallet`
 - Composant réutilisable : `MerchantXpBlock({ userId, merchantName })`
 

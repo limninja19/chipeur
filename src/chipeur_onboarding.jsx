@@ -139,47 +139,40 @@ function Screen3({ onDone }) {
       alignItems: "center", justifyContent: "center",
       padding: "0 20px 40px", boxSizing: "border-box",
     }}>
-      <div style={{ fontSize: 44, marginBottom: 14 }}>🎮</div>
+      <div style={{ fontSize: 44, marginBottom: 14 }}>🎁</div>
       <div style={{
         fontFamily: syne, fontWeight: 800, fontSize: 22,
         color: C.ink, textAlign: "center", marginBottom: 6,
       }}>
-        Réagis, participe, gagne
+        Explore & gagne des récompenses
       </div>
       <div style={{
         fontFamily: dm, fontSize: 13, color: C.ink2,
         textAlign: "center", marginBottom: 22, lineHeight: 1.5,
       }}>
-        Plus qu'une appli, un jeu local
+        Ton quartier te récompense
       </div>
 
-      {/* Réactions */}
+      {/* Sorties */}
       <div style={{
         width: "100%", background: C.card, borderRadius: 20,
-        border: `1.5px solid ${C.pill}`, padding: "14px",
+        border: `1.5px solid ${C.pill}`, padding: "14px 16px",
         marginBottom: 10, boxSizing: "border-box",
       }}>
         <div style={{
-          fontFamily: syne, fontWeight: 700, fontSize: 10,
-          color: C.ink2, letterSpacing: "0.07em", marginBottom: 10,
+          fontFamily: syne, fontWeight: 700, fontSize: 13,
+          color: C.ink, marginBottom: 5,
         }}>
-          LES 5 RÉACTIONS
+          📅 Sorties
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {REACTIONS.map(r => (
-            <div key={r.emoji} style={{
-              display: "flex", alignItems: "center", gap: 5,
-              background: C.bg, borderRadius: 20, padding: "5px 10px",
-              fontFamily: dm, fontSize: 12, color: C.ink,
-            }}>
-              <span style={{ fontSize: 14 }}>{r.emoji}</span>
-              <span>{r.label}</span>
-            </div>
-          ))}
+        <div style={{
+          fontFamily: dm, fontSize: 12, color: C.ink2, lineHeight: 1.55,
+        }}>
+          Vide-greniers, marchés, fêtes, concerts… Retrouve tous les événements du quartier et dis si tu y vas.
         </div>
       </div>
 
-      {/* Défis */}
+      {/* XP → bons d'achat */}
       <div style={{
         width: "100%",
         background: "linear-gradient(135deg, #FF5733, #F7A72D)",
@@ -190,13 +183,13 @@ function Screen3({ onDone }) {
           fontFamily: syne, fontWeight: 700, fontSize: 13,
           color: "#fff", marginBottom: 5,
         }}>
-          🏆 Défis
+          🏆 XP → Bons d'achat
         </div>
         <div style={{
           fontFamily: dm, fontSize: 12,
           color: "rgba(255,255,255,0.85)", lineHeight: 1.55,
         }}>
-          Participe aux défis des commerçants locaux et tente de gagner des récompenses dans ton quartier.
+          Prends en photo un article d'un commerce, le commerçant valide et tu gagnes des XP — échangeables en bons d'achat dans les boutiques locales.
         </div>
       </div>
 
