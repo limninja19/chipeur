@@ -464,8 +464,8 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg, #FFF8F6, #FFF0EB)", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,87,51,0.2)" }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎁</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: syne, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mes réductions</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>Bons d'achat disponibles</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: syne, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mes XP Shop & réductions</div>
+            <div style={{ fontSize: 10, color: C.ink2 }}>Bons d'achat & offres du quartier</div>
           </div>
           <div style={{ background: C.accent, color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 10, flexShrink: 0 }}>→</div>
         </div>
