@@ -8,6 +8,9 @@ import { ChallengeCard } from "./ChallengeUI";
 import SwipeVoteModal from "./SwipeVoteModal";
 import Avatar from "./Avatar";
 
+const syne = "'Syne', sans-serif";
+const dm   = "'DM Sans', sans-serif";
+
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
   accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
