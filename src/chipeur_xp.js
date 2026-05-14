@@ -38,12 +38,26 @@ export function getLevelProgress(xp = 0) {
 export async function addXP(userId, amount, reason) {
   if (!userId || !amount || amount <= 0) return;
   try {
+    // 1. XP total (RPC sécurisé)
     const { error } = await supabase.rpc("increment_xp", {
       p_user_id: userId,
       p_amount:  amount,
       p_reason:  reason,
     });
     if (error) console.error("addXP RPC error:", error);
+
+    // 2. XP du mois (reset automatique si nouveau mois)
+    const currentMonth = new Date().toISOString().slice(0, 7); // ex: "2026-05"
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("xp_month, xp_month_label")
+      .eq("id", userId)
+      .maybeSingle();
+    const sameMonth = prof?.xp_month_label === currentMonth;
+    await supabase.from("profiles").update({
+      xp_month:       sameMonth ? (prof.xp_month || 0) + amount : amount,
+      xp_month_label: currentMonth,
+    }).eq("id", userId);
   } catch (e) {
     console.error("addXP error:", e);
   }

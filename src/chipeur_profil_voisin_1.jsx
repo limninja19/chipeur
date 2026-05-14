@@ -442,17 +442,21 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
 
       {/* Stats row */}
       <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "10px 0" }}>
-        {[
-          { n: String(postCount), l: "publications" },
-          { n: "0", l: "abonnés" },
-          { n: rank ? `#${rank}` : "#—", l: "classement", color: C.gold },
-          { n: String(profile?.xp || 0), l: "XP total", color: C.accent },
-        ].map((s, i) => (
-          <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: s.color || C.ink }}>{s.n}</div>
-            <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
-          </div>
-        ))}
+        {(() => {
+          const currentMonth = new Date().toISOString().slice(0, 7);
+          const xpMonth = profile?.xp_month_label === currentMonth ? (profile?.xp_month || 0) : 0;
+          return [
+            { n: String(postCount), l: "publications" },
+            { n: rank ? `#${rank}` : "#—", l: "classement", color: C.gold },
+            { n: String(profile?.xp || 0), l: "XP total", color: C.accent },
+            { n: String(xpMonth), l: "XP ce mois", color: "#7C3AED" },
+          ].map((s, i) => (
+            <div key={i} style={{ flex: 1, textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: s.color || C.ink }}>{s.n}</div>
+              <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
+            </div>
+          ));
+        })()}
       </div>
 
       {/* Bandeau réductions */}

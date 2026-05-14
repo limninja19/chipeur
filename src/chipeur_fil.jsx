@@ -1649,6 +1649,120 @@ function TuValidesCard({ post, user }) {
   );
 }
 
+// ─── BANDEAU CLASSEMENT DU MOIS ─────────────────────────────────────────────
+const MEDALS = ["🥇", "🥈", "🥉"];
+const MONTH_NAMES = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+function BandeauClassement({ user, setSelectedVoisinId, setPage }) {
+  const [top, setTop] = useState([]);
+  const [myRank, setMyRank] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthLabel = MONTH_NAMES[new Date().getMonth()];
+
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("id, pseudo, avatar_url, xp_month, xp_month_label")
+      .eq("xp_month_label", currentMonth)
+      .neq("pseudo", "[Compte supprimé]")
+      .gt("xp_month", 0)
+      .order("xp_month", { ascending: false })
+      .limit(10)
+      .then(({ data }) => {
+        if (!data) return;
+        setTop(data);
+        if (user?.id) {
+          const rank = data.findIndex(p => p.id === user.id);
+          setMyRank(rank >= 0 ? rank + 1 : null);
+        }
+      });
+  }, [user?.id]);
+
+  if (top.length === 0) return null;
+
+  const topThree = top.slice(0, 3);
+
+  return (
+    <div style={{ marginBottom: 8 }}>
+      {/* Header cliquable */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: C.ink, borderRadius: 18,
+          padding: "12px 16px", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 14, color: "#fff" }}>
+            🏆 Classement de {monthLabel}
+          </div>
+          <div style={{ fontFamily: dm, fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+            {myRank ? `Tu es ${myRank}${myRank === 1 ? "er" : "e"} · ` : ""}Top {topThree.length} du mois
+          </div>
+        </div>
+        <div style={{ fontSize: 18, color: "rgba(255,255,255,0.4)" }}>{open ? "▲" : "▼"}</div>
+      </div>
+
+      {/* Podium déroulé */}
+      {open && (
+        <div style={{
+          background: C.card, borderRadius: "0 0 18px 18px",
+          border: `1px solid ${C.border}`, borderTop: "none",
+          padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10,
+        }}>
+          {top.slice(0, 5).map((p, i) => {
+            const isMe = p.id === user?.id;
+            return (
+              <div
+                key={p.id}
+                onClick={() => { if (p.id !== user?.id) { setSelectedVoisinId(p.id); setPage("voisins"); } else setPage("profil"); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  background: isMe ? "rgba(255,87,51,0.06)" : "transparent",
+                  borderRadius: 12, padding: "6px 8px", cursor: "pointer",
+                  border: isMe ? `1px solid rgba(255,87,51,0.2)` : "1px solid transparent",
+                }}
+              >
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 18, width: 28, textAlign: "center" }}>
+                  {i < 3 ? MEDALS[i] : `${i + 1}.`}
+                </div>
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>👤</div>
+                }
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>
+                    {p.pseudo}{isMe ? " (toi)" : ""}
+                  </div>
+                </div>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 13, color: C.accent }}>
+                  ⚡ {p.xp_month} XP
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Message lot */}
+          <div style={{
+            background: "rgba(255,87,51,0.06)", border: "1px dashed rgba(255,87,51,0.25)",
+            borderRadius: 12, padding: "10px 12px", marginTop: 4,
+          }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 11, color: C.accent, marginBottom: 3 }}>
+              🎁 Lot du mois
+            </div>
+            <div style={{ fontFamily: dm, fontSize: 11, color: C.ink2, lineHeight: 1.5 }}>
+              Le voisin le plus actif de {monthLabel} gagne une surprise offerte par nos partenaires locaux. Sois le plus actif !
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── BANDEAU INCITATION XP SHOP ───
 function BandeauXPShop({ setPage, user, profile }) {
   const isMagasin = ["magasin", "artisan", "commercant"].includes(profile?.role);
@@ -1884,6 +1998,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
         )}
         <BandeauDefis setPage={setPage} user={user} />
         <BandeauSortiesPhotos setPage={setPage} setSelectedSortieId={setSelectedSortieId} />
+        <BandeauClassement user={user} setSelectedVoisinId={setSelectedVoisinId} setPage={setPage} />
         <BandeauXPShop setPage={setPage} user={user} profile={profile} />
         <TuValidesNotif user={user} />
         <BandeauTuValides user={user} />
