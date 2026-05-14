@@ -1419,57 +1419,47 @@ function TabRewards({ user }) {
   };
 
   return (
-    <div style={{ padding: "16px 16px 32px" }}>
+    <div style={{ padding: "14px 14px 32px" }}>
       {/* Carte invitation */}
-      <div style={{
-        background: "linear-gradient(135deg,#FF5733,#FF8C42)",
-        borderRadius: 20, padding: 20, marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 36, marginBottom: 10 }}>🎁</div>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", marginBottom: 6 }}>
-          Chope des XP en invitant des voisins
+      <div style={{ background: "linear-gradient(135deg,#FF5733,#FF8C42)", borderRadius: 16, padding: "16px 16px", marginBottom: 12 }}>
+        <div style={{ fontSize: 22, marginBottom: 6 }}>🎁</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>
+          Invite des voisins, gagne des XP
         </div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.5, marginBottom: 16 }}>
-          Pour chaque ami qui rejoint Chipeur via ton lien, tu gagnes <span style={{ fontWeight: 700 }}>+20 XP</span> automatiquement. Partage-le au maximum !
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.82)", lineHeight: 1.5, marginBottom: 12 }}>
+          Pour chaque ami qui rejoint via ton lien → <span style={{ color: "#fff", fontWeight: 600 }}>+20 XP gloire</span> automatiquement.
         </div>
-        <button
-          onClick={handleShare}
-          style={{
-            width: "100%", background: "#fff", color: C.accent,
-            border: "none", borderRadius: 14, padding: "12px 16px",
-            fontSize: 13, fontWeight: 700, cursor: "pointer",
-            fontFamily: "'DM Sans', sans-serif",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}
-        >
-          {copied ? "✅ Lien copié !" : "🔗 Partager mon lien d'invitation"}
+        <button onClick={handleShare} style={{ background: "#fff", color: C.accent, border: "none", borderRadius: 12, padding: "9px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          {copied ? "✅ Lien copié !" : "🔗 Partager mon lien"}
         </button>
       </div>
 
       {/* XP gloire — explication */}
-      <div style={{ background: "#F5F2EE", borderRadius: 16, padding: "14px 16px", marginBottom: 16 }}>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 8 }}>⚡ Comment gagner de l'XP gloire ?</div>
+      <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, marginBottom: 12, overflow: "hidden" }}>
+        <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}` }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.4 }}>⚡ Gagner de l'XP gloire</span>
+        </div>
         {[
           { e: "📸", t: "Publier un post", x: "+10 XP" },
           { e: "❤️", t: "Recevoir une réaction", x: "+2 XP" },
           { e: "🏆", t: "Participer à un défi", x: "+15 XP" },
-          { e: "👥", t: "Inviter un ami (lien ci-dessus)", x: "+20 XP" },
-          { e: "🔥", t: "Connexion quotidienne (streak)", x: "+1 à +5 XP" },
+          { e: "👥", t: "Inviter un ami", x: "+20 XP" },
+          { e: "🔥", t: "Connexion quotidienne", x: "+1 à +5 XP" },
         ].map((r, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: i < 4 ? `1px solid rgba(26,23,20,0.06)` : "none" }}>
-            <span style={{ fontSize: 16 }}>{r.e}</span>
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderBottom: i < 4 ? `1px solid ${C.border}` : "none" }}>
+            <span style={{ fontSize: 14 }}>{r.e}</span>
             <span style={{ flex: 1, fontSize: 12, color: C.ink2 }}>{r.t}</span>
-            <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.accent }}>{r.x}</span>
+            <span style={{ fontFamily: syne, fontWeight: 600, fontSize: 12, color: C.accent }}>{r.x}</span>
           </div>
         ))}
       </div>
 
       {/* Trophées — bientôt */}
-      <div style={{ textAlign: "center", padding: "20px 16px", background: "#F5F2EE", borderRadius: 16 }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🎖️</div>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Trophées — Bientôt disponible</div>
-        <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>
-          Continue à publier et interagir pour accumuler un maximum d'XP gloire !
+      <div style={{ padding: "14px 14px", background: C.bg, borderRadius: 14, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ fontSize: 24, flexShrink: 0 }}>🎖️</div>
+        <div>
+          <div style={{ fontFamily: syne, fontWeight: 600, fontSize: 13, color: C.ink, marginBottom: 2 }}>Trophées — bientôt</div>
+          <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.4 }}>Continue à accumuler des XP gloire pour débloquer des récompenses !</div>
         </div>
       </div>
     </div>

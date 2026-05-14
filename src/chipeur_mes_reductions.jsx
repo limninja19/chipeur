@@ -135,27 +135,36 @@ function MesXPShop({ user, setPage }) {
 
   if (wallets.length === 0) {
     return (
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }}>
         {/* Hero vide */}
-        <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 20, padding: "24px 20px", textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 44, marginBottom: 8 }}>🏪</div>
-          <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 6 }}>Tes XP Shop t'attendent !</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginBottom: 16 }}>
-            Poste une photo d'un article en magasin. Si le commerçant l'accepte, tu gagnes 10 XP Shop chez lui — transformables en bon d'achat dès 100 XP !
+        <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 18, padding: "20px 18px", marginBottom: 12 }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>🏪</div>
+          <div style={{ fontFamily: syne, fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 5 }}>Tes XP Shop t'attendent !</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.82)", lineHeight: 1.55, marginBottom: 14 }}>
+            Poste une photo d'un article en magasin. Si le commerçant valide, tu gagnes 10 XP Shop — transformables en bon d'achat à 100 XP.
           </div>
           <button onClick={() => setPage("nouveau")}
-            style={{ background: "#fff", color: C.accent, fontFamily: syne, fontWeight: 800, fontSize: 13, border: "none", borderRadius: 14, padding: "11px 24px", cursor: "pointer" }}>
-            📸 Poster une photo maintenant
+            style={{ background: "#fff", color: C.accent, fontFamily: dm, fontWeight: 600, fontSize: 12, border: "none", borderRadius: 12, padding: "9px 18px", cursor: "pointer" }}>
+            📸 Poster une photo
           </button>
         </div>
-        <div style={{ background: C.card, borderRadius: 16, padding: "16px 14px", border: `1px solid ${C.border}`, textAlign: "center" }}>
-          <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6 }}>
-            <b style={{ color: C.ink }}>Comment ça marche ?</b><br />
-            1. Tu prends une photo d'un article<br />
-            2. Tu la postes en la reliant au commerce<br />
-            3. Le commerçant accepte → <b style={{ color: C.accent }}>+10 XP Shop</b><br />
-            4. À 100 XP Shop = <b style={{ color: C.pro }}>5€ de bon d'achat</b> chez lui 🎁
+
+        {/* Comment ça marche */}
+        <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+          <div style={{ padding: "12px 14px 8px", borderBottom: `1px solid ${C.border}` }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.4 }}>Comment ça marche</span>
           </div>
+          {[
+            { n: "1", text: "Prends une photo d'un article en magasin" },
+            { n: "2", text: "Poste-la en la reliant au commerce" },
+            { n: "3", text: <>Le commerçant accepte → <span style={{ color: C.accent, fontWeight: 600 }}>+10 XP Shop</span></> },
+            { n: "4", text: <>100 XP Shop = <span style={{ color: C.pro, fontWeight: 600 }}>5 € de bon d'achat</span> chez lui 🎁</> },
+          ].map((s, i, arr) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.accent, color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: syne }}>{s.n}</div>
+              <div style={{ fontSize: 12, color: C.ink, lineHeight: 1.4 }}>{s.text}</div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -165,15 +174,14 @@ function MesXPShop({ user, setPage }) {
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px 20px" }}>
 
       {/* Total banner */}
-      <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 18, padding: "16px 18px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 16, padding: "14px 16px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontFamily: syne, fontSize: 26, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{totalShop}</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>XP Shop total</div>
+          <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{totalShop} <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.85 }}>XP Shop</span></div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 3 }}>total accumulé</div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
-            100 XP Shop = <b style={{ color: "#fff" }}>5€ de bon d'achat</b><br />
-            utilisable chez le commerce concerné
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.82)", lineHeight: 1.55 }}>
+            100 XP Shop<br /><span style={{ color: "#fff", fontWeight: 600 }}>= 5 € de bon d'achat</span>
           </div>
         </div>
       </div>
@@ -194,7 +202,7 @@ function MesXPShop({ user, setPage }) {
               <div key={w.id} style={{ background: C.card, borderRadius: 18, border: `2px solid ${C.pro}`, marginBottom: 10, overflow: "hidden" }}>
                 <div style={{ background: C.proBg, padding: "8px 14px 6px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: C.pro, textTransform: "uppercase", letterSpacing: 0.5 }}>✅ BON D'ACHAT DISPONIBLE</span>
-                  <span style={{ fontFamily: syne, fontSize: 16, fontWeight: 800, color: C.pro }}>{bons * 5}€</span>
+                  <span style={{ fontFamily: syne, fontSize: 15, fontWeight: 700, color: C.pro }}>{bons * 5} €</span>
                 </div>
                 <div style={{ padding: "12px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -248,7 +256,7 @@ function MesXPShop({ user, setPage }) {
                     <div style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: C.ink }}>{merchant}</div>
                     <div style={{ fontSize: 11, color: C.ink2 }}>{pts} / 100 XP Shop</div>
                   </div>
-                  <div style={{ fontFamily: syne, fontSize: 18, fontWeight: 800, color: C.accent }}>{pts}</div>
+                  <div style={{ fontFamily: syne, fontSize: 15, fontWeight: 700, color: C.accent }}>{pts}<span style={{ fontSize: 10, fontWeight: 500, opacity: 0.75 }}> XP</span></div>
                 </div>
                 {/* Barre de progression */}
                 <div style={{ marginBottom: 8 }}>
@@ -268,8 +276,8 @@ function MesXPShop({ user, setPage }) {
 
       {/* CTA */}
       <button onClick={() => setPage("nouveau")}
-        style={{ width: "100%", padding: "14px 0", background: "linear-gradient(135deg, #FF5733, #F7A72D)", color: "#fff", fontFamily: syne, fontWeight: 800, fontSize: 14, border: "none", borderRadius: 16, cursor: "pointer", marginTop: 8 }}>
-        📸 Gagner plus de XP Shop →
+        style={{ width: "100%", padding: "12px 0", background: "linear-gradient(135deg, #FF5733, #F7A72D)", color: "#fff", fontFamily: dm, fontWeight: 600, fontSize: 13, border: "none", borderRadius: 14, cursor: "pointer", marginTop: 8 }}>
+        📸 Gagner plus de XP Shop
       </button>
     </div>
   );
