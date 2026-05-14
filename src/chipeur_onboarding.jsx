@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const C = {
   bg:     "#F5F2EE",
@@ -13,53 +13,87 @@ const C = {
 const syne = "'Syne', sans-serif";
 const dm   = "'DM Sans', sans-serif";
 
-const REACTIONS = [
-  { emoji: "❤️",  label: "J'aime"         },
-  { emoji: "🔥",  label: "Je kiffe"        },
-  { emoji: "🛒",  label: "Je le veux"      },
-  { emoji: "✨",  label: "C'est mon style"  },
-  { emoji: "👍",  label: "Je recommande"   },
-];
-
-// ─── Écran 1 ────────────────────────────────────────────────────────────────
+// ─── Écran 1 — Accroche forte ────────────────────────────────────────────────
 function Screen1() {
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    const t = setInterval(() => setPulse(p => !p), 900);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <div style={{
       width: "33.333%", flexShrink: 0, height: "100%",
       background: C.ink,
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
-      padding: "0 32px", boxSizing: "border-box", textAlign: "center",
+      padding: "0 28px", boxSizing: "border-box", textAlign: "center",
     }}>
       <div style={{
         fontFamily: syne, fontWeight: 800, fontSize: 44,
-        color: C.accent, letterSpacing: "-2px", marginBottom: 28,
+        color: C.accent, letterSpacing: "-2px", marginBottom: 20,
       }}>
         chipeur
       </div>
 
-      <div style={{ fontSize: 72, lineHeight: 1, marginBottom: 28 }}>🏘️</div>
+      <div style={{ fontSize: 66, lineHeight: 1, marginBottom: 20 }}>🏘️</div>
 
       <div style={{
-        fontFamily: syne, fontWeight: 800, fontSize: 26,
-        color: "#FFFFFF", lineHeight: 1.2, marginBottom: 14,
+        fontFamily: syne, fontWeight: 800, fontSize: 24,
+        color: "#FFFFFF", lineHeight: 1.2, marginBottom: 12,
       }}>
         Le quartier dans ta poche
       </div>
 
       <div style={{
-        fontFamily: dm, fontSize: 15,
+        fontFamily: dm, fontSize: 14,
         color: "rgba(255,255,255,0.55)", lineHeight: 1.6, maxWidth: 280,
+        marginBottom: 28,
       }}>
-        Découvre ta ville d'un autre œil — les instants de tes voisins, les produits de tes commerçants et artisans, les bons plans du quartier. Et partage les tiens.
+        Partage, réagis, participe à la vie locale. Et en plus…
+      </div>
+
+      {/* Teaser accrocheur */}
+      <div style={{
+        background: "linear-gradient(135deg, #FF5733, #F7A72D)",
+        borderRadius: 18, padding: "14px 18px",
+        width: "100%", boxSizing: "border-box", marginBottom: 28,
+      }}>
+        <div style={{
+          fontFamily: syne, fontWeight: 800, fontSize: 16,
+          color: "#fff", marginBottom: 5,
+        }}>
+          🎁 Gagne des bons d'achat
+        </div>
+        <div style={{
+          fontFamily: dm, fontSize: 12,
+          color: "rgba(255,255,255,0.88)", lineHeight: 1.5,
+        }}>
+          Chipeur te récompense en vraie monnaie locale utilisable dans tes commerces de quartier.
+        </div>
+      </div>
+
+      {/* Indicateur swipe animé */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        opacity: pulse ? 1 : 0.4,
+        transition: "opacity 0.4s ease",
+      }}>
+        <div style={{
+          fontFamily: dm, fontSize: 12, color: "rgba(255,255,255,0.6)",
+        }}>
+          Glisse pour découvrir
+        </div>
+        <div style={{ fontSize: 18 }}>👉</div>
       </div>
 
       <div style={{
-        marginTop: 36,
+        marginTop: 24,
         background: "rgba(255,87,51,0.12)",
         border: "1px solid rgba(255,87,51,0.3)",
-        borderRadius: 30, padding: "8px 20px",
-        fontFamily: syne, fontWeight: 700, fontSize: 11,
+        borderRadius: 30, padding: "6px 16px",
+        fontFamily: syne, fontWeight: 700, fontSize: 10,
         color: C.accent, letterSpacing: "0.1em",
       }}>
         📍 SAINT-DIÉ-DES-VOSGES
@@ -68,7 +102,7 @@ function Screen1() {
   );
 }
 
-// ─── Écran 2 ────────────────────────────────────────────────────────────────
+// ─── Écran 2 — XP Shop + Sorties (le hook) ──────────────────────────────────
 function Screen2() {
   return (
     <div style={{
@@ -78,58 +112,71 @@ function Screen2() {
       alignItems: "center", justifyContent: "center",
       padding: "0 20px 80px", boxSizing: "border-box",
     }}>
+      <div style={{ fontSize: 42, marginBottom: 12 }}>🎁</div>
       <div style={{
         fontFamily: syne, fontWeight: 800, fontSize: 22,
         color: C.ink, textAlign: "center", marginBottom: 6,
       }}>
-        Voisins &amp; Commerçants
+        Explore & gagne des récompenses
       </div>
       <div style={{
         fontFamily: dm, fontSize: 13, color: C.ink2,
-        textAlign: "center", marginBottom: 24, lineHeight: 1.5,
+        textAlign: "center", marginBottom: 20, lineHeight: 1.5,
       }}>
-        Deux façons de participer à la vie locale
+        Ton quartier te récompense vraiment
       </div>
 
-      {/* Voisin */}
+      {/* XP → bons d'achat */}
       <div style={{
-        width: "100%", background: C.card, borderRadius: 20,
-        border: `1.5px solid ${C.pill}`, padding: "18px 16px",
-        marginBottom: 12, boxSizing: "border-box",
+        width: "100%",
+        background: "linear-gradient(135deg, #FF5733, #F7A72D)",
+        borderRadius: 20, padding: "16px 16px",
+        marginBottom: 10, boxSizing: "border-box",
       }}>
-        <div style={{ fontSize: 30, marginBottom: 8 }}>🏘️</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>Voisin</span>
-          <span style={{
-            fontFamily: dm, fontSize: 10, fontWeight: 600,
-            color: C.pro, background: "#EBF5F0",
-            padding: "2px 9px", borderRadius: 20,
-          }}>gratuit</span>
+        <div style={{
+          fontFamily: syne, fontWeight: 700, fontSize: 14,
+          color: "#fff", marginBottom: 6,
+        }}>
+          🏆 XP Shop → Bons d'achat
         </div>
-        <div style={{ fontFamily: dm, fontSize: 13, color: C.ink2, lineHeight: 1.55 }}>
-          Partage tes chopes, bons plans et sorties avec ta communauté. Réagis, commente et accumule des XP.
+        <div style={{
+          fontFamily: dm, fontSize: 12,
+          color: "rgba(255,255,255,0.9)", lineHeight: 1.6,
+        }}>
+          Prends en photo un article d'un commerce local et relie-le. Le commerçant valide → tu gagnes des XP convertibles en bons d'achat dans sa boutique.
+        </div>
+        <div style={{
+          marginTop: 10, background: "rgba(255,255,255,0.2)",
+          borderRadius: 10, padding: "5px 12px", display: "inline-block",
+          fontFamily: syne, fontWeight: 800, fontSize: 11, color: "#fff",
+        }}>
+          100 XP = 5 € de bon d'achat 🎉
         </div>
       </div>
 
-      {/* Commerçant */}
+      {/* Sorties */}
       <div style={{
         width: "100%", background: C.card, borderRadius: 20,
-        border: "1.5px solid rgba(10,61,46,0.18)", padding: "18px 16px",
+        border: `1.5px solid ${C.pill}`, padding: "14px 16px",
         boxSizing: "border-box",
       }}>
-        <div style={{ fontSize: 30, marginBottom: 8 }}>🏪</div>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>
-          Commerçant
+        <div style={{
+          fontFamily: syne, fontWeight: 700, fontSize: 13,
+          color: C.ink, marginBottom: 5,
+        }}>
+          📅 Sorties & événements
         </div>
-        <div style={{ fontFamily: dm, fontSize: 13, color: C.ink2, lineHeight: 1.55 }}>
-          Crée des défis photo, anime ta communauté de clients et gagne en visibilité dans le quartier.
+        <div style={{
+          fontFamily: dm, fontSize: 12, color: C.ink2, lineHeight: 1.55,
+        }}>
+          Vide-greniers, marchés, fêtes, concerts… Retrouve tout ce qui se passe dans le quartier.
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Écran 3 ────────────────────────────────────────────────────────────────
+// ─── Écran 3 — Voisins & Commerçants + CTA ──────────────────────────────────
 function Screen3({ onDone }) {
   return (
     <div style={{
@@ -139,57 +186,51 @@ function Screen3({ onDone }) {
       alignItems: "center", justifyContent: "center",
       padding: "0 20px 40px", boxSizing: "border-box",
     }}>
-      <div style={{ fontSize: 44, marginBottom: 14 }}>🎁</div>
       <div style={{
         fontFamily: syne, fontWeight: 800, fontSize: 22,
         color: C.ink, textAlign: "center", marginBottom: 6,
       }}>
-        Explore & gagne des récompenses
+        Voisins &amp; Commerçants
       </div>
       <div style={{
         fontFamily: dm, fontSize: 13, color: C.ink2,
-        textAlign: "center", marginBottom: 22, lineHeight: 1.5,
+        textAlign: "center", marginBottom: 20, lineHeight: 1.5,
       }}>
-        Ton quartier te récompense
+        Deux façons de participer à la vie locale
       </div>
 
-      {/* Sorties */}
+      {/* Voisin */}
       <div style={{
         width: "100%", background: C.card, borderRadius: 20,
-        border: `1.5px solid ${C.pill}`, padding: "14px 16px",
+        border: `1.5px solid ${C.pill}`, padding: "16px",
         marginBottom: 10, boxSizing: "border-box",
       }}>
-        <div style={{
-          fontFamily: syne, fontWeight: 700, fontSize: 13,
-          color: C.ink, marginBottom: 5,
-        }}>
-          📅 Sorties
+        <div style={{ fontSize: 28, marginBottom: 8 }}>🏘️</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>Voisin</span>
+          <span style={{
+            fontFamily: dm, fontSize: 10, fontWeight: 600,
+            color: C.pro, background: "#EBF5F0",
+            padding: "2px 9px", borderRadius: 20,
+          }}>gratuit</span>
         </div>
-        <div style={{
-          fontFamily: dm, fontSize: 12, color: C.ink2, lineHeight: 1.55,
-        }}>
-          Vide-greniers, marchés, fêtes, concerts… Retrouve tous les événements du quartier et dis si tu y vas.
+        <div style={{ fontFamily: dm, fontSize: 12, color: C.ink2, lineHeight: 1.55 }}>
+          Partage tes trouvailles, accumule des XP Shop et échange-les en bons d'achat chez tes commerçants.
         </div>
       </div>
 
-      {/* XP → bons d'achat */}
+      {/* Commerçant */}
       <div style={{
-        width: "100%",
-        background: "linear-gradient(135deg, #FF5733, #F7A72D)",
-        borderRadius: 20, padding: "14px 16px",
+        width: "100%", background: C.card, borderRadius: 20,
+        border: "1.5px solid rgba(10,61,46,0.18)", padding: "16px",
         marginBottom: 24, boxSizing: "border-box",
       }}>
-        <div style={{
-          fontFamily: syne, fontWeight: 700, fontSize: 13,
-          color: "#fff", marginBottom: 5,
-        }}>
-          🏆 XP → Bons d'achat
+        <div style={{ fontSize: 28, marginBottom: 8 }}>🏪</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>
+          Commerçant
         </div>
-        <div style={{
-          fontFamily: dm, fontSize: 12,
-          color: "rgba(255,255,255,0.85)", lineHeight: 1.55,
-        }}>
-          Prends en photo un article d'un commerce, le commerçant valide et tu gagnes des XP — échangeables en bons d'achat dans les boutiques locales.
+        <div style={{ fontFamily: dm, fontSize: 12, color: C.ink2, lineHeight: 1.55 }}>
+          Crée des défis photo, valide les posts de tes clients et gagne en visibilité dans le quartier.
         </div>
       </div>
 
@@ -270,7 +311,7 @@ export default function Onboarding({ onDone }) {
           padding: "20px 24px 44px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           background: step === 0
-            ? "linear-gradient(to top, rgba(26,23,20,0.75) 0%, transparent 100%)"
+            ? "linear-gradient(to top, rgba(26,23,20,0.85) 0%, transparent 100%)"
             : "linear-gradient(to top, rgba(245,242,238,1) 55%, transparent 100%)",
           pointerEvents: "none",
         }}>
@@ -289,23 +330,25 @@ export default function Onboarding({ onDone }) {
             ))}
           </div>
 
-          {/* Bouton Suivant */}
+          {/* Bouton Suivant — texte différent sur écran 1 pour inciter */}
           <button
             onClick={next}
             style={{
               pointerEvents: "auto",
               background: C.accent, color: "#fff",
-              border: "none", borderRadius: 14, padding: "11px 22px",
-              fontFamily: syne, fontWeight: 700, fontSize: 14,
+              border: "none", borderRadius: 14,
+              padding: step === 0 ? "11px 18px" : "11px 22px",
+              fontFamily: syne, fontWeight: 700,
+              fontSize: step === 0 ? 13 : 14,
               cursor: "pointer",
             }}
           >
-            Suivant →
+            {step === 0 ? "Je veux mes bons d'achat 🎁" : "Suivant →"}
           </button>
         </div>
       )}
 
-      {/* Dots seuls sur l'écran 3 (le CTA est dans la slide) */}
+      {/* Dots seuls sur l'écran 3 */}
       {step === 2 && (
         <div style={{
           position: "absolute", bottom: 44, left: 0, right: 0,
