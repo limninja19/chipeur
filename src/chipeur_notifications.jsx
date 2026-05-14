@@ -44,7 +44,7 @@ function NotifItem({ n, setPage, setSelectedVoisinId }) {
   // ── Carte spéciale palier XP Shop ──────────────────────────────
   if (n.type === "xpshop_palier") {
     let extra = {};
-    try { extra = JSON.parse(n.extra || "{}"); } catch {}
+    try { extra = JSON.parse(n.message || "{}"); } catch {}
     const bons = extra.bons || 1;
     const merchantName = extra.merchant_name || pseudo;
     return (

@@ -1086,8 +1086,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
           type: "xpshop_palier",
           reference_id: post.id,
           read: false,
-          // On stocke le montant du bon dans le champ extra si disponible, sinon on utilise reference_id
-          extra: JSON.stringify({ bons, merchant_name: com.pseudo || "Le commerce", points: pts }),
+          message: JSON.stringify({ bons, merchant_name: com.pseudo || "Le commerce", points: pts }),
         });
       }
     }
