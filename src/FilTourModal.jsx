@@ -295,11 +295,11 @@ export default function FilTourModal({ onClose, setPage }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <div style={{ background: s.bgPill, borderRadius: 20, padding: "4px 12px", display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: s.emoji === "+" ? 14 : 16, fontWeight: s.emoji === "+" ? 800 : "normal", color: s.color, fontFamily: syne }}>{s.emoji}</span>
-            <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: s.color }}>{s.label}</span>
+            <span style={{ fontFamily: syne, fontWeight: 600, fontSize: 12, color: s.color }}>{s.label}</span>
           </div>
         </div>
 
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: "#1A1714", marginBottom: 4 }}>{s.title}</div>
+        <div style={{ fontFamily: syne, fontWeight: 600, fontSize: 15, color: "#1A1714", marginBottom: 4 }}>{s.title}</div>
         <div style={{ fontSize: 12, color: "#6B6560", lineHeight: 1.5, marginBottom: 12, fontFamily: "'DM Sans', sans-serif" }}>{s.desc}</div>
 
         {/* Illustration */}

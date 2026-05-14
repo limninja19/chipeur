@@ -395,7 +395,7 @@ function BandeauDefis({ setPage, user }) {
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#0A3D2E,#1a6b4a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🏪</div>
                 <div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 17, color: "#1A1714", lineHeight: 1.2 }}>Les défis commerçants arrivent !</div>
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 15, color: "#1A1714", lineHeight: 1.2 }}>Les défis commerçants arrivent !</div>
                   <div style={{ fontSize: 12, color: "#6B6660", marginTop: 2 }}>Comment ça marche ?</div>
                 </div>
               </div>
@@ -522,7 +522,7 @@ function BandeauDefis({ setPage, user }) {
                     <span style={{ fontSize: 22, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>🏆</span>
                     <span style={{ fontSize: 22, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>🎁</span>
                   </div>
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 13, color: "#fff", textAlign: "center", lineHeight: 1.2, padding: "0 10px" }}>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 500, fontSize: 12, color: "#fff", textAlign: "center", lineHeight: 1.3, padding: "0 10px" }}>
                     On les attend avec impatience !
                   </div>
                   {/* Badge */}
@@ -1100,15 +1100,15 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
               <img src={post.image_url} alt={post.content} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
               {/* Ruban diagonal en coin */}
               {ribbon && (
-                <div style={{ position: "absolute", top: 0, left: 0, width: 90, height: 90, overflow: "hidden", pointerEvents: "none" }}>
+                <div style={{ position: "absolute", top: 0, right: 0, width: 90, height: 90, overflow: "hidden", pointerEvents: "none" }}>
                   <div style={{
-                    position: "absolute", top: 20, left: -28, width: 120,
+                    position: "absolute", top: 20, right: -28, width: 120,
                     background: ribbon.bg,
                     backdropFilter: "blur(4px)",
-                    transform: "rotate(-45deg)",
+                    transform: "rotate(45deg)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     padding: "5px 0",
-                    fontSize: 10, fontWeight: 700, color: "#fff",
+                    fontSize: 10, fontWeight: 600, color: "#fff",
                     letterSpacing: 0.3,
                   }}>{ribbon.label}</div>
                 </div>
@@ -1699,7 +1699,7 @@ function BandeauClassement({ user, setSelectedVoisinId, setPage }) {
         }}
       >
         <div>
-          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 14, color: "#fff" }}>
+          <div style={{ fontFamily: syne, fontWeight: 600, fontSize: 13, color: "#fff" }}>
             🏆 Classement de {monthLabel}
           </div>
           <div style={{ fontFamily: dm, fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
