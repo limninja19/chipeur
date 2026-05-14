@@ -114,11 +114,11 @@ export default function App() {
 
   // ── Onboarding première visite ──────────────────────────────────────────
   const [onboardingDone, setOnboardingDone] = useState(
-    () => localStorage.getItem("chipeur_onboarding_done") === "true"
+    () => localStorage.getItem("chipeur_onboarding_done_v2") === "true"
   );
 
   async function handleOnboardingDone() {
-    localStorage.setItem("chipeur_onboarding_done", "true");
+    localStorage.setItem("chipeur_onboarding_done_v2", "true");
     setOnboardingDone(true);
     // Si connecté, on marque aussi en base
     if (user?.id) {

@@ -1655,7 +1655,7 @@ function BandeauXPShop({ setPage, user, profile }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (user && !isMagasin && localStorage.getItem("chipeur_xpshop_hint") !== "1") {
+    if (user && !isMagasin && localStorage.getItem("chipeur_xpshop_hint_v2") !== "1") {
       setVisible(true);
     }
   }, [user, isMagasin]);
@@ -1686,7 +1686,7 @@ function BandeauXPShop({ setPage, user, profile }) {
         </div>
       </div>
       <div
-        onClick={e => { e.stopPropagation(); localStorage.setItem("chipeur_xpshop_hint", "1"); setVisible(false); }}
+        onClick={e => { e.stopPropagation(); localStorage.setItem("chipeur_xpshop_hint_v2", "1"); setVisible(false); }}
         style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", flexShrink: 0, padding: 4, cursor: "pointer" }}
       >✕</div>
     </div>

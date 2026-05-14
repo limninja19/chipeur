@@ -710,7 +710,7 @@ function PopupXPShop({ onClose }) {
   const C    = { accent: "#FF5733", pro: "#0A3D2E", proBg: "#EBF5F0", ink: "#1A1714", ink2: "#6B6560", bg: "#F5F2EE" };
 
   function handleClose() {
-    if (nePlusAfficher) localStorage.setItem("chipeur_nouvpost_popup", "1");
+    if (nePlusAfficher) localStorage.setItem("chipeur_nouvpost_popup_v2", "1");
     onClose();
   }
 
@@ -789,7 +789,7 @@ function PopupXPShop({ onClose }) {
 export default function ChipeurNouveauPost({ setPage, user, profile, editPost, setEditPost, autoCreateSortie, setAutoCreateSortie }) {
   const [screen, setScreen] = useState("choose"); // "choose" | "form" | "success"
   const [showXPPopup, setShowXPPopup] = useState(
-    () => !editPost && localStorage.getItem("chipeur_nouvpost_popup") !== "1"
+    () => !editPost && localStorage.getItem("chipeur_nouvpost_popup_v2") !== "1"
   );
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
