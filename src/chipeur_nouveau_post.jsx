@@ -737,8 +737,8 @@ function PopupXPShop({ onClose }) {
         {[
           { n: "1", text: "Prends en photo un article d'un commerce du quartier" },
           { n: "2", text: "Relie le post à ce commerce en bas du formulaire" },
-          { n: "3", text: "Si le commerçant valide → tu gagnes des XP Shop 🏆" },
-          { n: "4", text: "100 XP Shop = 5 € de bon d'achat dans sa boutique 🎁" },
+          { n: "3", text: "Si le commerçant valide → tu gagnes des XP Shop chez lui 🏆" },
+          { n: "4", text: "100 XP Shop = 5 € de bon d'achat uniquement dans cette boutique 🎁" },
         ].map(step => (
           <div key={step.n} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
             <div style={{

@@ -1788,7 +1788,7 @@ function BandeauXPShop({ setPage, user, profile }) {
           Gagne des bons d'achat !
         </div>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "rgba(255,255,255,0.88)", lineHeight: 1.5 }}>
-          Prends en photo un article d'un commerce local et relie-le. Si le commerçant valide → tu gagnes des XP Shop convertibles en bons d'achat. 📸
+          Prends en photo un article d'un commerce local et relie-le. Si le commerçant valide → tu gagnes des XP Shop utilisables en bon d'achat uniquement chez lui. 📸
         </div>
         <div style={{
           display: "inline-block", marginTop: 8,

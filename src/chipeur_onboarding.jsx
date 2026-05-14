@@ -143,7 +143,7 @@ function Screen2() {
           fontFamily: dm, fontSize: 12,
           color: "rgba(255,255,255,0.9)", lineHeight: 1.6,
         }}>
-          Prends en photo un article d'un commerce local et relie-le. Le commerçant valide → tu gagnes des XP convertibles en bons d'achat dans sa boutique.
+          Prends en photo un article d'un commerce local et relie-le. Le commerçant valide → tu gagnes des XP Shop utilisables en bon d'achat uniquement chez lui.
         </div>
         <div style={{
           marginTop: 10, background: "rgba(255,255,255,0.2)",
@@ -215,7 +215,7 @@ function Screen3({ onDone }) {
           }}>gratuit</span>
         </div>
         <div style={{ fontFamily: dm, fontSize: 12, color: C.ink2, lineHeight: 1.55 }}>
-          Partage tes trouvailles, accumule des XP Shop et échange-les en bons d'achat chez tes commerçants.
+          Partage tes trouvailles, accumule des XP Shop et échange-les en bon d'achat uniquement chez le commerçant concerné.
         </div>
       </div>
 
