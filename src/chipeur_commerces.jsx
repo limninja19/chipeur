@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
-import { addXP } from "./chipeur_xp";
+import { addXP, addXPShop } from "./chipeur_xp";
 import Avatar from "./Avatar";
 
 const C = {
@@ -1057,21 +1057,8 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const handleAcceptPost = async (post) => {
     // 1. Mettre à jour le statut du post
     await supabase.from("posts").update({ linked_status: "accepted" }).eq("id", post.id);
-    // 2. Créditer 10 XP dans le wallet merchant
-    const { data: existing } = await supabase
-      .from("merchant_xp_wallet")
-      .select("id, points")
-      .eq("user_id", post.author_id)
-      .eq("merchant_id", com.id)
-      .maybeSingle();
-    if (existing) {
-      await supabase.from("merchant_xp_wallet")
-        .update({ points: existing.points + 10, updated_at: new Date().toISOString() })
-        .eq("id", existing.id);
-    } else {
-      await supabase.from("merchant_xp_wallet")
-        .insert({ user_id: post.author_id, merchant_id: com.id, points: 10 });
-    }
+    // 2. Créditer 10 XP Shop (valeur marchande) dans le wallet + profiles.xp_shop
+    await addXPShop(post.author_id, com.id, 10);
     // 3. Notifier l'auteur
     await supabase.from("notifications").insert({
       user_id: post.author_id,

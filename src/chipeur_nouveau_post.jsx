@@ -276,7 +276,7 @@ function MagLink({ selectedId, selectedNom, onSelect, onSelectNom }) {
                 🔖 Associer "{search.trim()}"
               </button>
               <div style={{ fontSize: 10, color: C.ink2, marginTop: 6, lineHeight: 1.4, textAlign: "center" }}>
-                Il sera notifié dès qu'il rejoindra Chipeur.
+                Dès qu'il rejoindra Chipeur, ta photo lui sera présentée. S'il l'accepte, tu gagneras des XP Shop 🎁
               </div>
             </div>
           ) : (
@@ -702,8 +702,95 @@ function FormRecherche({ content, onChange, rechercheTag, onTagChange }) {
 }
 
 // ─── MAIN ───
+// ─── POP-UP XP SHOP ─────────────────────────────────────────────────────────
+function PopupXPShop({ onClose }) {
+  const [nePlusAfficher, setNePlusAfficher] = useState(false);
+  const syne = "'Syne', sans-serif";
+  const dm   = "'DM Sans', sans-serif";
+  const C    = { accent: "#FF5733", pro: "#0A3D2E", proBg: "#EBF5F0", ink: "#1A1714", ink2: "#6B6560", bg: "#F5F2EE" };
+
+  function handleClose() {
+    if (nePlusAfficher) localStorage.setItem("chipeur_nouvpost_popup", "1");
+    onClose();
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 999,
+      background: "rgba(26,23,20,0.55)",
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }}>
+      <div style={{
+        width: "100%", maxWidth: 480,
+        background: "#fff", borderRadius: "24px 24px 0 0",
+        padding: "24px 20px 36px", boxSizing: "border-box",
+      }}>
+        <div style={{ textAlign: "center", fontSize: 44, marginBottom: 14 }}>📸</div>
+        <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 20, color: C.ink, textAlign: "center", marginBottom: 8 }}>
+          Gagne des bons d'achat !
+        </div>
+        <div style={{ fontFamily: dm, fontSize: 13, color: C.ink2, textAlign: "center", lineHeight: 1.6, marginBottom: 20 }}>
+          Tu peux relier n'importe quel post à un commerce local.
+        </div>
+
+        {/* Étapes */}
+        {[
+          { n: "1", text: "Prends en photo un article d'un commerce du quartier" },
+          { n: "2", text: "Relie le post à ce commerce en bas du formulaire" },
+          { n: "3", text: "Si le commerçant valide → tu gagnes des XP Shop 🏆" },
+          { n: "4", text: "100 XP Shop = 5 € de bon d'achat dans sa boutique 🎁" },
+        ].map(step => (
+          <div key={step.n} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+            <div style={{
+              width: 26, height: 26, borderRadius: "50%", background: C.accent,
+              color: "#fff", fontFamily: syne, fontWeight: 800, fontSize: 12,
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>{step.n}</div>
+            <div style={{ fontFamily: dm, fontSize: 13, color: C.ink, lineHeight: 1.5, paddingTop: 3 }}>{step.text}</div>
+          </div>
+        ))}
+
+        <div style={{
+          background: C.proBg, border: "1px solid rgba(10,61,46,0.2)",
+          borderRadius: 12, padding: "10px 14px", margin: "16px 0",
+          fontFamily: dm, fontSize: 12, color: C.pro, lineHeight: 1.5,
+        }}>
+          💡 Le commerce n'est pas encore sur Chipeur ? Associe-le quand même — dès qu'il s'inscrit, ta photo lui sera présentée et tu pourras gagner tes XP Shop !
+        </div>
+
+        {/* Ne plus afficher */}
+        <div
+          onClick={() => setNePlusAfficher(v => !v)}
+          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18, cursor: "pointer" }}
+        >
+          <div style={{
+            width: 18, height: 18, borderRadius: 5,
+            border: `2px solid ${nePlusAfficher ? C.accent : "#ccc"}`,
+            background: nePlusAfficher ? C.accent : "#fff",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            {nePlusAfficher && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>✓</span>}
+          </div>
+          <span style={{ fontFamily: dm, fontSize: 12, color: C.ink2 }}>Ne plus afficher</span>
+        </div>
+
+        <button onClick={handleClose} style={{
+          width: "100%", background: C.accent, color: "#fff",
+          border: "none", borderRadius: 14, padding: "14px 0",
+          fontFamily: syne, fontWeight: 700, fontSize: 15, cursor: "pointer",
+        }}>
+          J'ai compris, je poste ! 🚀
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ChipeurNouveauPost({ setPage, user, profile, editPost, setEditPost, autoCreateSortie, setAutoCreateSortie }) {
   const [screen, setScreen] = useState("choose"); // "choose" | "form" | "success"
+  const [showXPPopup, setShowXPPopup] = useState(
+    () => !editPost && localStorage.getItem("chipeur_nouvpost_popup") !== "1"
+  );
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
@@ -1148,6 +1235,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       fontFamily: "'DM Sans', sans-serif", color: C.ink,
       display: "flex", flexDirection: "column",
     }}>
+      {showXPPopup && <PopupXPShop onClose={() => setShowXPPopup(false)} />}
 
         {/* ── ÉCRAN CHOIX DU TYPE ── */}
         {screen === "choose" && (

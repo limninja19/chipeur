@@ -1649,6 +1649,50 @@ function TuValidesCard({ post, user }) {
   );
 }
 
+// ─── BANDEAU INCITATION XP SHOP ───
+function BandeauXPShop({ setPage, user, profile }) {
+  const isMagasin = ["magasin", "artisan", "commercant"].includes(profile?.role);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (user && !isMagasin && localStorage.getItem("chipeur_xpshop_hint") !== "1") {
+      setVisible(true);
+    }
+  }, [user, isMagasin]);
+
+  if (!visible) return null;
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg, #FF5733, #F7A72D)",
+      borderRadius: 18, padding: "14px 16px", margin: "8px 0",
+      display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
+    }} onClick={() => { setPage("nouveau"); }}>
+      <div style={{ fontSize: 32, flexShrink: 0 }}>🎁</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 14, color: "#fff", marginBottom: 3 }}>
+          Gagne des bons d'achat !
+        </div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "rgba(255,255,255,0.88)", lineHeight: 1.5 }}>
+          Prends en photo un article d'un commerce local et relie-le. Si le commerçant valide → tu gagnes des XP Shop convertibles en bons d'achat. 📸
+        </div>
+        <div style={{
+          display: "inline-block", marginTop: 8,
+          background: "rgba(255,255,255,0.25)", borderRadius: 10,
+          padding: "4px 10px", fontFamily: "'Syne', sans-serif",
+          fontWeight: 700, fontSize: 11, color: "#fff",
+        }}>
+          Poster maintenant →
+        </div>
+      </div>
+      <div
+        onClick={e => { e.stopPropagation(); localStorage.setItem("chipeur_xpshop_hint", "1"); setVisible(false); }}
+        style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", flexShrink: 0, padding: 4, cursor: "pointer" }}
+      >✕</div>
+    </div>
+  );
+}
+
 // ─── TU VALIDES ?! — BANDEAU ───
 function BandeauTuValides({ user }) {
   const [posts, setPosts] = useState([]);
@@ -1840,6 +1884,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
         )}
         <BandeauDefis setPage={setPage} user={user} />
         <BandeauSortiesPhotos setPage={setPage} setSelectedSortieId={setSelectedSortieId} />
+        <BandeauXPShop setPage={setPage} user={user} profile={profile} />
         <TuValidesNotif user={user} />
         <BandeauTuValides user={user} />
 

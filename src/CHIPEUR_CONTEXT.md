@@ -70,12 +70,18 @@ Dans `chipeur_settings.jsx` → `handleDeleteAccount` :
 - Met `deleted_at` = now()
 - Ne supprime PAS la ligne auth (pas de CASCADE) → choix intentionnel de Jenny
 
-### Système XP voisin
-- Un **voisin** poste une photo d'un article de magasin et relie le post au commerce
-- Si le **magasin accepte** le lien (`linked_status = "accepted"`), le **voisin** gagne des XP
-- Les XP sont convertibles en **bons d'achat** (100 XP = 5€)
-- Stocké dans `merchant_xp_wallet`
-- Composant réutilisable : `MerchantXpBlock({ userId, merchantName })`
+### Deux types de XP voisin
+
+**XP normal** (`profiles.xp`) → pour la gloire, niveaux, classement
+- Gagné via : streak connexion, posts, réactions, défis, pépites validées…
+- Pas de valeur marchande pour l'instant (récompenses prévues plus tard)
+
+**XP Shop** (`profiles.xp_shop` + `merchant_xp_wallet`) → valeur marchande
+- Gagné uniquement quand un commerçant valide une photo reliée à son commerce
+- 10 XP Shop par photo acceptée (`linked_status = "accepted"`)
+- 100 XP Shop = 5 € de bon d'achat dans la boutique concernée
+- Crédité via `addXPShop(userId, merchantId, amount)` dans `chipeur_xp.js`
+- Stocké par commerce dans `merchant_xp_wallet` + total dans `profiles.xp_shop`
 
 ### Recommandations "Je cherche"
 - Un voisin peut recommander un commerce sur un post `post_type = "recherche"`
