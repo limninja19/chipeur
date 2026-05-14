@@ -178,7 +178,6 @@ export default function App() {
       {page === "commerces"    && <Commerces     {...sharedProps} />}
       {page === "reductions"   && user && <MesReductions {...sharedProps} />}
       {page === "reglement"    && <ReglementScreen {...sharedProps} />}
-      {page === "profilMagasin"&& <ProfilMagasin {...sharedProps} />}
       {page === "voisins"      && <PageVoisins   {...sharedProps} />}
       {page === "notifications"&& user && <Notifications {...sharedProps} />}
       {page === "messages"     && user && <Messages     {...sharedProps} />}
@@ -190,7 +189,7 @@ export default function App() {
         return isMarchand ? <ProfilMagasin {...sharedProps} /> : <ProfilVoisin {...sharedProps} />;
       })()}
       {/* Fil = page par défaut, visible aussi sans compte */}
-      {!["defis","sorties","nouveau","commerces","reductions","reglement","profilMagasin","voisins","notifications","messages","profil"].includes(page) && (
+      {!["defis","sorties","nouveau","commerces","reductions","reglement","voisins","notifications","messages","profil"].includes(page) && (
         <Fil {...sharedProps} />
       )}
     </>

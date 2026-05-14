@@ -32,13 +32,11 @@ export function getLevelProgress(xp = 0) {
   return Math.min(100, Math.round(((xp - current.xpMin) / (next.xpMin - current.xpMin)) * 100));
 }
 
-// ─── AJOUTER DES XP (via fonction sécurisée côté serveur) ────────
-// Le calcul et la validation sont faits en Postgres SECURITY DEFINER
-// → impossible à exploiter depuis le client ou les DevTools
+// ─── AJOUTER DES XP NORMAL (gloire, niveaux, classement) ─────────
 export async function addXP(userId, amount, reason) {
   if (!userId || !amount || amount <= 0) return;
   try {
-    // 1. XP total (RPC sécurisé)
+    // 1. XP total (RPC sécurisé côté serveur)
     const { error } = await supabase.rpc("increment_xp", {
       p_user_id: userId,
       p_amount:  amount,
@@ -68,7 +66,7 @@ export async function addXP(userId, amount, reason) {
 export async function addXPShop(userId, merchantId, amount) {
   if (!userId || !merchantId || !amount || amount <= 0) return;
   try {
-    // 1. Upsert dans merchant_xp_wallet
+    // 1. Upsert dans merchant_xp_wallet (XP Shop par commerce)
     const { data: existing } = await supabase
       .from("merchant_xp_wallet")
       .select("id, points")
@@ -84,14 +82,20 @@ export async function addXPShop(userId, merchantId, amount) {
         .insert({ user_id: userId, merchant_id: merchantId, points: amount });
     }
     // 2. Incrémenter xp_shop total dans profiles
-    const { data: prof } = await supabase.from("profiles").select("xp_shop").eq("id", userId).maybeSingle();
-    await supabase.from("profiles").update({ xp_shop: (prof?.xp_shop || 0) + amount }).eq("id", userId);
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("xp_shop")
+      .eq("id", userId)
+      .maybeSingle();
+    await supabase.from("profiles")
+      .update({ xp_shop: (prof?.xp_shop || 0) + amount })
+      .eq("id", userId);
   } catch (e) {
     console.error("addXPShop error:", e);
   }
 }
 
-// ─── CONNEXION QUOTIDIENNE ───────────────────────────────────────
+// ─── CONNEXION QUOTIDIENNE (streak) ──────────────────────────────
 export async function checkDailyLogin(userId, profile) {
   if (!userId || !profile) return;
 
@@ -115,7 +119,7 @@ export async function checkDailyLogin(userId, profile) {
     login_streak: newStreak,
   }).eq("id", userId);
 
-  // Ajoute les XP
+  // Ajoute les XP normaux
   await addXP(userId, xpGain, `connexion_streak_${newStreak}`);
 
   return { xpGain, streak: newStreak };
