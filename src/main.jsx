@@ -8,6 +8,11 @@ import App from './App.jsx'
 const APP_VERSION = "2026-05-15-v4";
 
 if ("serviceWorker" in navigator) {
+  // On mémorise s'il y avait déjà un SW actif AVANT ce chargement.
+  // Si non (première visite), on ne recharge pas quand il s'installe
+  // pour la première fois → évite la page blanche/noire sur iPhone.
+  const hadController = !!navigator.serviceWorker.controller;
+
   navigator.serviceWorker.ready.then(reg => {
     // Demander au service worker en attente de s'activer immédiatement
     if (reg.waiting) {
@@ -18,8 +23,9 @@ if ("serviceWorker" in navigator) {
   }).catch(() => {});
 
   // Quand le service worker change (nouvelle version activée) → recharger la page
+  // Mais uniquement si ce n'est pas la première installation (hadController)
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!window.__reloading) {
+    if (!window.__reloading && hadController) {
       window.__reloading = true;
       window.location.reload();
     }
