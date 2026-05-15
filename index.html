@@ -9,8 +9,44 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Syne+Mono&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Sonde diagnostic iOS — s'exécute avant React, capture les erreurs JS globales -->
+  <script>
+    (function() {
+      var log = [];
+      var t0 = Date.now();
+      function stamp(msg) { log.push((Date.now()-t0)+'ms '+msg); }
+      stamp('html-parsed');
+      window.__diagnosticLog = log;
+      window.addEventListener('error', function(e) {
+        stamp('js-error: ' + e.message + ' @ ' + e.filename + ':' + e.lineno);
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        stamp('unhandled-rejection: ' + String(e.reason));
+      });
+      window.addEventListener('load', function() { stamp('window-load'); });
+    })();
+  </script>
  </head>
   <body>
+
+    <!-- Fallback visible si le JS React ne charge pas (écran blanc → message) -->
+    <div id="app-loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;font-family:system-ui;flex-direction:column;gap:16px;z-index:9999;">
+      <div style="font-size:40px;">🐾</div>
+      <div style="font-size:14px;color:#6B6560;">Chargement...</div>
+      <div id="app-loading-error" style="display:none;font-size:13px;color:#FF5733;max-width:280px;text-align:center;line-height:1.5;padding:0 24px;"></div>
+      <button id="app-loading-reload" onclick="window.location.reload()" style="display:none;background:#FF5733;color:#fff;border:none;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;">Recharger</button>
+    </div>
+    <script>
+      window.__loadingTimeout = setTimeout(function() {
+        var el = document.getElementById('app-loading-error');
+        var btn = document.getElementById('app-loading-reload');
+        var logs = window.__diagnosticLog ? window.__diagnosticLog.join(' | ') : '';
+        if (el) { el.style.display='block'; el.textContent = "Le chargement a échoué. Vérifie ta connexion et réessaie." + (logs ? ' ['+logs+']' : ''); }
+        if (btn) btn.style.display='block';
+      }, 10000);
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

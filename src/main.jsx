@@ -125,6 +125,13 @@ function showUpdateBanner(worker) {
   } catch (_) {}
 }
 
+// Masquer le fallback HTML dès que React est prêt — prouve que le JS a bien chargé
+try {
+  const loadingEl = document.getElementById('app-loading');
+  if (loadingEl) loadingEl.remove();
+  if (window.__loadingTimeout) clearTimeout(window.__loadingTimeout);
+} catch (_) {}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>

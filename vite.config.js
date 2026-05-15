@@ -6,9 +6,23 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       workbox: {
+        skipWaiting: false,
+        clientsClaim: false,
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MB
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-cache',
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
       },
       manifest: {
         name: 'Chipeur',
