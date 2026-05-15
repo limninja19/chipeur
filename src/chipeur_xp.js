@@ -62,34 +62,17 @@ export async function addXP(userId, amount, reason) {
 }
 
 // ─── AJOUTER DES XP SHOP (valeur marchande, liés à un commerce) ──
-// Crédite le wallet par commerce + incrémente xp_shop dans profiles
+// Utilise un RPC SECURITY DEFINER pour contourner les politiques RLS
+// (le commerçant ne peut pas modifier directement le profil d'un voisin)
 export async function addXPShop(userId, merchantId, amount) {
   if (!userId || !merchantId || !amount || amount <= 0) return;
   try {
-    // 1. Upsert dans merchant_xp_wallet (XP Shop par commerce)
-    const { data: existing } = await supabase
-      .from("merchant_xp_wallet")
-      .select("id, points")
-      .eq("user_id", userId)
-      .eq("merchant_id", merchantId)
-      .maybeSingle();
-    if (existing) {
-      await supabase.from("merchant_xp_wallet")
-        .update({ points: existing.points + amount, updated_at: new Date().toISOString() })
-        .eq("id", existing.id);
-    } else {
-      await supabase.from("merchant_xp_wallet")
-        .insert({ user_id: userId, merchant_id: merchantId, points: amount });
-    }
-    // 2. Incrémenter xp_shop total dans profiles
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("xp_shop")
-      .eq("id", userId)
-      .maybeSingle();
-    await supabase.from("profiles")
-      .update({ xp_shop: (prof?.xp_shop || 0) + amount })
-      .eq("id", userId);
+    const { error } = await supabase.rpc("increment_xp_shop", {
+      p_user_id:     userId,
+      p_merchant_id: merchantId,
+      p_amount:      amount,
+    });
+    if (error) console.error("addXPShop RPC error:", error);
   } catch (e) {
     console.error("addXPShop error:", e);
   }
