@@ -1551,12 +1551,23 @@ function VitrineScreen({ com, onBack, user }) {
     setLoadingPosts(true);
 
     async function loadPosts() {
-      // 1. Posts publiés par le commerce OU tagguant ce commerce (magasin_id)
-      const { data: directPosts } = await supabase
+      // 1a. Posts publiés par le commerce lui-même
+      const { data: ownPosts } = await supabase
         .from("posts")
         .select("*, profiles:author_id(pseudo, avatar_url)")
-        .or(`author_id.eq.${com.id},magasin_id.eq.${com.id}`)
+        .eq("author_id", com.id)
         .order("created_at", { ascending: false });
+
+      // 1b. Posts de voisins liés à ce commerce — uniquement ceux acceptés
+      const { data: linkedAccepted } = await supabase
+        .from("posts")
+        .select("*, profiles:author_id(pseudo, avatar_url)")
+        .eq("magasin_id", com.id)
+        .neq("author_id", com.id)
+        .eq("linked_status", "accepted")
+        .order("created_at", { ascending: false });
+
+      const directPosts = [...(ownPosts || []), ...(linkedAccepted || [])];
 
       // 2. Posts de réponse aux défis lancés par ce commerce
       const { data: merchantDefis } = await supabase

@@ -1131,6 +1131,21 @@ function PostCard({ post, setPage, userId, setSelectedVoisinId, user, requireAut
             <span style={{ fontSize: 10, color: "#0369A1", opacity: 0.7 }}>— aide ce voisin !</span>
           </div>
         )}
+        {/* Tag commerce lié */}
+        {post.magasin_nom && (
+          <div style={{ margin: "0 12px 6px", display: "inline-flex", alignItems: "center", gap: 5,
+            background: post.linked_status === "accepted" ? "rgba(10,61,46,0.07)" : "rgba(255,87,51,0.07)",
+            border: `1px solid ${post.linked_status === "accepted" ? "rgba(10,61,46,0.2)" : "rgba(255,87,51,0.2)"}`,
+            borderRadius: 10, padding: "4px 10px" }}>
+            <span style={{ fontSize: 12 }}>🏪</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: post.linked_status === "accepted" ? "#0A3D2E" : "#FF5733" }}>
+              {post.magasin_nom}
+            </span>
+            {post.linked_status !== "accepted" && (
+              <span style={{ fontSize: 9, color: "#FF5733", opacity: 0.7 }}>· en attente</span>
+            )}
+          </div>
+        )}
         {/* Contenu */}
         <div style={{ padding: "10px 12px 6px" }}>
           {post.content
