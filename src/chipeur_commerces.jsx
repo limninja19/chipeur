@@ -271,17 +271,31 @@ function RecentShopPhotos({ onOpenShop, merchants }) {
   useEffect(() => {
     if (!merchants || merchants.length === 0) return;
     const merchantIds = merchants.map(m => m.id);
-    supabase
-      .from("posts")
-      .select("id, image_url, content, author_id, created_at, magasin_id")
-      .not("image_url", "is", null)
-      .or(`author_id.in.(${merchantIds.join(",")}),magasin_id.in.(${merchantIds.join(",")})`)
-      .order("created_at", { ascending: false })
-      .limit(60)
-      .then(({ data }) => {
-        setPhotos((data || []).filter(p => merchants.some(m => m.id === p.author_id || m.id === p.magasin_id)));
-        setLoading(false);
-      });
+    // Deux requêtes séparées :
+    // 1. Posts publiés par le commerçant lui-même (toujours visibles)
+    // 2. Posts voisins liés → uniquement ceux acceptés (linked_status = "accepted")
+    Promise.all([
+      supabase.from("posts")
+        .select("id, image_url, content, author_id, created_at, magasin_id")
+        .not("image_url", "is", null)
+        .in("author_id", merchantIds)
+        .order("created_at", { ascending: false })
+        .limit(40),
+      supabase.from("posts")
+        .select("id, image_url, content, author_id, created_at, magasin_id")
+        .not("image_url", "is", null)
+        .in("magasin_id", merchantIds)
+        .not("author_id", "in", `(${merchantIds.join(",")})`)
+        .eq("linked_status", "accepted")
+        .order("created_at", { ascending: false })
+        .limit(40),
+    ]).then(([ownRes, linkedRes]) => {
+      const own    = (ownRes.data    || []);
+      const linked = (linkedRes.data || []);
+      const merged = [...own, ...linked].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 60);
+      setPhotos(merged);
+      setLoading(false);
+    });
   }, [merchants.length]);
 
   if (loading || photos.length === 0) return null;
