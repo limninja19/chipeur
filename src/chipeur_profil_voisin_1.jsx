@@ -462,13 +462,13 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
 
       {/* Bandeau réductions */}
       <div onClick={() => setPage("reductions")} style={{ padding: "10px 16px 0", cursor: "pointer" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFF8F6", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,87,51,0.2)" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎁</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: C.accent, borderRadius: 14, padding: "14px 16px" }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🎁</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: syne, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mes XP Shop & réductions</div>
-            <div style={{ fontSize: 10, color: C.ink2 }}>Bons d'achat & offres du quartier</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: syne }}>Mes XP Shop & réductions</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>Bons d'achat & offres du quartier</div>
           </div>
-          <div style={{ background: C.accent, color: "#fff", fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 10, flexShrink: 0 }}>→</div>
+          <div style={{ background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 13, fontWeight: 800, padding: "6px 12px", borderRadius: 10, flexShrink: 0 }}>→</div>
         </div>
       </div>
 
