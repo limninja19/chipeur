@@ -78,6 +78,40 @@ export async function addXPShop(userId, merchantId, amount) {
   }
 }
 
+// ─── RETIRER DES XP SHOP (suppression de post accepté) ──────────
+export async function removeXPShop(userId, merchantId, amount) {
+  if (!userId || !merchantId || !amount || amount <= 0) return;
+  try {
+    const { error } = await supabase.rpc("decrement_xp_shop", {
+      p_user_id:     userId,
+      p_merchant_id: merchantId,
+      p_amount:      amount,
+    });
+    if (error) console.error("removeXPShop RPC error:", error);
+  } catch (e) {
+    console.error("removeXPShop error:", e);
+  }
+}
+
+// ─── RETIRER DES XP GLOIRE (suppression de post) ─────────────────
+export async function removeXP(userId, amount) {
+  if (!userId || !amount || amount <= 0) return;
+  try {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("xp, xp_month")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!prof) return;
+    await supabase.from("profiles").update({
+      xp:       Math.max(0, (prof.xp || 0) - amount),
+      xp_month: Math.max(0, (prof.xp_month || 0) - amount),
+    }).eq("id", userId);
+  } catch (e) {
+    console.error("removeXP error:", e);
+  }
+}
+
 // ─── CONNEXION QUOTIDIENNE (streak) ──────────────────────────────
 export async function checkDailyLogin(userId, profile) {
   if (!userId || !profile) return;

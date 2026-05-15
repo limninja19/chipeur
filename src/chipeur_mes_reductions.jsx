@@ -101,23 +101,43 @@ function DetailScreen({ item, onBack }) {
 // ─── TAB 1 : MES XP SHOP ──────────────────────────────────────
 function MesXPShop({ user, setPage }) {
   const [wallets, setWallets] = useState([]);
+  const [linkedPosts, setLinkedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadWallets();
+    loadAll();
   }, [user?.id]);
 
-  async function loadWallets() {
+  async function loadAll() {
     if (!user?.id) { setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("merchant_xp_wallet")
-      .select("*, profiles:merchant_id(pseudo, avatar_url)")
-      .eq("user_id", user.id)
-      .order("points", { ascending: false });
+    const [walletsRes, postsRes] = await Promise.all([
+      supabase
+        .from("merchant_xp_wallet")
+        .select("*, profiles:merchant_id(pseudo, avatar_url)")
+        .eq("user_id", user.id)
+        .order("points", { ascending: false }),
+      supabase
+        .from("posts")
+        .select("id, image_url, content, magasin_id, magasin_nom, linked_status, created_at")
+        .eq("author_id", user.id)
+        .not("magasin_id", "is", null)
+        .order("created_at", { ascending: false }),
+    ]);
+    if (walletsRes.error) console.error("wallets:", walletsRes.error);
+    setWallets(walletsRes.data || []);
 
-    if (error) { console.error("wallets:", error); setLoading(false); return; }
-    setWallets(data || []);
+    // Enrichir magasin_nom manquant pour anciens posts
+    const posts = postsRes.data || [];
+    const needName = [...new Set(posts.filter(p => p.magasin_id && !p.magasin_nom).map(p => p.magasin_id))];
+    if (needName.length > 0) {
+      const { data: merchants } = await supabase.from("profiles").select("id, pseudo").in("id", needName);
+      const nm = {};
+      (merchants || []).forEach(m => { nm[m.id] = m.pseudo; });
+      setLinkedPosts(posts.map(p => (p.magasin_id && !p.magasin_nom && nm[p.magasin_id]) ? { ...p, magasin_nom: nm[p.magasin_id] } : p));
+    } else {
+      setLinkedPosts(posts);
+    }
     setLoading(false);
   }
 
@@ -266,6 +286,45 @@ function MesXPShop({ user, setPage }) {
                   <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
                     <div style={{ fontSize: 11, color: C.accent, fontWeight: 600 }}>Plus que {reste} XP pour débloquer 5€ 🎁</div>
                     <div style={{ fontSize: 10, color: C.ink2 }}>{pct}%</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* ── Section : mes photos liées à un commerce ── */}
+      {linkedPosts.length > 0 && (
+        <>
+          <div style={{ height: 12 }} />
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            📸 Mes photos liées · {linkedPosts.length}
+          </div>
+          {linkedPosts.map(p => {
+            const isPending  = p.linked_status === "pending";
+            const isAccepted = p.linked_status === "accepted";
+            const statusColor = isAccepted ? C.pro : isPending ? "#B45309" : C.ink2;
+            const statusBg    = isAccepted ? C.proBg : isPending ? "#FFF8E8" : C.pill;
+            const statusLabel = isAccepted ? "✅ Accepté · +10 XP Shop" : isPending ? "⏳ En attente" : "—";
+            return (
+              <div key={p.id} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, marginBottom: 8, display: "flex", alignItems: "center", gap: 10, padding: 10, overflow: "hidden" }}>
+                {/* Miniature */}
+                {p.image_url
+                  ? <img src={p.image_url} alt="" style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+                  : <div style={{ width: 52, height: 52, borderRadius: 10, background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>📷</div>
+                }
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    🏪 {p.magasin_nom || "Commerce"}
+                  </div>
+                  {p.content && (
+                    <div style={{ fontSize: 11, color: C.ink2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+                      {p.content}
+                    </div>
+                  )}
+                  <div style={{ marginTop: 5, display: "inline-flex", alignItems: "center", gap: 4, background: statusBg, borderRadius: 8, padding: "3px 8px" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: statusColor }}>{statusLabel}</span>
                   </div>
                 </div>
               </div>

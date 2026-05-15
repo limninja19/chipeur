@@ -1983,7 +1983,18 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
     if (error) { setFetchError(error.message); console.error("Posts error:", error); }
     // Filtrer les posts de comptes supprimés
     const filtered = (mainPosts || []).filter(p => p.profiles && p.profiles.pseudo !== "[Compte supprimé]");
-    setPosts(filtered);
+
+    // Enrichir les posts liés à un commerce dont magasin_nom n'est pas encore stocké (anciens posts)
+    const needName = [...new Set(filtered.filter(p => p.magasin_id && !p.magasin_nom).map(p => p.magasin_id))];
+    if (needName.length > 0) {
+      const { data: merchants } = await supabase.from("profiles").select("id, pseudo").in("id", needName);
+      const nameMap = {};
+      (merchants || []).forEach(m => { nameMap[m.id] = m.pseudo; });
+      setPosts(filtered.map(p => (p.magasin_id && !p.magasin_nom && nameMap[p.magasin_id])
+        ? { ...p, magasin_nom: nameMap[p.magasin_id] } : p));
+    } else {
+      setPosts(filtered);
+    }
     setLoading(false);
   };
 

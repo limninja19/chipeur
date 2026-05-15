@@ -716,7 +716,7 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId, onGoMentions 
   useEffect(() => {
     if (!userId) return;
     supabase.from("posts").select("id", { count: "exact", head: true })
-      .eq("magasin_id", userId).neq("author_id", userId).neq("linked_status", "accepted")
+      .eq("magasin_id", userId).neq("author_id", userId).eq("linked_status", "pending")
       .then(({ count }) => setPendingCount(count || 0));
   }, [userId]);
 

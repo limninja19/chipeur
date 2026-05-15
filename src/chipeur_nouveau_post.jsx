@@ -252,7 +252,7 @@ function MagLink({ selectedId, selectedNom, onSelect, onSelectNom }) {
           {/* Liste filtrée */}
           {hasResult ? (
             filtered.map((m, i) => (
-              <div key={m.id} onClick={() => { onSelect(m.id); onSelectNom(""); setSearch(""); setOpen(false); }} style={{
+              <div key={m.id} onClick={() => { onSelect(m.id); onSelectNom(m.pseudo); setSearch(""); setOpen(false); }} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
                 cursor: "pointer", borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none",
               }}>

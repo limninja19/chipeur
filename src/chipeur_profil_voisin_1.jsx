@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
-import { getLevel, getNextLevel, getLevelProgress, addXP } from "./chipeur_xp";
+import { getLevel, getNextLevel, getLevelProgress, addXP, removeXP, removeXPShop } from "./chipeur_xp";
 import { THEMES, miniDefisAll } from "./chipeur_univers_data";
 import Avatar from "./Avatar";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
@@ -674,7 +674,7 @@ function PhotoThumb({ p, onDelete, onOpen, onEdit }) {
       {/* Boutons actions */}
       <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 4 }}>
         <button onClick={e => { e.stopPropagation(); onEdit(p); }} style={{ width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✏️</button>
-        <button onClick={e => { e.stopPropagation(); onDelete(p.id); }} style={{ width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        <button onClick={e => { e.stopPropagation(); onDelete(p); }} style={{ width: 22, height: 22, background: "rgba(26,23,20,0.55)", borderRadius: "50%", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
       </div>
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(26,23,20,0.65))", padding: "16px 8px 7px" }}>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>
@@ -1541,10 +1541,19 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
     await supabase.auth.signOut();
   };
 
-  const handleDelete = async (id) => {
-    await supabase.from("posts").delete().eq("id", id).eq("author_id", user.id);
-    setPosts(prev => prev.filter(p => p.id !== id));
+  const handleDelete = async (post) => {
+    // 1. Supprimer le post
+    await supabase.from("posts").delete().eq("id", post.id).eq("author_id", user.id);
+    setPosts(prev => prev.filter(p => p.id !== post.id));
     setDeleteTarget(null);
+
+    // 2. Retirer les XP gloire gagnés à la publication (10 XP)
+    await removeXP(user.id, 10);
+
+    // 3. Si le post était lié ET accepté → retirer aussi les 10 XP Shop
+    if (post.magasin_id && post.linked_status === "accepted") {
+      await removeXPShop(user.id, post.magasin_id, 10);
+    }
   };
 
   const handleEditSave = (id, newContent) => {
@@ -1565,7 +1574,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
             <ProfileTop onEditProfile={() => setScreen("edit")} setPage={setPage} profile={profile} onSettings={() => setSettingsOpen(true)} postCount={postCount} univers={univers} rank={rank} onTabChange={setActiveTab} />
             <StickyTabs activeTab={activeTab} onTabChange={setActiveTab} />
             <div style={{ padding: "12px 14px 20px" }}>
-              {activeTab === "Publications" && <TabPosts posts={posts} onDelete={id => setDeleteTarget(id)} onEdit={p => { setEditPost?.(p); setPage("nouveau"); }} loading={postsLoading} />}
+              {activeTab === "Publications" && <TabPosts posts={posts} onDelete={post => setDeleteTarget(post)} onEdit={p => { setEditPost?.(p); setPage("nouveau"); }} loading={postsLoading} />}
               {activeTab === "Événements" && <TabEvenements sorties={sorties} onDelete={handleDeleteSortie} loading={sortiesLoading} />}
               {activeTab === "Mon univers" && <TabUnivers items={univers} onOpen={id => { setMiniDefiId(id); setScreen("minidefi"); }} />}
               {activeTab === "Défis" && <TabDefis setPage={setPage} userId={user?.id} />}
