@@ -23,6 +23,7 @@ const NOTIF_CONFIG = {
   message:        { icon: "💬",  label: "vous a envoyé un message" },
   linked_accepted:{ icon: "✅",  label: "a accepté votre photo · +10 XP Shop 🎁" },
   xpshop_palier:  { icon: "🎉",  label: null }, // label dynamique
+  photo_linked:   { icon: "📸",  label: "a lié une photo à votre commerce" },
 };
 
 function timeAgo(ts) {
@@ -87,6 +88,8 @@ function NotifItem({ n, setPage, setSelectedVoisinId }) {
       setPage("defis");
     } else if (n.type === "linked_accepted" || n.type === "xpshop_palier") {
       setPage("reductions");
+    } else if (n.type === "photo_linked") {
+      setPage("profil");
     } else {
       setPage("fil");
     }

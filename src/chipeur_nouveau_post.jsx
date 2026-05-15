@@ -969,7 +969,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
         const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
         image_url = urlData.publicUrl;
       }
-      const { error } = await supabase.from("posts").insert({
+      const { data: tvData, error } = await supabase.from("posts").insert({
         author_id: user.id,
         content: content.trim() || null,
         image_url,
@@ -979,10 +979,20 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
         magasin_id: magasinId || null,
         magasin_nom: magasinNom || null,
         linked_status: magasinId ? "pending" : null,
-      });
+      }).select("id").maybeSingle();
       setPublishing(false);
       if (error) { setPublishError("Erreur : " + error.message); return; }
       addXP(user.id, 10, "tuvalides_publie");
+      if (magasinId && tvData?.id) {
+        supabase.from("notifications").insert({
+          user_id: magasinId,
+          from_user_id: user.id,
+          type: "photo_linked",
+          reference_id: tvData.id,
+          read: false,
+          message: JSON.stringify({ pseudo: profile?.pseudo || "Un voisin" }),
+        }).then(() => {});
+      }
       setScreen("success");
       return;
     }
@@ -1112,7 +1122,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
     // ✅ Pépite : ajoute le tag "Pépite ⭐" si activé
     const finalTags = pepiteOn ? [...activeTags, "Pépite ⭐"] : activeTags;
 
-    const { error } = await supabase.from("posts").insert({
+    const { data: postData, error } = await supabase.from("posts").insert({
       author_id: user.id,
       content: content.trim(),
       image_url,
@@ -1123,7 +1133,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       magasin_nom: magasinNom || null,
       linked_status: magasinId ? "pending" : null,
       link_url: (linkUrl.trim().startsWith("http://") || linkUrl.trim().startsWith("https://")) ? linkUrl.trim() : null,
-    });
+    }).select("id").maybeSingle();
     setPublishing(false);
     if (error) {
       console.error("Insert error:", error);
@@ -1131,6 +1141,16 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       return;
     }
     addXP(user.id, 10, "post_publie");
+    if (magasinId && postData?.id) {
+      supabase.from("notifications").insert({
+        user_id: magasinId,
+        from_user_id: user.id,
+        type: "photo_linked",
+        reference_id: postData.id,
+        read: false,
+        message: JSON.stringify({ pseudo: profile?.pseudo || "Un voisin" }),
+      }).then(() => {});
+    }
     setScreen("success");
   };
 
