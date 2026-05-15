@@ -139,10 +139,18 @@ export default function App() {
     () => localStorage.getItem("chipeur_onboarding_done_v2") === "true"
   );
 
+  // Si l'utilisateur est déjà connecté (compte existant), on saute l'onboarding
+  // et on marque la clé localStorage pour éviter de le revoir
+  useEffect(() => {
+    if (user && profile && !onboardingDone) {
+      localStorage.setItem("chipeur_onboarding_done_v2", "true");
+      setOnboardingDone(true);
+    }
+  }, [user?.id, profile?.id]);
+
   async function handleOnboardingDone() {
     localStorage.setItem("chipeur_onboarding_done_v2", "true");
     setOnboardingDone(true);
-    // Si connecté, on marque aussi en base
     if (user?.id) {
       await supabase.from("profiles").update({ has_seen_onboarding: true }).eq("id", user.id);
     }
@@ -150,8 +158,7 @@ export default function App() {
 
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
 
-  // Onboarding : uniquement basé sur localStorage v2
-  // → tout utilisateur sans la clé v2 voit l'onboarding, peu importe la base
+  // Onboarding uniquement pour les visiteurs sans compte
   if (!onboardingDone) {
     return <Onboarding onDone={handleOnboardingDone} />;
   }
