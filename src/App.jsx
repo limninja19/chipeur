@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Component } from "react";
 import { supabase } from "./supabase";
 import { useProfile } from "./useProfile";
 import { Analytics } from "@vercel/analytics/react";
@@ -23,6 +23,42 @@ import SignupModal from "./SignupModal";
 import Onboarding from "./chipeur_onboarding";
 import InstallPWAModal from "./InstallPWAModal";
 import FilTourModal from "./FilTourModal";
+
+// ─── Error Boundary global ──────────────────────────────────────────────────
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error("Chipeur crash:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: "100dvh", background: "#1A1A2E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 16 }}>
+          <div style={{ fontFamily: "Syne", fontWeight: 800, fontSize: 32, color: "#FF5733" }}>chipeur</div>
+          <div style={{ fontFamily: "sans-serif", fontSize: 15, color: "rgba(255,255,255,0.8)", textAlign: "center", lineHeight: 1.6 }}>
+            Oups, une erreur est survenue 😕
+          </div>
+          <div style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(255,87,51,0.7)", background: "rgba(255,87,51,0.1)", padding: "8px 14px", borderRadius: 10, maxWidth: 320, wordBreak: "break-all", textAlign: "center" }}>
+            {this.state.error?.message || "Erreur inconnue"}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ marginTop: 8, background: "#FF5733", color: "#fff", border: "none", borderRadius: 14, padding: "12px 24px", fontFamily: "Syne", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+          >
+            Recharger l'app
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function SplashScreen() {
   return (
@@ -190,6 +226,7 @@ export default function App() {
   }
 
   return (
+    <ErrorBoundary>
     <>
       <Analytics />
       <SpeedInsights />
@@ -232,5 +269,6 @@ export default function App() {
         <Fil {...sharedProps} />
       )}
     </>
+    </ErrorBoundary>
   );
 }
