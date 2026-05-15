@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
-import { addXP } from "./chipeur_xp";
+import { addXP, addXPShop } from "./chipeur_xp";
 import Avatar from "./Avatar";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
@@ -289,9 +289,10 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
 }
 
 // ─── POSTS VOISINS QUI MENTIONNENT LE COMMERCE ───
-function MentionedPosts({ userId, onEnrich }) {
+function MentionedPosts({ userId, merchantPseudo, onEnrich }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [accepting, setAccepting] = useState(null);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -301,25 +302,63 @@ function MentionedPosts({ userId, onEnrich }) {
       .eq("magasin_id", userId)
       .neq("author_id", userId)
       .order("created_at", { ascending: false })
-      .limit(20)
+      .limit(30)
       .then(({ data }) => { setPosts(data || []); setLoading(false); });
   }, [userId]);
 
-  const handleRetirer = async (postId) => {
-    const { error } = await supabase
-      .from("posts")
-      .update({ magasin_id: null })
-      .eq("id", postId);
-    if (!error) setPosts(prev => prev.filter(p => p.id !== postId));
+  const handleAccept = async (post) => {
+    if (accepting) return;
+    setAccepting(post.id);
+    try {
+      // 1. Marquer le post comme accepté
+      await supabase.from("posts")
+        .update({ linked_status: "accepted" })
+        .eq("id", post.id);
+
+      // 2. Donner +10 XP Shop au voisin
+      await addXPShop(post.author_id, userId, 10);
+
+      // 3. Vérifier si un palier de 100 XP est franchi → notification
+      const { data: wallet } = await supabase
+        .from("merchant_xp_wallet")
+        .select("points")
+        .eq("user_id", post.author_id)
+        .eq("merchant_id", userId)
+        .maybeSingle();
+      if (wallet) {
+        const pts = wallet.points;
+        const prev = pts - 10;
+        if (Math.floor(pts / 100) > Math.floor(prev / 100)) {
+          const bons = Math.floor(pts / 100);
+          await supabase.from("notifications").insert({
+            user_id: post.author_id, from_user_id: userId,
+            type: "xpshop_palier", reference_id: post.id, read: false,
+            message: JSON.stringify({ bons, merchant_name: merchantPseudo || "Le commerce", points: pts }),
+          });
+        }
+      }
+
+      // 4. Notification "photo acceptée" au voisin
+      await supabase.from("notifications").insert({
+        user_id: post.author_id, from_user_id: userId,
+        type: "linked_accepted", reference_id: post.id, read: false,
+        message: JSON.stringify({ merchant_name: merchantPseudo || "Un commerce" }),
+      });
+
+      // 5. Mettre à jour l'affichage local
+      setPosts(prev => prev.map(p =>
+        p.id === post.id ? { ...p, linked_status: "accepted" } : p
+      ));
+    } catch (e) {
+      console.error("handleAccept error:", e);
+    }
+    setAccepting(null);
   };
 
-  if (loading) return null;
-  if (posts.length === 0) return (
-    <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "14px", marginBottom: 8, textAlign: "center" }}>
-      <div style={{ fontSize: 24, marginBottom: 6 }}>📌</div>
-      <div style={{ fontSize: 12, color: C.ink2 }}>Aucun voisin n'a encore taguè ta boutique</div>
-    </div>
-  );
+  const handleRetirer = async (postId) => {
+    await supabase.from("posts").update({ magasin_id: null, linked_status: null }).eq("id", postId);
+    setPosts(prev => prev.filter(p => p.id !== postId));
+  };
 
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
@@ -328,55 +367,111 @@ function MentionedPosts({ userId, onEnrich }) {
     return Math.floor(diff / 1440) + "j";
   };
 
+  if (loading) return null;
+
+  const pending  = posts.filter(p => p.linked_status !== "accepted");
+  const accepted = posts.filter(p => p.linked_status === "accepted");
+
+  if (posts.length === 0) return (
+    <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "14px", marginBottom: 8, textAlign: "center" }}>
+      <div style={{ fontSize: 24, marginBottom: 6 }}>📌</div>
+      <div style={{ fontSize: 12, color: C.ink2 }}>Aucun voisin n'a encore taguè ta boutique</div>
+    </div>
+  );
+
+  const PostRow = ({ p, showAccept }) => {
+    const hasEnrichment = p.product_label || p.product_price;
+    const isAccepting = accepting === p.id;
+    return (
+      <div style={{
+        background: C.card, borderRadius: 14, marginBottom: 8, overflow: "hidden",
+        border: showAccept ? `1.5px solid #FF5733` : `1px solid ${C.border}`,
+      }}>
+        {showAccept && (
+          <div style={{ background: "#FFF4F1", padding: "5px 10px", fontSize: 10, color: "#FF5733", fontWeight: 600 }}>
+            ⏳ En attente de validation
+          </div>
+        )}
+        {!showAccept && (
+          <div style={{ background: "#EBF5F0", padding: "5px 10px", fontSize: 10, color: C.pro, fontWeight: 600 }}>
+            ✅ Photo acceptée · +10 XP Shop offerts
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 10, padding: "10px 10px 8px", alignItems: "center" }}>
+          {p.image_url ? (
+            <img src={p.image_url} alt="" style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 52, height: 52, borderRadius: 10, background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>📝</div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{p.profiles?.pseudo || "Voisin·e"}</div>
+            <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {p.content?.substring(0, 50) || "Photo sans description"}
+            </div>
+            <div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{timeAgo(p.created_at)}</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+            {showAccept && (
+              <button
+                onClick={() => handleAccept(p)}
+                disabled={isAccepting}
+                style={{
+                  background: isAccepting ? C.pill : "linear-gradient(135deg,#FF5733,#F7A72D)",
+                  color: isAccepting ? C.ink2 : "#fff",
+                  border: "none", borderRadius: 10, padding: "6px 10px",
+                  fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+                }}
+              >
+                {isAccepting ? "⏳…" : "✅ Accepter"}
+              </button>
+            )}
+            <button
+              onClick={() => onEnrich(p)}
+              style={{
+                background: hasEnrichment ? C.proBg : C.pill,
+                color: hasEnrichment ? C.pro : C.ink2,
+                border: "none", borderRadius: 10, padding: "5px 8px",
+                fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+              }}
+            >
+              {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
+            </button>
+            {showAccept && (
+              <button
+                onClick={() => handleRetirer(p.id)}
+                style={{
+                  background: "#FFF0EE", color: "#C0392B",
+                  border: "none", borderRadius: 10, padding: "5px 8px",
+                  fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+                }}
+              >
+                ✕ Refuser
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
-      <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 6px" }}>
-        📌 Posts voisins me mentionnant · {posts.length}
-      </div>
-      {posts.map(p => {
-        const hasEnrichment = p.product_label || p.product_price;
-        return (
-          <div key={p.id} style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, marginBottom: 8, overflow: "hidden" }}>
-            <div style={{ display: "flex", gap: 10, padding: "10px 10px 8px", alignItems: "center" }}>
-              {p.image_url ? (
-                <img src={p.image_url} alt="" style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: 48, height: 48, borderRadius: 10, background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>📝</div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{p.profiles?.pseudo || "Voisin·e"}</div>
-                <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {p.content?.substring(0, 50) || "Post sans texte"}
-                </div>
-                <div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{timeAgo(p.created_at)}</div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
-                <button
-                  onClick={() => onEnrich(p)}
-                  style={{
-                    background: hasEnrichment ? C.proBg : C.pill,
-                    color: hasEnrichment ? C.pro : C.ink2,
-                    border: "none", borderRadius: 10, padding: "5px 8px",
-                    fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
-                  }}
-                >
-                  {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
-                </button>
-                <button
-                  onClick={() => handleRetirer(p.id)}
-                  style={{
-                    background: "#FFF0EE", color: "#C0392B",
-                    border: "none", borderRadius: 10, padding: "5px 8px",
-                    fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
-                  }}
-                >
-                  ✕ Retirer
-                </button>
-              </div>
-            </div>
+      {pending.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "#FF5733", textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 6px" }}>
+            ⏳ Photos à valider · {pending.length}
           </div>
-        );
-      })}
+          {pending.map(p => <PostRow key={p.id} p={p} showAccept={true} />)}
+        </>
+      )}
+      {accepted.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.pro, textTransform: "uppercase", letterSpacing: 0.5, padding: "10px 0 6px" }}>
+            ✅ Photos acceptées · {accepted.length}
+          </div>
+          {accepted.map(p => <PostRow key={p.id} p={p} showAccept={false} />)}
+        </>
+      )}
     </>
   );
 }
@@ -863,7 +958,7 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
       <MesDefis userId={userId} />
 
       {/* ── POSTS VOISINS QUI ME MENTIONNENT ── */}
-      <MentionedPosts userId={userId} onEnrich={onEnrich} />
+      <MentionedPosts userId={userId} merchantPseudo={merchantName} onEnrich={onEnrich} />
 
       {/* ── CRÉDITS LOCAUX XP ── */}
       <MerchantXpBlock userId={userId} merchantName={merchantName} />
