@@ -5,7 +5,7 @@ import App from './App.jsx'
 
 // ── Force la mise à jour du service worker pour tous les utilisateurs ──────
 // Change APP_VERSION à chaque fois que tu veux forcer un rechargement global
-const APP_VERSION = "2026-05-15-v3";
+const APP_VERSION = "2026-05-15-v4";
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.ready.then(reg => {
