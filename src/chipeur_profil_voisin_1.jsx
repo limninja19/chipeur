@@ -662,7 +662,7 @@ function ProfileLightbox({ photos, startIndex, onClose }) {
 
 function PhotoThumb({ p, onDelete, onOpen, onEdit }) {
   return (
-    <div style={{ borderRadius: 14, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "zoom-in", background: C.pill }} onClick={onOpen}>
+    <div style={{ borderRadius: 8, aspectRatio: "1", position: "relative", overflow: "hidden", cursor: "zoom-in", background: C.pill }} onClick={onOpen}>
       {p.image_url ? (
         <img src={p.image_url} alt={p.content} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       ) : (
@@ -729,82 +729,20 @@ function EditPostModal({ post, onSave, onCancel }) {
   );
 }
 
-// ─── GROUP COLORS ────────────────────────────────────────────────
-const GROUP_COLORS = {
-  "Souvenirs d'événements": { bg: "#EEF2FF", border: "#6366F1", dot: "#6366F1" },
-  "Photos de défis":        { bg: "#FFF7ED", border: "#F97316", dot: "#F97316" },
-  "Chopes":                 { bg: "#FFF0EB", border: "#FF5733", dot: "#FF5733" },
-  "Bons plans":             { bg: "#FFFBEB", border: "#F59E0B", dot: "#B45309" },
-  "Lieux":                  { bg: "#F0FDF9", border: "#0F766E", dot: "#0F766E" },
-  "Autres":                 { bg: C.bg,      border: C.border,  dot: C.ink2    },
-};
-
-function PostGroup({ icon, label, posts, onDelete, onEdit }) {
-  const [open, setOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(null);
-  if (posts.length === 0) return null;
-
-  const colors = GROUP_COLORS[label] || GROUP_COLORS["Autres"];
-  const previews = posts.filter(p => p.image_url).slice(0, 2);
-
-  return (
-    <div style={{ marginBottom: 12 }}>
-      {lightboxIndex !== null && (
-        <ProfileLightbox photos={posts} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
-      )}
-
-      {/* Header cliquable */}
-      <div
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: "flex", alignItems: "center", gap: 10,
-          background: colors.bg,
-          borderRadius: open ? "16px 16px 0 0" : 16,
-          border: `1.5px solid ${colors.border}`,
-          padding: "12px 14px", cursor: "pointer",
-        }}
-      >
-        <div style={{ width: 32, height: 32, borderRadius: 10, background: colors.border + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{icon}</div>
-        <span style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, flex: 1 }}>{label}</span>
-
-        {/* 2 previews quand fermé */}
-        {!open && previews.length > 0 && (
-          <div style={{ display: "flex", gap: 4 }}>
-            {previews.map(p => (
-              <img key={p.id} src={p.image_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover", border: `1.5px solid ${colors.border}` }} />
-            ))}
-            {posts.length > 2 && (
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.border + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: colors.dot }}>
-                +{posts.length - 2}
-              </div>
-            )}
-          </div>
-        )}
-
-        <span style={{ fontSize: 11, color: colors.dot, background: colors.border + "22", borderRadius: 20, padding: "2px 10px", fontWeight: 700, marginLeft: 4 }}>
-          {posts.length}
-        </span>
-        <span style={{ fontSize: 14, color: C.ink2, marginLeft: 4 }}>{open ? "▾" : "▸"}</span>
-      </div>
-
-      {/* Grille photos — visible seulement si ouvert */}
-      {open && (
-        <div style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6,
-          background: colors.bg, border: `1.5px solid ${colors.border}`,
-          borderTop: "none", borderRadius: "0 0 16px 16px",
-          padding: "10px",
-        }}>
-          {posts.map((p, i) => (
-            <PhotoThumb key={p.id} p={p} onDelete={onDelete} onOpen={() => setLightboxIndex(i)} onEdit={onEdit} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+// ─── TAB PUBLICATIONS : grid + chips ────────────────────────────
+const CHIPS = [
+  { id: "tout",      label: "Tout",       filter: () => true },
+  { id: "chopes",    label: "🛍️ Chopes",  filter: p => p.post_type === "decouverte" },
+  { id: "bonplans",  label: "💡 Plans",   filter: p => p.post_type === "bonplan" },
+  { id: "lieux",     label: "📍 Lieux",   filter: p => p.post_type === "lieu" },
+  { id: "defis",     label: "🏆 Défis",   filter: p => !!p.defi_id },
+  { id: "events",    label: "📅 Évén.",   filter: p => !!p.evenement_id },
+];
 
 function TabPosts({ posts, onDelete, onEdit, loading }) {
+  const [activeChip, setActiveChip] = useState("tout");
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+
   if (loading) return <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>Chargement…</div>;
   if (posts.length === 0) return (
     <div style={{ textAlign: "center", padding: "40px 16px" }}>
@@ -814,20 +752,56 @@ function TabPosts({ posts, onDelete, onEdit, loading }) {
     </div>
   );
 
-  const groupes = [
-    { icon: "📅", label: "Souvenirs d'événements", posts: posts.filter(p => p.evenement_id) },
-    { icon: "🏆", label: "Photos de défis",        posts: posts.filter(p => p.defi_id && !p.evenement_id) },
-    { icon: "🛍️", label: "Chopes",                 posts: posts.filter(p => p.post_type === "decouverte") },
-    { icon: "💡", label: "Bons plans",              posts: posts.filter(p => p.post_type === "bonplan") },
-    { icon: "📍", label: "Lieux",                   posts: posts.filter(p => p.post_type === "lieu") },
-    { icon: "📝", label: "Autres",                  posts: posts.filter(p => !p.evenement_id && !p.defi_id && !["decouverte","bonplan","lieu"].includes(p.post_type)) },
-  ];
+  const chipDef    = CHIPS.find(c => c.id === activeChip) || CHIPS[0];
+  const visible    = posts.filter(chipDef.filter);
+  // N'afficher que les chips qui ont au moins 1 post
+  const available  = CHIPS.filter(c => c.id === "tout" || posts.filter(c.filter).length > 0);
 
   return (
     <div>
-      {groupes.map(g => (
-        <PostGroup key={g.label} icon={g.icon} label={g.label} posts={g.posts} onDelete={onDelete} onEdit={onEdit} />
-      ))}
+      {lightboxIndex !== null && (
+        <ProfileLightbox photos={visible} startIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+
+      {/* ── Chips filtre ── */}
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "none" }}>
+        {available.map(c => {
+          const isActive = activeChip === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setActiveChip(c.id)}
+              style={{
+                flexShrink: 0, border: "none", borderRadius: 20, cursor: "pointer",
+                padding: "6px 14px", fontSize: 12, fontWeight: 600, fontFamily: dm,
+                background: isActive ? C.ink : C.pill,
+                color:      isActive ? "#fff" : C.ink2,
+                transition: "background 0.15s, color 0.15s",
+              }}
+            >
+              {c.label}
+              {c.id !== "tout" && (
+                <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.7 }}>
+                  {posts.filter(c.filter).length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Grille ── */}
+      {visible.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 12 }}>
+          Aucun post dans cette catégorie
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4 }}>
+          {visible.map((p, i) => (
+            <PhotoThumb key={p.id} p={p} onDelete={onDelete} onOpen={() => setLightboxIndex(i)} onEdit={onEdit} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
