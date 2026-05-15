@@ -51,6 +51,7 @@ function BottomNav({ active, onNavigate, onFab }) {
     <div style={{
       height: 80, background: C.card, borderTop: `1px solid ${C.border}`,
       display: "flex", alignItems: "center", justifyContent: "space-around", flexShrink: 0,
+      paddingBottom: "env(safe-area-inset-bottom, 0px)",
     }}>
       {items.map(it => it.isFab ? (
         <div key="fab" onClick={onFab} style={{

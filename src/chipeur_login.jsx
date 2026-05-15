@@ -310,7 +310,8 @@ function Screen3({ onBack, onSuccess }) {
     setError("");
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !user) throw new Error("Session expirée, reconnecte-toi.");
       const { error: err } = await supabase.from("magasins").insert({
         user_id: user.id,
         enseigne,
