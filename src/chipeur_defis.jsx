@@ -37,7 +37,7 @@ const STATIC_DEFIS = [
     id: "static-0", icon: "🛍️", title: "Coup de Cœur Local",
     sub: "Montre ton commerce préféré de Saint-Dié-des-Vosges",
     participants: 0, objectif: 60, pct: 0,
-    grad: "linear-gradient(135deg,#FF5733,#F7A72D)", fill: "#FF5733",
+    grad: "#FF5733", fill: "#FF5733",
     timeLeft: "21 jours restants",
     tags: ["#Local", "#SaintDié", "#Commerce", "#Quartier", "#Vosges"],
     ended: false, isStatic: true,
@@ -61,12 +61,12 @@ function isUUID(val) {
 
 // ─── PALETTES COULEURS DÉFIS ────────────────────────────────────
 const GRAD_PALETTES = [
-  { grad: "linear-gradient(135deg,#FF5733,#F7A72D)", fill: "#FF5733" },
-  { grad: "linear-gradient(135deg,#7C3AED,#A855F7)", fill: "#7C3AED" },
-  { grad: "linear-gradient(135deg,#0F766E,#14B8A6)", fill: "#0F766E" },
-  { grad: "linear-gradient(135deg,#1D4ED8,#3B82F6)", fill: "#1D4ED8" },
-  { grad: "linear-gradient(135deg,#B45309,#F59E0B)", fill: "#B45309" },
-  { grad: "linear-gradient(135deg,#0A3D2E,#16A34A)", fill: "#0A3D2E" },
+  { grad: "#FF5733", fill: "#FF5733" },
+  { grad: "#7C3AED", fill: "#7C3AED" },
+  { grad: "#0F766E", fill: "#0F766E" },
+  { grad: "#1D4ED8", fill: "#1D4ED8" },
+  { grad: "#B45309", fill: "#B45309" },
+  { grad: "#0A3D2E", fill: "#0A3D2E" },
 ];
 
 // ─── EMOJIS PAR CATÉGORIE ───────────────────────────────────────
@@ -613,7 +613,7 @@ function VoteResultsScreen({ d, onBack }) {
 
           {/* Résumé global */}
           <div style={{
-            background: "linear-gradient(135deg,#1A1714,#2D2926)",
+            background: "#1A1714",
             borderRadius: 18, padding: "16px 18px", marginBottom: 18,
             display: "flex", gap: 10,
           }}>
@@ -811,7 +811,7 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
         {/* Récompense */}
         {d.reward && (
           <div style={{
-            background: "linear-gradient(135deg,#FFF8E8,#FFF3D0)",
+            background: "#FFF8E8",
             border: "1.5px solid #F7A72D", borderRadius: 16,
             padding: "12px 16px", marginBottom: 14,
             display: "flex", alignItems: "center", gap: 12,
@@ -878,7 +878,7 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
             <div
               onClick={() => setShowSwipe(true)}
               style={{
-                flex: 1, background: "linear-gradient(135deg,#FF5733,#F7A72D)",
+                flex: 1, background: "#FF5733",
                 borderRadius: 18, padding: "14px 16px",
                 cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
                 boxShadow: "0 6px 20px rgba(255,87,51,0.35)",

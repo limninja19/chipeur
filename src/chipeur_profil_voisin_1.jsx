@@ -374,7 +374,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
   return (
     <div style={{ background: C.card }}>
       {/* Bannière couverture */}
-      <div style={{ height: 110, background: "linear-gradient(135deg, #1A1A2E 0%, #FF5733 60%, #F7A72D 100%)", position: "relative" }}>
+      <div style={{ height: 110, background: "#1A1A2E", position: "relative" }}>
         <div style={{ position: "absolute", top: 12, right: 14, background: "rgba(255,255,255,0.18)", backdropFilter: "blur(6px)", borderRadius: 10, padding: "4px 10px", fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: 0.3 }}>
           ✦ Pépite du Quartier
         </div>
@@ -462,7 +462,7 @@ function ProfileTop({ onEditProfile, setPage, profile, onSettings, postCount, un
 
       {/* Bandeau réductions */}
       <div onClick={() => setPage("reductions")} style={{ padding: "10px 16px 0", cursor: "pointer" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg, #FFF8F6, #FFF0EB)", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,87,51,0.2)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFF8F6", borderRadius: 14, padding: "10px 14px", border: "1px solid rgba(255,87,51,0.2)" }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎁</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: C.ink, fontFamily: syne, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Mes XP Shop & réductions</div>
@@ -881,7 +881,7 @@ function MiniDefiCard({ it, idx, onOpen }) {
   // ── FAIT sans photo ──────────────────────────────────────────
   if (it.done) {
     return (
-      <div onClick={() => onOpen(it.id)} style={{ borderRadius: 18, overflow: "hidden", cursor: "pointer", aspectRatio: "1", background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`, position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12, boxShadow: "0 4px 14px rgba(0,0,0,0.13)" }}>
+      <div onClick={() => onOpen(it.id)} style={{ borderRadius: 18, overflow: "hidden", cursor: "pointer", aspectRatio: "1", background: grad.from, position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12, boxShadow: "0 4px 14px rgba(0,0,0,0.13)" }}>
         {/* Checkmark badge */}
         <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, alignSelf: "flex-end" }}>✓</div>
         <div>
@@ -1290,7 +1290,7 @@ function TabDefis({ setPage, userId }) {
           return (
             <div key={d.id} style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 12, overflow: "hidden" }}>
               <div style={{ display: "flex", gap: 10, padding: "12px 14px", alignItems: "center" }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🏆</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "#FF5733", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🏆</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2 }}>{d.title}</div>
                   <div style={{ fontSize: 11, color: C.ink2 }}>
@@ -1354,7 +1354,7 @@ function TabDefis({ setPage, userId }) {
           <div style={{ fontSize: 13, color: C.ink2, textAlign: "center", padding: "12px 0" }}>Aucun défi actif pour l'instant.</div>
         ) : allDefis.slice(0, 3).map(d => (
           <div key={d.id} onClick={() => setPage("defis")} style={{ display: "flex", gap: 10, alignItems: "center", background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "10px 12px", marginBottom: 8, cursor: "pointer" }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#FF5733", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
               {d.photo_url ? <img src={d.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : d.emoji || "🏆"}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1395,7 +1395,7 @@ function TabRewards({ user }) {
   return (
     <div style={{ padding: "14px 14px 32px" }}>
       {/* Carte invitation */}
-      <div style={{ background: "linear-gradient(135deg,#FF5733,#FF8C42)", borderRadius: 16, padding: "16px 16px", marginBottom: 12 }}>
+      <div style={{ background: "#FF5733", borderRadius: 16, padding: "16px 16px", marginBottom: 12 }}>
         <div style={{ fontSize: 22, marginBottom: 6 }}>🎁</div>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>
           Invite des voisins, gagne des XP

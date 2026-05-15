@@ -85,7 +85,7 @@ function IlluEvenements() {
       </div>
       {/* Event card */}
       <div style={{ margin: "6px 8px", background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-        <div style={{ background: "linear-gradient(135deg,#1A1A2E,#FF5733)", height: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: "#1A1A2E", height: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ fontSize: 24 }}>🎪</span>
         </div>
         <div style={{ padding: "6px 8px" }}>
@@ -98,7 +98,7 @@ function IlluEvenements() {
         </div>
       </div>
       <div style={{ margin: "0 8px 6px", background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-        <div style={{ background: "linear-gradient(135deg,#1A1A2E,#7C3AED)", height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: "#7C3AED", height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ fontSize: 18 }}>🎶</span>
         </div>
         <div style={{ padding: "5px 8px" }}>
@@ -173,7 +173,7 @@ function IlluCommerces() {
 function IlluProfil() {
   return (
     <div style={{ background: "#F5F2EE", borderRadius: 14, overflow: "hidden", border: "1px solid rgba(26,23,20,0.08)" }}>
-      <div style={{ background: "linear-gradient(135deg,#1A1A2E,#FF5733,#F7A72D)", height: 40, position: "relative" }}>
+      <div style={{ background: "#1A1A2E", height: 40, position: "relative" }}>
         <div style={{ position: "absolute", bottom: -18, left: 10, width: 36, height: 36, borderRadius: "50%", background: "#FF5733", border: "2px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "#fff", fontFamily: syne, fontWeight: 700 }}>J</div>
       </div>
       <div style={{ background: "#fff", padding: "22px 10px 8px" }}>
@@ -194,7 +194,7 @@ function IlluProfil() {
           ))}
         </div>
         {/* Bandeau XP Shop */}
-        <div style={{ marginTop: 6, background: "linear-gradient(135deg,#FFF8F6,#FFF0EB)", borderRadius: 8, padding: "5px 8px", display: "flex", alignItems: "center", gap: 6, border: "1px solid rgba(255,87,51,0.15)" }}>
+        <div style={{ marginTop: 6, background: "#FFF8F6", borderRadius: 8, padding: "5px 8px", display: "flex", alignItems: "center", gap: 6, border: "1px solid rgba(255,87,51,0.15)" }}>
           <span style={{ fontSize: 12 }}>🎁</span>
           <div>
             <div style={{ fontSize: 8, fontWeight: 600, fontFamily: syne, color: "#1A1714" }}>Mes XP Shop & réductions</div>
@@ -312,7 +312,7 @@ export default function FilTourModal({ onClose, setPage }) {
             : <button onClick={onClose} style={{ flex: 1, padding: "11px 0", borderRadius: 13, border: "1.5px solid #EDEBE8", background: "#fff", color: "#6B6560", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Passer</button>
           }
           <button onClick={() => isLast ? onClose() : setStep(p => p + 1)}
-            style={{ flex: 2, padding: "11px 0", borderRadius: 13, border: "none", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontFamily: syne, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            style={{ flex: 2, padding: "11px 0", borderRadius: 13, border: "none", background: "#FF5733", color: "#fff", fontFamily: syne, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             {isLast ? "C'est parti ! 🚀" : "Suivant →"}
           </button>
         </div>

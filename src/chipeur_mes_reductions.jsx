@@ -157,7 +157,7 @@ function MesXPShop({ user, setPage }) {
     return (
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }}>
         {/* Hero vide */}
-        <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 18, padding: "20px 18px", marginBottom: 12 }}>
+        <div style={{ background: "#FF5733", borderRadius: 18, padding: "20px 18px", marginBottom: 12 }}>
           <div style={{ fontSize: 28, marginBottom: 6 }}>🏪</div>
           <div style={{ fontFamily: syne, fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 5 }}>Tes XP Shop t'attendent !</div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.82)", lineHeight: 1.55, marginBottom: 14 }}>
@@ -194,7 +194,7 @@ function MesXPShop({ user, setPage }) {
     <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px 20px" }}>
 
       {/* Total banner */}
-      <div style={{ background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)", borderRadius: 16, padding: "14px 16px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: "#FF5733", borderRadius: 16, padding: "14px 16px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{totalShop} <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.85 }}>XP Shop</span></div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 3 }}>total accumulé</div>
@@ -335,7 +335,7 @@ function MesXPShop({ user, setPage }) {
 
       {/* CTA */}
       <button onClick={() => setPage("nouveau")}
-        style={{ width: "100%", padding: "12px 0", background: "linear-gradient(135deg, #FF5733, #F7A72D)", color: "#fff", fontFamily: dm, fontWeight: 600, fontSize: 13, border: "none", borderRadius: 14, cursor: "pointer", marginTop: 8 }}>
+        style={{ width: "100%", padding: "12px 0", background: "#FF5733", color: "#fff", fontFamily: dm, fontWeight: 600, fontSize: 13, border: "none", borderRadius: 14, cursor: "pointer", marginTop: 8 }}>
         📸 Gagner plus de XP Shop
       </button>
     </div>

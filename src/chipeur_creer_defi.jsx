@@ -97,7 +97,7 @@ export default function ChipeurCreerDefi() {
             {/* Preview */}
             <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 12, marginBottom: 14 }}>
               <div style={{ fontSize: 10, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Aperçu du défi</div>
-              <div style={{ borderRadius: 12, padding: "10px 12px", background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div style={{ borderRadius: 12, padding: "10px 12px", background: "#FF5733", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ fontSize: 22 }}>{icone}</div>
                 <div>
                   <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 700, color: "#fff" }}>{titre}</div>

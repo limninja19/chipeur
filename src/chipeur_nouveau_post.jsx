@@ -146,7 +146,7 @@ function PhotoZone({ onPhotoSelect, zoneId, externalPreview }) {
           width: "100%", height: "100%", cursor: "pointer",
           background: preview && !previewFailed
             ? "#000"
-            : "linear-gradient(135deg, #1A1714 0%, #2D2520 50%, #1A1714 100%)",
+            : "#1A1714",
           position: "relative",
         }}>
           {preview && !previewFailed && !isVideo ? (
@@ -856,17 +856,17 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   const isEditMode = !!editPost?.id;
   const isMagasin = profile?.role === "magasin";
   const types = isMagasin ? [
-    { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un instant, une trouvaille, une nouveauté à partager",       grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
-    { id: "promo",       icon: "🏷️", name: "Promo",        desc: "Une réduction ou une offre spéciale pour tes voisins",       grad: "linear-gradient(135deg,#B45309,#F7A72D)", light: "#FFFBEB" },
-    { id: "sortie",      icon: "📅", name: "Événement",    desc: "Crée un événement et invite tes voisins à venir",            grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF", isRedirect: true },
-    { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir autour de toi",        grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
+    { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un instant, une trouvaille, une nouveauté à partager",       grad: "#FF5733", light: "#FFF3F0" },
+    { id: "promo",       icon: "🏷️", name: "Promo",        desc: "Une réduction ou une offre spéciale pour tes voisins",       grad: "#B45309", light: "#FFFBEB" },
+    { id: "sortie",      icon: "📅", name: "Événement",    desc: "Crée un événement et invite tes voisins à venir",            grad: "#7C3AED", light: "#F5F3FF", isRedirect: true },
+    { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir autour de toi",        grad: "#0F766E", light: "#F0FDF9" },
   ] : [
-    { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un achat, un instant sympa, une trouvaille du jour",         grad: "linear-gradient(135deg,#FF5733,#FF8C42)", light: "#FFF3F0" },
-    { id: "tuvalides",   icon: "🤔", name: "Tu valides !!!", desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "linear-gradient(135deg,#8B5CF6,#C4B5FD)", light: "#F5F3FF" },
-    { id: "recherche",   icon: "🔍", name: "Je cherche",   desc: "Tu cherches un artisan, un service, un produit ?",           grad: "linear-gradient(135deg,#0EA5E9,#38BDF8)", light: "#F0F9FF" },
-    { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir aux voisins",          grad: "linear-gradient(135deg,#0F766E,#34D399)", light: "#F0FDF9" },
-    { id: "sortie",      icon: "📅", name: "Événement",    desc: "Crée un événement et invite tes voisins à venir",            grad: "linear-gradient(135deg,#7C3AED,#A78BFA)", light: "#F5F3FF", isRedirect: true },
-    { id: "defi_voisin", icon: "🏆", name: "Défi",         desc: "Lance un défi photo avec une récompense à la clé",          grad: "linear-gradient(135deg,#FF5733,#F7A72D)", light: "#FFF8E8" },
+    { id: "decouverte",  icon: "📸", name: "Chope",        desc: "Un achat, un instant sympa, une trouvaille du jour",         grad: "#FF5733", light: "#FFF3F0" },
+    { id: "tuvalides",   icon: "🤔", name: "Tu valides !!!", desc: "Tu craques sur quelque chose ? Tes voisins votent oui/non", grad: "#8B5CF6", light: "#F5F3FF" },
+    { id: "recherche",   icon: "🔍", name: "Je cherche",   desc: "Tu cherches un artisan, un service, un produit ?",           grad: "#0EA5E9", light: "#F0F9FF" },
+    { id: "lieu",        icon: "📍", name: "Un lieu",      desc: "Un spot, un endroit à faire découvrir aux voisins",          grad: "#0F766E", light: "#F0FDF9" },
+    { id: "sortie",      icon: "📅", name: "Événement",    desc: "Crée un événement et invite tes voisins à venir",            grad: "#7C3AED", light: "#F5F3FF", isRedirect: true },
+    { id: "defi_voisin", icon: "🏆", name: "Défi",         desc: "Lance un défi photo avec une récompense à la clé",          grad: "#FF5733", light: "#FFF8E8" },
   ];
 
   const handlePublishClick = () => {

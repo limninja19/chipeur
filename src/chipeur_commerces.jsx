@@ -53,17 +53,17 @@ function catEmoji(cat) {
 
 // ─── COVER PAR DÉFAUT PAR THÈME ───
 const THEME_COVERS = {
-  "Mode":          { grad: "linear-gradient(135deg, #C471ED 0%, #F64F59 100%)", emoji: "👗" },
-  "Beauté":        { grad: "linear-gradient(135deg, #FFAFBD 0%, #FFC3A0 100%)", emoji: "💄" },
-  "Restauration":  { grad: "linear-gradient(135deg, #F7971E 0%, #C0392B 100%)", emoji: "🍽️" },
-  "Alimentation":  { grad: "linear-gradient(135deg, #56AB2F 0%, #A8E063 100%)", emoji: "🧀" },
-  "Artisan":       { grad: "linear-gradient(135deg, #0F2027 0%, #2C5364 100%)", emoji: "🎨" },
-  "Maison":        { grad: "linear-gradient(135deg, #5D8A6B 0%, #A8C5A0 100%)", emoji: "🏠" },
-  "Sport":         { grad: "linear-gradient(135deg, #1565C0 0%, #42A5F5 100%)", emoji: "🏃" },
-  "Culture":       { grad: "linear-gradient(135deg, #4A148C 0%, #9C27B0 100%)", emoji: "📚" },
-  "Services":      { grad: "linear-gradient(135deg, #37474F 0%, #78909C 100%)", emoji: "🔧" },
-  "Autre":         { grad: "linear-gradient(135deg, #C9A96E 0%, #F5F2EE 100%)", emoji: "✨" },
-  "default":       { grad: "linear-gradient(135deg, #FF5733 0%, #C9A96E 100%)", emoji: "🏪" },
+  "Mode":          { grad: "#C471ED", emoji: "👗" },
+  "Beauté":        { grad: "#FFAFBD", emoji: "💄" },
+  "Restauration":  { grad: "#F7971E", emoji: "🍽️" },
+  "Alimentation":  { grad: "#56AB2F", emoji: "🧀" },
+  "Artisan":       { grad: "#2C5364", emoji: "🎨" },
+  "Maison":        { grad: "#5D8A6B", emoji: "🏠" },
+  "Sport":         { grad: "#1565C0", emoji: "🏃" },
+  "Culture":       { grad: "#4A148C", emoji: "📚" },
+  "Services":      { grad: "#37474F", emoji: "🔧" },
+  "Autre":         { grad: "#C9A96E", emoji: "✨" },
+  "default":       { grad: "#FF5733", emoji: "🏪" },
 };
 
 function getThemeCover(commerce) {
@@ -345,7 +345,7 @@ function RecentShopPhotos({ onOpenShop, merchants }) {
           {remaining > 0 && (
             <div
               onClick={() => setLightboxIndex(PREVIEW_COUNT)}
-              style={{ flexShrink: 0, width: 130, height: 130, borderRadius: 16, cursor: "pointer", background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 2px 10px rgba(0,0,0,0.12)" }}
+              style={{ flexShrink: 0, width: 130, height: 130, borderRadius: 16, cursor: "pointer", background: "#FF5733", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 2px 10px rgba(0,0,0,0.12)" }}
             >
               <div style={{ fontFamily: syne, fontWeight: 800, fontSize: 28, color: "#fff" }}>+{remaining}</div>
               <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.9)", textAlign: "center", lineHeight: 1.3 }}>Voir toutes<br />les photos</div>
@@ -1156,7 +1156,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                 background: C.card, borderRadius: 18, border: `1.5px dashed rgba(26,23,20,0.15)`,
                 overflow: "hidden", opacity: 0.8,
               }}>
-                <div style={{ height: 120, background: "linear-gradient(135deg,#C471ED,#F64F59)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>👗</div>
+                <div style={{ height: 120, background: "#C471ED", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>👗</div>
                 <div style={{ padding: "12px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>👤</div>

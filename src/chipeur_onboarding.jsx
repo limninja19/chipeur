@@ -40,7 +40,7 @@ function Screen1() {
       <div style={{ fontSize: 66, lineHeight: 1, marginBottom: 20 }}>🏘️</div>
 
       <div style={{
-        fontFamily: syne, fontWeight: 800, fontSize: 24,
+        fontFamily: syne, fontWeight: 800, fontSize: 18,
         color: "#FFFFFF", lineHeight: 1.2, marginBottom: 12,
       }}>
         Le quartier dans ta poche
@@ -56,7 +56,7 @@ function Screen1() {
 
       {/* Teaser accrocheur */}
       <div style={{
-        background: "linear-gradient(135deg, #FF5733, #F7A72D)",
+        background: "#FF5733",
         borderRadius: 18, padding: "14px 18px",
         width: "100%", boxSizing: "border-box", marginBottom: 28,
       }}>
@@ -114,7 +114,7 @@ function Screen2() {
     }}>
       <div style={{ fontSize: 42, marginBottom: 12 }}>🎁</div>
       <div style={{
-        fontFamily: syne, fontWeight: 800, fontSize: 22,
+        fontFamily: syne, fontWeight: 800, fontSize: 17,
         color: C.ink, textAlign: "center", marginBottom: 6,
       }}>
         Explore & gagne des récompenses
@@ -129,7 +129,7 @@ function Screen2() {
       {/* XP → bons d'achat */}
       <div style={{
         width: "100%",
-        background: "linear-gradient(135deg, #FF5733, #F7A72D)",
+        background: "#FF5733",
         borderRadius: 20, padding: "16px 16px",
         marginBottom: 10, boxSizing: "border-box",
       }}>
@@ -187,7 +187,7 @@ function Screen3({ onDone }) {
       padding: "0 20px 40px", boxSizing: "border-box",
     }}>
       <div style={{
-        fontFamily: syne, fontWeight: 800, fontSize: 22,
+        fontFamily: syne, fontWeight: 800, fontSize: 17,
         color: C.ink, textAlign: "center", marginBottom: 6,
       }}>
         Voisins &amp; Commerçants

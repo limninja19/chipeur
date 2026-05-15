@@ -351,7 +351,7 @@ function BandeauDefis({ setPage, user }) {
           {d.photo_url ? (
             <img src={d.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           ) : (
-            <div style={{ height: 120, background: "linear-gradient(135deg,#FF5733,#E94B2C)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ height: 120, background: "#FF5733", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontSize: 52, fontWeight: 900, color: "rgba(255,255,255,0.9)", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
                 {(d.title || "C").charAt(0).toUpperCase()}
               </span>
@@ -376,7 +376,7 @@ function BandeauDefis({ setPage, user }) {
       </div>
       <button
         onClick={() => setVoteDefi(d)}
-        style={{ background: "linear-gradient(135deg,#FF5733,#F7A72D)", border: "none", borderRadius: 12, padding: "8px 0", fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", width: "100%" }}
+        style={{ background: "#FF5733", border: "none", borderRadius: 12, padding: "8px 0", fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", width: "100%" }}
       >🗳️ Voter</button>
     </div>
   );
@@ -394,7 +394,7 @@ function BandeauDefis({ setPage, user }) {
 
               {/* Header */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: "linear-gradient(135deg,#0A3D2E,#1a6b4a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🏪</div>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: "#0A3D2E", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>🏪</div>
                 <div>
                   <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 600, fontSize: 15, color: "#1A1714", lineHeight: 1.2 }}>Les défis commerçants arrivent !</div>
                   <div style={{ fontSize: 12, color: "#6B6660", marginTop: 2 }}>Comment ça marche ?</div>
@@ -446,7 +446,7 @@ function BandeauDefis({ setPage, user }) {
               {/* ── VUE COMMERÇANT ── */}
               {infoTab === "commercant" && (
                 <>
-                  <div style={{ background: "linear-gradient(135deg,#0A3D2E,#1a6b4a)", borderRadius: 16, padding: "16px 14px", marginBottom: 20, color: "#fff" }}>
+                  <div style={{ background: "#0A3D2E", borderRadius: 16, padding: "16px 14px", marginBottom: 20, color: "#fff" }}>
                     <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 14, marginBottom: 6 }}>Rejoins Chipeur et booste ta visibilité locale 🚀</div>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.6 }}>
                       En créant un défi, tu t'inscris sur Chipeur et obtiens ta <b>vitrine gratuite</b> — visible par tous les voisins de Saint-Dié.
@@ -513,7 +513,7 @@ function BandeauDefis({ setPage, user }) {
                 {/* Zone visuelle */}
                 <div style={{
                   height: 120, position: "relative",
-                  background: "linear-gradient(135deg, #0A3D2E 0%, #1a6b4a 50%, #F7A72D 100%)",
+                  background: "#0A3D2E",
                   display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 6,
                 }}>
@@ -624,7 +624,7 @@ function BandeauSortiesPhotos({ setPage, setSelectedSortieId }) {
               {photos.length > 2 && (
                 <div style={{
                   width: 52, height: 52, borderRadius: 10,
-                  background: "linear-gradient(135deg,#FF5733,#F7A72D)",
+                  background: "#FF5733",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   color: "#fff", fontWeight: 700, fontSize: 15,
                 }}>
@@ -1497,7 +1497,7 @@ function TuValidesNotif({ user }) {
 
   return (
     <div style={{
-      background: "linear-gradient(135deg,#8B5CF6,#A78BFA)",
+      background: "#8B5CF6",
       borderRadius: 14, padding: "10px 14px", marginBottom: 10,
       display: "flex", alignItems: "center", gap: 10,
     }}>
@@ -1802,7 +1802,7 @@ function BandeauXPShop({ setPage, user, profile }) {
 
   return (
     <div style={{
-      background: "linear-gradient(135deg, #FF5733, #F7A72D)",
+      background: "#FF5733",
       borderRadius: 18, padding: "14px 16px", margin: "8px 0",
       display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
     }} onClick={() => { setPage("nouveau"); }}>

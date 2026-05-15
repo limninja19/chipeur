@@ -224,7 +224,7 @@ export default function InstallPWAModal({ onClose }) {
           </button>
           <button
             onClick={onClose}
-            style={{ flex: 2, padding: "12px 0", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontFamily: syne, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
+            style={{ flex: 2, padding: "12px 0", borderRadius: 14, border: "none", background: "#FF5733", color: "#fff", fontFamily: syne, fontSize: 14, fontWeight: 800, cursor: "pointer" }}
           >
             J'ai compris ! 🚀
           </button>

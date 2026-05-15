@@ -79,7 +79,7 @@ export function ReglementScreen({ setPage }) {
       </div>
 
       {/* Intro banner */}
-      <div style={{ margin: "12px 16px 0", background: "linear-gradient(135deg,#FF5733,#F7A72D)", borderRadius: 16, padding: "14px 16px" }}>
+      <div style={{ margin: "12px 16px 0", background: "#FF5733", borderRadius: 16, padding: "14px 16px" }}>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: "#fff", marginBottom: 4 }}>Chipeur — Saint-Dié-des-Vosges</div>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", lineHeight: 1.5 }}>
           Ce règlement s'applique à tous les Défis communautaires publiés sur la plateforme Chipeur par les commerçants et artisans locaux.

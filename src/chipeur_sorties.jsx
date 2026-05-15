@@ -701,7 +701,7 @@ function EventDetailScreen({ event, user, onBack }) {
         {/* Bannière "souvenir" pour les 7 jours après l'événement */}
         {!todayIsEvent && withinSevenDays && (
           <div style={{
-            background: "linear-gradient(135deg,#F7A72D,#FF5733)", padding: "8px 16px", fontSize: 11,
+            background: "#F7A72D", padding: "8px 16px", fontSize: 11,
             fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: 8,
           }}>
             <span>📸 Tu peux encore partager tes souvenirs !</span>

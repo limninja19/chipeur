@@ -53,7 +53,7 @@ function NotifItem({ n, setPage, setSelectedVoisinId }) {
         onClick={() => { supabase.from("notifications").update({ read: true }).eq("id", n.id).then(() => {}); setPage("reductions"); }}
         style={{
           margin: "0 12px 10px", borderRadius: 18,
-          background: "linear-gradient(135deg, #FF5733 0%, #F7A72D 100%)",
+          background: "#FF5733",
           padding: "14px 16px", cursor: "pointer",
           boxShadow: "0 4px 14px rgba(255,87,51,0.3)",
           position: "relative", overflow: "hidden",

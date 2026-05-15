@@ -36,7 +36,7 @@ export const ChallengeMedia = ({ photoUrl, merchantName, category, height = 160 
     );
   }
   return (
-    <div style={{ height, background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ height, background: colors.from, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }} aria-hidden="true">
         <defs>
           <pattern id={patternId} patternUnits="userSpaceOnUse"

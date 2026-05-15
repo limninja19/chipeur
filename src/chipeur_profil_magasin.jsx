@@ -416,7 +416,7 @@ function MentionedPosts({ userId, merchantPseudo, onEnrich }) {
                 onClick={() => handleAccept(p)}
                 disabled={isAccepting}
                 style={{
-                  background: isAccepting ? C.pill : "linear-gradient(135deg,#FF5733,#F7A72D)",
+                  background: isAccepting ? C.pill : "#FF5733",
                   color: isAccepting ? C.ink2 : "#fff",
                   border: "none", borderRadius: 10, padding: "6px 10px",
                   fontSize: 10, fontWeight: 700, fontFamily: dm, cursor: "pointer",
@@ -626,7 +626,7 @@ function MerchantXpBlock({ userId, merchantName }) {
       <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, padding: "6px 0 6px" }}>
         🏅 Crédits locaux générés
       </div>
-      <div style={{ background: "linear-gradient(135deg,#0A3D2E,#1a6647)", borderRadius: 16, padding: "14px 16px", marginBottom: 10 }}>
+      <div style={{ background: "#0A3D2E", borderRadius: 16, padding: "14px 16px", marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
           <div style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
             <div style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, color: "#fff" }}>{xpStats.totalXp}</div>
@@ -845,7 +845,7 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId, onGoMentions 
 
       {/* ── KPI INTENTION D'ACHAT (highlight) ── */}
       {intentionCount > 0 && (
-        <div style={{ background: "linear-gradient(135deg,#0F766E,#34D399)", borderRadius: 16, padding: "14px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ background: "#0F766E", borderRadius: 16, padding: "14px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ fontSize: 30 }}>🛒</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{intentionCount}</div>
@@ -1157,7 +1157,7 @@ function TabCreer({ merchantName, setPage, user }) {
     </> : <>
       <div
         onClick={() => setPage && setPage("defis")}
-        style={{ background: "linear-gradient(135deg,#7B2FF7,#E840FB)", borderRadius: 18, padding: 20, marginBottom: 12, cursor: "pointer", textAlign: "center" }}
+        style={{ background: "#7B2FF7", borderRadius: 18, padding: 20, marginBottom: 12, cursor: "pointer", textAlign: "center" }}
       >
         <div style={{ fontSize: 40, marginBottom: 10 }}>🏆</div>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: "#fff", marginBottom: 6 }}>Créer un défi</div>
@@ -1835,7 +1835,7 @@ function TabMesDefis({ userId }) {
             <div style={{ display: "flex", gap: 10, padding: "12px 14px", alignItems: "center" }}>
               {d.photo_url
                 ? <img src={d.photo_url} alt="" style={{ width: 48, height: 48, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} />
-                : <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,#FF5733,#F7A72D)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{d.emoji || "🏆"}</div>
+                : <div style={{ width: 48, height: 48, borderRadius: 12, background: "#FF5733", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{d.emoji || "🏆"}</div>
               }
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2 }}>{d.title}</div>

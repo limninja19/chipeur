@@ -93,7 +93,7 @@ function Podium({ voisins, onOpen }) {
     { w: 40, rank: "#3", rc: "#A0714A", bh: 16 },
   ];
   return (
-    <div style={{ background: "linear-gradient(135deg,#1A1714,#3D3530)", borderRadius: 20, padding: 16, marginBottom: 14, position: "relative", overflow: "hidden" }}>
+    <div style={{ background: "#1A1714", borderRadius: 20, padding: 16, marginBottom: 14, position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", right: -10, top: -10, fontSize: 72, opacity: 0.1 }}>🏆</div>
       <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>Top 3 — Plus actifs</div>
       <div style={{ display: "flex", gap: 8, alignItems: "flex-end", justifyContent: "center", marginBottom: 12 }}>
@@ -362,7 +362,7 @@ function ExtProfile({ v, followed, onToggleFollow, onBack, voisinsRanking, onMes
               <div style={{ width: 5, height: 5, background: C.accent, borderRadius: "50%", flexShrink: 0 }} />
               {v.quartier || "Saint-Dié-des-Vosges"}
             </div>
-            <div style={{ display: "inline-block", background: "linear-gradient(135deg,#FF5733,#F7A72D)", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8, marginTop: 4 }}>{v.level}</div>
+            <div style={{ display: "inline-block", background: "#FF5733", color: "#fff", fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 8, marginTop: 4 }}>{v.level}</div>
             {v.bio && <div style={{ fontSize: 12, color: C.ink2, marginTop: 5, lineHeight: 1.4 }}>{v.bio}</div>}
           </div>
         </div>
