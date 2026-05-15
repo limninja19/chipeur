@@ -697,7 +697,7 @@ function MerchantXpBlock({ userId, merchantName }) {
   );
 }
 
-function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
+function TabDashboard({ onEnrich, postCount, merchantName, userId, onGoMentions }) {
   const [period, setPeriod] = useState("semaine");
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -708,8 +708,17 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
   const [uniqueUsers, setUniqueUsers] = useState(0);
   const [topPosts, setTopPosts] = useState([]);
   const [recoCount, setRecoCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => { if (userId) loadData(); }, [period, userId]);
+
+  // Compteur de photos en attente (indépendant de la période)
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("posts").select("id", { count: "exact", head: true })
+      .eq("magasin_id", userId).neq("author_id", userId).neq("linked_status", "accepted")
+      .then(({ count }) => setPendingCount(count || 0));
+  }, [userId]);
 
   const loadData = async () => {
     setLoading(true);
@@ -845,6 +854,21 @@ function TabDashboard({ onEnrich, postCount, merchantName, userId }) {
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", textAlign: "right", maxWidth: 80, lineHeight: 1.4 }}>
             Signal fort 🎯
           </div>
+        </div>
+      )}
+
+      {/* ── DEMANDES PHOTOS EN ATTENTE ── */}
+      {pendingCount > 0 && (
+        <div
+          onClick={onGoMentions}
+          style={{ background: "#FFF4F1", borderRadius: 14, border: "1.5px solid #FF5733", padding: "10px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+        >
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>📸</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.accent }}>{pendingCount} photo{pendingCount > 1 ? "s" : ""} en attente</div>
+            <div style={{ fontSize: 11, color: C.ink2, marginTop: 1 }}>Valide-les pour récompenser tes voisins en XP Shop</div>
+          </div>
+          <div style={{ fontSize: 18, color: C.accent }}>→</div>
         </div>
       )}
 
@@ -1317,6 +1341,64 @@ function TabMentions({ pseudo, userId, merchantName }) {
   const [recherchePosts, setRecherchePosts] = useState([]);
   const [loadingReco, setLoadingReco] = useState(true);
 
+  // ── Photos directement liées à ce commerce (pending + accepted) ──
+  const [linkedPosts, setLinkedPosts] = useState([]);
+  const [loadingLinked, setLoadingLinked] = useState(true);
+  const [accepting, setAccepting] = useState(null);
+
+  useEffect(() => {
+    if (!userId) { setLoadingLinked(false); return; }
+    supabase.from("posts")
+      .select("*, profiles:author_id(pseudo, avatar_url)")
+      .eq("magasin_id", userId)
+      .neq("author_id", userId)
+      .order("linked_status", { ascending: true }) // pending d'abord
+      .order("created_at", { ascending: false })
+      .limit(30)
+      .then(({ data }) => { setLinkedPosts(data || []); setLoadingLinked(false); });
+  }, [userId]);
+
+  const handleAcceptLinked = async (post) => {
+    if (accepting) return;
+    setAccepting(post.id);
+    try {
+      await supabase.from("posts").update({ linked_status: "accepted" }).eq("id", post.id);
+      await addXPShop(post.author_id, userId, 10);
+      // Vérifier palier 100 XP
+      const { data: wallet } = await supabase.from("merchant_xp_wallet")
+        .select("points").eq("user_id", post.author_id).eq("merchant_id", userId).maybeSingle();
+      if (wallet) {
+        const pts = wallet.points;
+        if (Math.floor(pts / 100) > Math.floor((pts - 10) / 100)) {
+          await supabase.from("notifications").insert({
+            user_id: post.author_id, from_user_id: userId,
+            type: "xpshop_palier", reference_id: post.id, read: false,
+            message: JSON.stringify({ bons: Math.floor(pts / 100), merchant_name: merchantName || "Le commerce", points: pts }),
+          });
+        }
+      }
+      await supabase.from("notifications").insert({
+        user_id: post.author_id, from_user_id: userId,
+        type: "linked_accepted", reference_id: post.id, read: false,
+        message: JSON.stringify({ merchant_name: merchantName || "Un commerce" }),
+      });
+      setLinkedPosts(prev => prev.map(p => p.id === post.id ? { ...p, linked_status: "accepted" } : p));
+    } catch (e) { console.error("handleAcceptLinked:", e); }
+    setAccepting(null);
+  };
+
+  const handleRejectLinked = async (postId) => {
+    await supabase.from("posts").update({ magasin_id: null, linked_status: null }).eq("id", postId);
+    setLinkedPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
+  const timeAgoLinked = (ts) => {
+    const diff = Math.floor((Date.now() - new Date(ts)) / 86400000);
+    if (diff === 0) return "Aujourd'hui";
+    if (diff === 1) return "Hier";
+    return `Il y a ${diff}j`;
+  };
+
   const normalize = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
   useEffect(() => {
@@ -1388,6 +1470,62 @@ function TabMentions({ pseudo, userId, merchantName }) {
 
   return (
     <div style={{ padding: "16px 0 32px" }}>
+
+      {/* ── PHOTOS LIÉES À MON COMMERCE ── */}
+      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 4 }}>📸 Photos liées à mon commerce</div>
+      <div style={{ fontSize: 12, color: C.ink2, marginBottom: 10, lineHeight: 1.5 }}>
+        Un voisin a associé ces photos à ton enseigne. Accepte pour lui offrir +10 XP Shop.
+      </div>
+
+      {loadingLinked ? (
+        <div style={{ textAlign: "center", padding: "12px 0", color: C.ink2, fontSize: 12 }}>Chargement…</div>
+      ) : linkedPosts.length === 0 ? (
+        <div style={{ background: C.card, borderRadius: 14, border: `1px solid ${C.border}`, padding: "14px", textAlign: "center", marginBottom: 18 }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>📌</div>
+          <div style={{ fontSize: 12, color: C.ink2 }}>Aucune photo liée à votre commerce pour l'instant</div>
+        </div>
+      ) : (
+        <div style={{ marginBottom: 20 }}>
+          {linkedPosts.map(p => {
+            const isPending = p.linked_status !== "accepted";
+            const isAcc = accepting === p.id;
+            return (
+              <div key={p.id} style={{ background: C.card, borderRadius: 14, marginBottom: 8, overflow: "hidden", border: isPending ? `1.5px solid #FF5733` : `1px solid ${C.border}` }}>
+                <div style={{ background: isPending ? "#FFF4F1" : "#EBF5F0", padding: "5px 10px", fontSize: 10, color: isPending ? "#FF5733" : C.pro, fontWeight: 600 }}>
+                  {isPending ? "⏳ En attente de validation" : "✅ Photo acceptée · +10 XP Shop offerts"}
+                </div>
+                <div style={{ display: "flex", gap: 10, padding: "10px 10px 8px", alignItems: "center" }}>
+                  {p.image_url
+                    ? <img src={p.image_url} alt="" style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+                    : <div style={{ width: 52, height: 52, borderRadius: 10, background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>📝</div>
+                  }
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{p.profiles?.pseudo || "Voisin·e"}</div>
+                    <div style={{ fontSize: 11, color: C.ink2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {p.content?.substring(0, 50) || "Photo sans description"}
+                    </div>
+                    <div style={{ fontSize: 9, color: C.ink2, marginTop: 2 }}>{timeAgoLinked(p.created_at)}</div>
+                  </div>
+                </div>
+                {isPending && (
+                  <div style={{ display: "flex", gap: 6, padding: "0 10px 10px" }}>
+                    <button
+                      onClick={() => handleAcceptLinked(p)}
+                      disabled={isAcc}
+                      style={{ flex: 2, background: isAcc ? "#ccc" : C.pro, color: "#fff", border: "none", borderRadius: 10, padding: "8px 0", fontSize: 12, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}
+                    >{isAcc ? "…" : "✅ Accepter"}</button>
+                    <button
+                      onClick={() => handleRejectLinked(p.id)}
+                      style={{ flex: 1, background: C.pill, color: C.ink2, border: "none", borderRadius: 10, padding: "8px 0", fontSize: 12, fontWeight: 600, fontFamily: dm, cursor: "pointer" }}
+                    >✕ Refuser</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Bloc XP — contexte pour le commerçant */}
       <MerchantXpBlock userId={userId} merchantName={merchantName} />
 
@@ -1873,7 +2011,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
           ))}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
-          {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} />}
+          {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} onGoMentions={() => setActiveTab("mentions")} />}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
           {activeTab === "mentions" && <TabMentions pseudo={localProfile?.pseudo} userId={user?.id} merchantName={localProfile?.pseudo} />}
           {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} setPage={setPage} user={user} />}
