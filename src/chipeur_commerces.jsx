@@ -357,71 +357,88 @@ function RecentShopPhotos({ onOpenShop, merchants }) {
   );
 }
 
-// ─── DROPDOWN FILTRE BOUTIQUES (multi-sélection, style fil) ───
-function BoutiquesDropdown({ active, onToggle }) {
-  const [open, setOpen] = useState(false);
+// ─── CHIPS FILTRE CATÉGORIES (remplace le dropdown) ───
+function CategoryChips({ active, onToggle }) {
   const isAll = active.size === 0 || (active.size === 1 && active.has("Tous"));
-  const label = isAll
-    ? "Toutes les boutiques"
-    : THEMES.filter(t => t.key !== "Tous" && active.has(t.key)).map(t => `${t.emoji} ${t.short}`).join(", ");
+  return (
+    <div style={{ display: "flex", gap: 7, overflowX: "auto", padding: "2px 14px 10px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+      {THEMES.map(t => {
+        const isOn = t.key === "Tous" ? isAll : active.has(t.key);
+        return (
+          <button
+            key={t.key}
+            onClick={() => onToggle(t.key)}
+            style={{
+              flexShrink: 0,
+              fontSize: 12, fontWeight: 600,
+              padding: "7px 14px", borderRadius: 20,
+              border: "none", cursor: "pointer", whiteSpace: "nowrap",
+              background: isOn ? C.ink : C.pill,
+              color: isOn ? "#fff" : C.ink2,
+              fontFamily: dm, transition: "background 0.15s, color 0.15s",
+            }}
+          >
+            {t.emoji} {t.short}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── CARTE GRILLE COMMERCE (2 colonnes) ───
+function ComGridCard({ com, onClick }) {
+  const themeEmoji = (() => {
+    const h = [com.categorie, com.category, com.metier].filter(Boolean).join(" ").toLowerCase();
+    for (const t of THEMES) {
+      if (t.key === "Tous" || t.isAutre) continue;
+      if (t.match.some(m => h.includes(m))) return t.emoji;
+    }
+    return "🏪";
+  })();
 
   return (
-    <div style={{ padding: "2px 14px 10px", flexShrink: 0, position: "relative" }}>
-      {/* Bouton dérouleur */}
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
-          width: "100%", boxSizing: "border-box",
-          background: isAll ? C.pill : C.ink,
-          color: isAll ? C.ink2 : "#fff",
-          border: "none", borderRadius: 20,
-          padding: "9px 16px",
-          fontFamily: dm, fontSize: 12, fontWeight: 600,
-          cursor: "pointer",
-        }}
-      >
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>
-          {label}
-        </span>
-        <svg width="14" height="18" viewBox="0 0 72 90" fill="none" style={{ flexShrink: 0 }} xmlns="http://www.w3.org/2000/svg">
-          <defs><linearGradient id="pinDropC" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#FF5733"/><stop offset="100%" stopColor="#FF8C42"/></linearGradient></defs>
-          <path d="M36 4C22 4 11 15 11 29C11 46 36 82 36 82C36 82 61 46 61 29C61 15 50 4 36 4Z" fill={isAll ? "#BBBAB8" : "rgba(255,255,255,0.7)"}/>
-          <circle cx="36" cy="29" r="11" fill={isAll ? "#F5F2EE" : "rgba(255,255,255,0.25)"}/>
-        </svg>
-      </button>
-
-      {/* Panneau déroulé */}
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 50 }} />
-          <div style={{
-            position: "absolute", top: "calc(100% + 4px)", left: 14, right: 14,
-            background: C.card, border: `1px solid ${C.border}`, borderRadius: 18,
-            padding: "12px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-            zIndex: 51, display: "flex", flexWrap: "wrap", gap: 8,
-          }}>
-            {THEMES.map(t => {
-              const isOn = t.key === "Tous" ? isAll : active.has(t.key);
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => { onToggle(t.key); if (t.key === "Tous") setOpen(false); }}
-                  style={{
-                    fontSize: 12, fontWeight: 600, padding: "8px 16px", borderRadius: 20,
-                    border: "none", cursor: "pointer", whiteSpace: "nowrap",
-                    background: isOn ? C.ink : C.pill,
-                    color: isOn ? "#fff" : C.ink2,
-                    fontFamily: dm, transition: "all 0.15s",
-                  }}
-                >
-                  {t.emoji} {t.short}
-                </button>
-              );
-            })}
+    <div
+      onClick={onClick}
+      style={{
+        background: C.card, borderRadius: 16, overflow: "hidden",
+        border: `1px solid ${C.border}`, cursor: "pointer",
+        boxShadow: "0 2px 8px rgba(26,23,20,0.06)",
+      }}
+    >
+      {/* Cover */}
+      <div style={{ position: "relative", width: "100%", height: 100, overflow: "hidden" }}>
+        <CoverImage src={com.cover} commerce={com} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 35%, rgba(26,23,20,0.68))" }} />
+        {/* Emoji badge */}
+        <div style={{ position: "absolute", top: 7, right: 7, background: "rgba(255,255,255,0.92)", borderRadius: 8, padding: "3px 7px", fontSize: 13 }}>
+          {themeEmoji}
+        </div>
+        {/* Posts count */}
+        {com.posts !== "—" && (
+          <div style={{ position: "absolute", top: 7, left: 7, background: "rgba(0,0,0,0.48)", borderRadius: 8, padding: "3px 7px", fontSize: 9, color: "#fff", fontFamily: dm, fontWeight: 600 }}>
+            📸 {com.posts}
           </div>
-        </>
-      )}
+        )}
+        {/* Nom en overlay bas */}
+        <div style={{ position: "absolute", bottom: 7, left: 8, right: 8 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "#fff", lineHeight: 1.2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            {com.name}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "8px 10px 10px" }}>
+        <div style={{ fontSize: 10, color: C.ink, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {catLabel(com.categorie || com.category || "Commerce")}
+        </div>
+        {com.adresse && (
+          <div style={{ fontSize: 10, color: C.ink2, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            📍 {com.adresse}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1752,8 +1769,8 @@ export default function ChipeurCommerces({ setPage, user }) {
               {search && <span onClick={() => setSearch("")} style={{ fontSize: 13, cursor: "pointer", color: C.ink2 }}>✕</span>}
             </div>
 
-            {/* Dropdown filtres thèmes */}
-            <BoutiquesDropdown active={activeCats} onToggle={toggleCat} />
+            {/* Chips filtres catégories */}
+            <CategoryChips active={activeCats} onToggle={toggleCat} />
           </div>
 
           <div style={{ flex: 1, overflowY: "auto" }}>
@@ -1814,9 +1831,11 @@ export default function ChipeurCommerces({ setPage, user }) {
                       <div style={{ fontSize: 12, color: C.ink2 }}>Essaie un autre filtre ou une autre recherche.</div>
                     </div>
                   ) : (
-                    filtered.map((c, i) => (
-                      <ComCard key={i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
-                    ))
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {filtered.map((c, i) => (
+                        <ComGridCard key={i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
+                      ))}
+                    </div>
                   )}
                 </div>
               </>
