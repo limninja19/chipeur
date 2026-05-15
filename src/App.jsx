@@ -194,8 +194,8 @@ export default function App() {
 
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
 
-  // Onboarding uniquement pour les visiteurs sans compte
-  if (!onboardingDone) {
+  // Onboarding uniquement pour les visiteurs sans compte (jamais pour un utilisateur déjà connecté)
+  if (!onboardingDone && !user) {
     return <Onboarding onDone={handleOnboardingDone} />;
   }
 
