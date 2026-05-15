@@ -917,62 +917,37 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
   );
 }
 
-// ─── MODES VITRINE ───
+// ─── CHIPS VITRINE ───
 const VITRINE_MODES = [
-  { id: "tout",    label: "✦ Tout voir" },
-  { id: "galerie", label: "🖼 Galerie" },
-  { id: "cartes",  label: "🃏 Cartes" },
+  { id: "galerie", label: "Photos" },
+  { id: "tout",    label: "🃏 Posts" },
   { id: "promos",  label: "🎁 Promos" },
   { id: "defis",   label: "🏆 Défis" },
-  { id: "postes",  label: "📬 Posts liés", ownerOnly: true },
+  { id: "postes",  label: "📬 Liés", ownerOnly: true },
 ];
 
-function VitrineDropdown({ activeMode, onChange, isOwner }) {
-  const [open, setOpen] = useState(false);
-  const visibleModes = VITRINE_MODES.filter(m => !m.ownerOnly || isOwner);
-  const current = visibleModes.find(m => m.id === activeMode) || visibleModes[0];
+function VitrineChips({ activeMode, onChange, isOwner }) {
+  const visible = VITRINE_MODES.filter(m => !m.ownerOnly || isOwner);
   return (
-    <div style={{ position: "relative", padding: "12px 16px 8px", zIndex: 20 }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: "100%", background: C.card, border: `1.5px solid ${C.border}`,
-          borderRadius: 14, padding: "11px 16px", display: "flex", alignItems: "center",
-          justifyContent: "space-between", cursor: "pointer", fontFamily: dm,
-          fontSize: 13, fontWeight: 600, color: C.ink,
-        }}
-      >
-        <span>{current.label}</span>
-        <span style={{ fontSize: 10, color: C.ink2, transition: "transform 0.2s", display: "inline-block", transform: open ? "rotate(180deg)" : "none" }}>▼</span>
-      </button>
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
-          <div style={{
-            position: "absolute", top: "calc(100% - 4px)", left: 16, right: 16, zIndex: 20,
-            background: C.card, borderRadius: 14, border: `1px solid ${C.border}`,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.1)", overflow: "hidden",
-          }}>
-            {visibleModes.map((m, i) => (
-              <div
-                key={m.id}
-                onClick={() => { onChange(m.id); setOpen(false); }}
-                style={{
-                  padding: "13px 16px", fontSize: 13,
-                  fontWeight: m.id === activeMode ? 700 : 500,
-                  color: m.id === activeMode ? C.accent : C.ink,
-                  background: m.id === activeMode ? "rgba(255,87,51,0.05)" : "transparent",
-                  cursor: "pointer", fontFamily: dm, display: "flex", alignItems: "center", justifyContent: "space-between",
-                  borderBottom: i < visibleModes.length - 1 ? `1px solid ${C.border}` : "none",
-                }}
-              >
-                {m.label}
-                {m.id === activeMode && <span style={{ color: C.accent, fontSize: 14 }}>✓</span>}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+    <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "10px 16px 8px", scrollbarWidth: "none", background: C.bg }}>
+      {visible.map(m => {
+        const isActive = activeMode === m.id;
+        return (
+          <button
+            key={m.id}
+            onClick={() => onChange(m.id)}
+            style={{
+              flexShrink: 0, border: "none", borderRadius: 20, cursor: "pointer",
+              padding: "7px 16px", fontSize: 12, fontWeight: 600, fontFamily: dm,
+              background: isActive ? C.ink : C.pill,
+              color:      isActive ? "#fff" : C.ink2,
+              transition: "background 0.15s, color 0.15s",
+            }}
+          >
+            {m.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -1031,7 +1006,7 @@ function DefiVitrine({ defi }) {
 // ─── ONGLET VITRINE ───
 function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const [posts, setPosts] = useState(realPosts);
-  const [activeMode, setActiveMode] = useState("tout");
+  const [activeMode, setActiveMode] = useState("galerie");
   const [selectedPost, setSelectedPost] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
@@ -1127,8 +1102,8 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
 
   return (
     <div style={{ padding: "0 0 100px" }}>
-      {/* Dropdown mode */}
-      <VitrineDropdown activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} />
+      {/* Chips mode */}
+      <VitrineChips activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} />
 
       {/* ── Mode POSTS LIÉS (owner seulement) ── */}
       {activeMode === "postes" && isOwner && (
@@ -1288,7 +1263,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
         ) : photoPosts.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>Aucune photo pour l'instant.</div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3, padding: "0 2px" }}>
             {photoPosts.map((post, idx) => (
               <div
                 key={post.id}
