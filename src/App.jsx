@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, Component } from "react";
 import { supabase } from "./supabase";
 import { useProfile } from "./useProfile";
+import safeStorage from "./safeStorage";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
@@ -152,40 +153,40 @@ export default function App() {
 
   // ── Modales post-inscription ─────────────────────────────────────────────
   const [showInstall, setShowInstall] = useState(
-    () => localStorage.getItem("chipeur_install_shown_v1") !== "true"
+    () => safeStorage.getItem("chipeur_install_shown_v1") !== "true"
   );
   const [showFilTour, setShowFilTour] = useState(false);
 
   function handleCloseInstall() {
-    localStorage.setItem("chipeur_install_shown_v1", "true");
+    safeStorage.setItem("chipeur_install_shown_v1", "true");
     setShowInstall(false);
     // Enchaîner le tour du fil si pas encore vu
-    if (localStorage.getItem("chipeur_fil_tour_v1") !== "true") {
+    if (safeStorage.getItem("chipeur_fil_tour_v1") !== "true") {
       setShowFilTour(true);
     }
   }
 
   function handleCloseFilTour() {
-    localStorage.setItem("chipeur_fil_tour_v1", "true");
+    safeStorage.setItem("chipeur_fil_tour_v1", "true");
     setShowFilTour(false);
   }
 
   // ── Onboarding première visite ──────────────────────────────────────────
   const [onboardingDone, setOnboardingDone] = useState(
-    () => localStorage.getItem("chipeur_onboarding_done_v2") === "true"
+    () => safeStorage.getItem("chipeur_onboarding_done_v2") === "true"
   );
 
   // Si l'utilisateur est déjà connecté (compte existant), on saute l'onboarding
   // et on marque la clé localStorage pour éviter de le revoir
   useEffect(() => {
     if (user && profile && !onboardingDone) {
-      localStorage.setItem("chipeur_onboarding_done_v2", "true");
+      safeStorage.setItem("chipeur_onboarding_done_v2", "true");
       setOnboardingDone(true);
     }
   }, [user?.id, profile?.id]);
 
   async function handleOnboardingDone() {
-    localStorage.setItem("chipeur_onboarding_done_v2", "true");
+    safeStorage.setItem("chipeur_onboarding_done_v2", "true");
     setOnboardingDone(true);
     if (user?.id) {
       await supabase.from("profiles").update({ has_seen_onboarding: true }).eq("id", user.id);

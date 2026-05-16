@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 import { addXP, addXPShop } from "./chipeur_xp";
 import Avatar from "./Avatar";
+import safeStorage from "./safeStorage";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
 async function compressImage(file, maxPx = 1200, quality = 0.82) {
@@ -1051,11 +1052,11 @@ function TabPosts({ userId }) {
 
 // ─── ONGLET CRÉER ───
 function TabCreer({ merchantName, setPage, user }) {
-  const initMode = localStorage.getItem("chipeur_creer_mode") || "remise";
+  const initMode = safeStorage.getItem("chipeur_creer_mode") || "remise";
   const [mode, setMode] = useState(initMode);
   useEffect(() => {
-    if (localStorage.getItem("chipeur_creer_mode")) {
-      localStorage.removeItem("chipeur_creer_mode");
+    if (safeStorage.getItem("chipeur_creer_mode")) {
+      safeStorage.removeItem("chipeur_creer_mode");
     }
   }, []);
   const [typeRemise, setTypeRemise] = useState("pct");
@@ -1940,11 +1941,11 @@ function TabMesDefis({ userId }) {
 // ─── COMPOSANT PRINCIPAL ───
 export default function ChipeurProfilMagasin({ setPage, user, profile, updateProfile }) {
   const [screen, setScreen] = useState("main");
-  const initTab = localStorage.getItem("chipeur_profil_tab") || "dashboard";
+  const initTab = safeStorage.getItem("chipeur_profil_tab") || "dashboard";
   const [activeTab, setActiveTab] = useState(initTab);
   useEffect(() => {
-    if (localStorage.getItem("chipeur_profil_tab")) {
-      localStorage.removeItem("chipeur_profil_tab");
+    if (safeStorage.getItem("chipeur_profil_tab")) {
+      safeStorage.removeItem("chipeur_profil_tab");
     }
   }, []);
   const [postCount, setPostCount] = useState(null);

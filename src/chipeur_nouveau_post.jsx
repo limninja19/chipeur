@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import heic2any from "heic2any";
 import { addXP } from "./chipeur_xp";
+import safeStorage from "./safeStorage";
 
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
@@ -519,7 +520,7 @@ function FormBonPlan({ content, onChange, onPhotoSelect, photoPreview, activeTag
 function DroitImagePopup({ onConfirm, onCancel }) {
   const [nePlusAfficher, setNePlusAfficher] = useState(false);
   const handlePublier = () => {
-    if (nePlusAfficher) localStorage.setItem("chipeur_droitimage_ok", "1");
+    if (nePlusAfficher) safeStorage.setItem("chipeur_droitimage_ok", "1");
     onConfirm();
   };
   return (
@@ -710,7 +711,7 @@ function PopupXPShop({ onClose }) {
   const C    = { accent: "#FF5733", pro: "#0A3D2E", proBg: "#EBF5F0", ink: "#1A1714", ink2: "#6B6560", bg: "#F5F2EE" };
 
   function handleClose() {
-    if (nePlusAfficher) localStorage.setItem("chipeur_nouvpost_popup_v2", "1");
+    if (nePlusAfficher) safeStorage.setItem("chipeur_nouvpost_popup_v2", "1");
     onClose();
   }
 
@@ -789,7 +790,7 @@ function PopupXPShop({ onClose }) {
 export default function ChipeurNouveauPost({ setPage, user, profile, editPost, setEditPost, autoCreateSortie, setAutoCreateSortie }) {
   const [screen, setScreen] = useState("choose"); // "choose" | "form" | "success"
   const [showXPPopup, setShowXPPopup] = useState(
-    () => !editPost && localStorage.getItem("chipeur_nouvpost_popup_v2") !== "1"
+    () => !editPost && safeStorage.getItem("chipeur_nouvpost_popup_v2") !== "1"
   );
   const [selectedType, setSelectedType] = useState("decouverte");
   const [content, setContent] = useState("");
@@ -870,7 +871,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   ];
 
   const handlePublishClick = () => {
-    if (localStorage.getItem("chipeur_droitimage_ok") === "1") {
+    if (safeStorage.getItem("chipeur_droitimage_ok") === "1") {
       handlePublish();
     } else {
       setShowDroitImage(true);
@@ -1271,8 +1272,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
                 {types.map(t => (
                   <div key={t.id} onClick={() => {
                     if (t.id === "promo" && isMagasin) {
-                      localStorage.setItem("chipeur_profil_tab", "creer");
-                      localStorage.setItem("chipeur_creer_mode", "remise");
+                      safeStorage.setItem("chipeur_profil_tab", "creer");
+                      safeStorage.setItem("chipeur_creer_mode", "remise");
                       setPage("profil"); return;
                     }
                     if (t.isRedirect) {

@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import { useUnreadNotifs } from "./chipeur_notifications";
 import { useUnreadMessages } from "./chipeur_messages";
 import { addXP } from "./chipeur_xp";
+import safeStorage from "./safeStorage";
 import AuthGate from "./AuthGate";
 import { ChallengeCard } from "./ChallengeUI";
 import SwipeVoteModal from "./SwipeVoteModal";
@@ -1475,12 +1476,12 @@ function RechercheRecommandations({ post, user, requireAuth }) {
 function TuValidesNotif({ user }) {
   const [post, setPost] = useState(null);
   const [dismissed, setDismissed] = useState(
-    () => localStorage.getItem("chipeur_tuvalides_notif_off") === "1"
+    () => safeStorage.getItem("chipeur_tuvalides_notif_off") === "1"
   );
 
   useEffect(() => {
     if (dismissed) return;
-    const lastSeen = localStorage.getItem("chipeur_tuvalides_last_seen") || "";
+    const lastSeen = safeStorage.getItem("chipeur_tuvalides_last_seen") || "";
     supabase.from("posts")
       .select("id, created_at, profiles(pseudo), tags, image_url")
       .eq("post_type", "tuvalides")
@@ -1512,14 +1513,14 @@ function TuValidesNotif({ user }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
         <button onClick={() => {
-          localStorage.setItem("chipeur_tuvalides_last_seen", post.created_at);
+          safeStorage.setItem("chipeur_tuvalides_last_seen", post.created_at);
           setPost(null);
         }} style={{
           background: "rgba(255,255,255,0.25)", border: "none", borderRadius: 20,
           padding: "4px 10px", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer",
         }}>✕</button>
         <button onClick={() => {
-          localStorage.setItem("chipeur_tuvalides_notif_off", "1");
+          safeStorage.setItem("chipeur_tuvalides_notif_off", "1");
           setDismissed(true);
         }} style={{
           background: "none", border: "none", color: "rgba(255,255,255,0.7)",
@@ -1793,7 +1794,7 @@ function BandeauXPShop({ setPage, user, profile }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (user && !isMagasin && localStorage.getItem("chipeur_xpshop_hint_v2") !== "1") {
+    if (user && !isMagasin && safeStorage.getItem("chipeur_xpshop_hint_v2") !== "1") {
       setVisible(true);
     }
   }, [user, isMagasin]);
@@ -1824,7 +1825,7 @@ function BandeauXPShop({ setPage, user, profile }) {
         </div>
       </div>
       <div
-        onClick={e => { e.stopPropagation(); localStorage.setItem("chipeur_xpshop_hint_v2", "1"); setVisible(false); }}
+        onClick={e => { e.stopPropagation(); safeStorage.setItem("chipeur_xpshop_hint_v2", "1"); setVisible(false); }}
         style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", flexShrink: 0, padding: 4, cursor: "pointer" }}
       >✕</div>
     </div>
