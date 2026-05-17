@@ -4,6 +4,7 @@ import { addXP } from "./chipeur_xp";
 import Avatar from "./Avatar";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 import SwipeVoteModal from "./SwipeVoteModal";
+import { ShareButtons } from "./chipeur_nouveau_post";
 
 // ─── HEIC → JPEG conversion (photos iPhone) ─────────────────────
 async function convertImageFile(file) {
@@ -964,8 +965,13 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
         ))}
       </div>
 
-      {!d.ended && (
-        <div style={{ position: "absolute", bottom: 90, left: 20, right: 20, zIndex: 10 }}>
+      <div style={{ position: "absolute", bottom: 90, left: 20, right: 20, zIndex: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* Bouton Partager — toujours visible pour inviter des participants */}
+        <ShareButtons
+          text={`🏆 Défi "${d.title}"${d.sub ? ` — ${d.sub}` : ""}${d.reward ? `. À gagner : ${d.reward}` : ""}. Participe sur Chipeur !`}
+          imageUrl={d.photo_url || null}
+        />
+        {!d.ended && (
           <button
             onClick={onParticipe}
             style={{
@@ -975,8 +981,8 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
               color: "#fff", background: d.fill,
             }}
           >+ Participer à ce défi</button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

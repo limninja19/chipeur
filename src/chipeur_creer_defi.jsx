@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ShareButtons } from "./chipeur_nouveau_post";
 
 const C = { bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560", accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0", pill: "#EDEBE8", border: "rgba(26,23,20,0.08)" };
 const syne = "'Syne', sans-serif";
@@ -122,12 +123,19 @@ export default function ChipeurCreerDefi() {
         )}
 
         {screen === "success" && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center", gap: 14 }}>
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center", gap: 14 }}>
             <div style={{ fontSize: 56 }}>🚀</div>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink }}>Défi lancé !</div>
             <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6 }}>Ton défi "<strong>{titre}</strong>" est visible dans la page Défis avec ton logo et le badge sponsorisé.</div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.proBg, color: C.pro, fontSize: 12, fontWeight: 700, padding: "8px 16px", borderRadius: 20 }}>✓ Objectif : {objectif} participants</div>
-            <button onClick={() => setScreen("form")} style={{ background: C.pro, color: "#fff", border: "none", borderRadius: 16, padding: "13px 28px", fontSize: 14, fontWeight: 600, fontFamily: dm, cursor: "pointer", marginTop: 6 }}>Retour au dashboard</button>
+            {/* Partager le défi sur les réseaux pour recruter des participants */}
+            <div style={{ width: "100%", marginTop: 4 }}>
+              <ShareButtons
+                text={`🏆 Défi : "${titre}" — participe et tente de gagner ! Rejoins le quartier sur Chipeur.`}
+                imageUrl={null}
+              />
+            </div>
+            <button onClick={() => setScreen("form")} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 16, padding: "12px 0", fontSize: 13, fontWeight: 600, fontFamily: dm, cursor: "pointer" }}>Retour au dashboard</button>
           </div>
         )}
     </div>
