@@ -1625,6 +1625,7 @@ export default function ChipeurProfilVoisin({ setPage, profile, updateProfile, u
         setPage={setPage}
         user={user}
         profile={profile}
+        onProfileUpdate={() => setPage("profil")}
       />
     </div>
   );

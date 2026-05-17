@@ -2046,6 +2046,7 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
         setPage={setPage}
         user={user}
         profile={localProfile}
+        onProfileUpdate={() => setPage("profil")}
       />
     </div>
   );

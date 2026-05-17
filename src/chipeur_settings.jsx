@@ -117,11 +117,41 @@ export function ReglementScreen({ setPage }) {
 
 // ─── SETTINGS DRAWER ───
 // Panneau qui glisse du bas — accessible depuis n'importe quel profil
-export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
+export function SettingsDrawer({ open, onClose, setPage, user, profile, onProfileUpdate }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [confirmSwitch, setConfirmSwitch] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState(null);
+
+  const isMerchant = ["magasin", "artisan", "commercant"].includes(profile?.role);
+
+  const handleSwitchAccount = async () => {
+    if (!confirmSwitch) { setConfirmSwitch(true); return; }
+    setSwitching(true);
+    setSwitchError(null);
+    try {
+      if (isMerchant) {
+        // Commerçant → Voisin : supprimer le magasin, passer role à "voisin"
+        await supabase.from("magasins").delete().eq("user_id", user.id);
+        const { error } = await supabase.from("profiles")
+          .update({ role: "voisin", categorie: null, metier: null, website: null, instagram: null, facebook: null })
+          .eq("id", user.id);
+        if (error) throw error;
+        onProfileUpdate?.();
+        onClose();
+      } else {
+        // Voisin → Commerçant : aller vers la page d'inscription commerce
+        onClose();
+        setPage("login"); // redirige vers le flow commerçant
+      }
+    } catch (err) {
+      setSwitchError(err.message || "Erreur lors du changement");
+      setSwitching(false);
+    }
+  };
 
   if (!open) return null;
 
@@ -226,6 +256,42 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile }) {
 
         {/* Compte */}
         <SectionTitle>Mon compte</SectionTitle>
+
+        {/* Changer de type de compte */}
+        {!confirmSwitch ? (
+          <Row
+            icon={isMerchant ? "🏘️" : "🏪"}
+            label={isMerchant ? "Passer en compte Voisin" : "Passer en compte Commerçant"}
+            sublabel={isMerchant ? "Ton profil commerçant sera supprimé, tes photos conservées" : "Crée un profil commerçant pour ton commerce"}
+            onClick={() => setConfirmSwitch(true)}
+          />
+        ) : (
+          <div style={{ background: "#FFF8F0", borderRadius: 16, padding: 16, marginBottom: 4, border: "1px solid rgba(255,87,51,0.2)" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.accent, marginBottom: 6 }}>
+              {isMerchant ? "⚠️ Passer en compte Voisin ?" : "⚠️ Passer en compte Commerçant ?"}
+            </div>
+            <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5, marginBottom: 12 }}>
+              {isMerchant
+                ? "Ton profil commerçant et ta fiche magasin seront supprimés. Tes publications et photos seront conservées. Cette action est irréversible."
+                : "Tu vas être redirigé vers la création d'un profil commerçant."}
+            </div>
+            {switchError && <div style={{ fontSize: 11, color: "#E53935", marginBottom: 8 }}>{switchError}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => { setConfirmSwitch(false); setSwitchError(null); }}
+                style={{ flex: 1, padding: 11, borderRadius: 12, background: C.pill, color: C.ink, border: "none", fontFamily: dm, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Annuler
+              </button>
+              <button
+                onClick={handleSwitchAccount}
+                disabled={switching}
+                style={{ flex: 1, padding: 11, borderRadius: 12, background: C.accent, color: "#fff", border: "none", fontFamily: dm, fontSize: 13, fontWeight: 600, cursor: switching ? "not-allowed" : "pointer" }}>
+                {switching ? "⏳ En cours…" : "Confirmer"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <Row icon="🔄" label="Changer de compte" sublabel="Retour à l'écran de connexion" onClick={handleLogout} />
         <Row
           icon={loggingOut ? "⏳" : confirmLogout ? "⚠️" : "🚪"}
