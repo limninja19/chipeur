@@ -485,46 +485,56 @@ function PhotoCard({ post, onOpen }) {
 // ─── PHOTO UPLOAD OVERLAY ───
 function PhotoUploadOverlay({ event, user, onClose, onSuccess }) {
   const [caption, setCaption] = useState("");
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
   const fileRef = useRef();
 
-  const handleFile = e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+  const handleFiles = e => {
+    const selected = Array.from(e.target.files);
+    if (!selected.length) return;
+    setFiles(selected);
+    setPreviews(selected.map(f => URL.createObjectURL(f)));
+  };
+
+  const removeFile = (i) => {
+    setFiles(prev => prev.filter((_, idx) => idx !== i));
+    setPreviews(prev => prev.filter((_, idx) => idx !== i));
   };
 
   const handleSubmit = async () => {
-    if (!file) { setError("Choisis une photo !"); return; }
+    if (!files.length) { setError("Choisis au moins une photo !"); return; }
     if (!user?.id) { setError("Tu dois être connecté."); return; }
     setLoading(true);
     setError(null);
+    setProgress(0);
+    const posts = [];
     try {
-      // 1. Upload image dans le bucket
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `evenements/${event.id}/${user.id}_${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("images").upload(path, file);
-      if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(path);
-
-      // 2. Insérer le post lié à l'événement
-      const { data: post, error: postErr } = await supabase
-        .from("posts")
-        .insert({
-          author_id: user.id,
-          content: caption.trim() || null,
-          image_url: publicUrl,
-          evenement_id: event.id,
-          post_type: "evenement",
-        })
-        .select("id, content, image_url, created_at, author_id, profiles:author_id(pseudo, avatar_url)")
-        .single();
-      if (postErr) throw postErr;
-      onSuccess(post);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `evenements/${event.id}/${user.id}_${Date.now()}_${i}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("images").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(path);
+        const { data: post, error: postErr } = await supabase
+          .from("posts")
+          .insert({
+            author_id: user.id,
+            content: caption.trim() || "",
+            image_url: publicUrl,
+            evenement_id: event.id,
+            post_type: "evenement",
+          })
+          .select("id, content, image_url, created_at, author_id, profiles:author_id(pseudo, avatar_url)")
+          .single();
+        if (postErr) throw postErr;
+        posts.push(post);
+        setProgress(Math.round(((i + 1) / files.length) * 100));
+      }
+      posts.forEach(p => onSuccess(p));
     } catch (err) {
       setError(err.message || "Erreur lors de l'envoi");
       setLoading(false);
@@ -543,33 +553,52 @@ function PhotoUploadOverlay({ event, user, onClose, onSuccess }) {
         boxSizing: "border-box",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>📸 Partager une photo</div>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>📸 Partager des photos</div>
           <button onClick={onClose} style={{ background: C.pill, border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 14, cursor: "pointer" }}>✕</button>
         </div>
         <div style={{ fontSize: 12, color: C.ink2, marginBottom: 14 }}>
           Tu es à <b style={{ color: C.ink }}>{event.title}</b> ? Partage ton moment !
         </div>
 
-        {/* Zone photo */}
-        <div
-          onClick={() => fileRef.current?.click()}
-          style={{
-            border: `2px dashed ${preview ? C.accent : C.border}`,
-            borderRadius: 16, minHeight: 160, display: "flex",
-            alignItems: "center", justifyContent: "center",
-            cursor: "pointer", marginBottom: 12, overflow: "hidden", background: C.bg,
-          }}
-        >
-          {preview ? (
-            <img src={preview} alt="" style={{ width: "100%", maxHeight: 260, objectFit: "cover" }} />
-          ) : (
+        {/* Zone photos */}
+        {previews.length === 0 ? (
+          <div
+            onClick={() => fileRef.current?.click()}
+            style={{
+              border: `2px dashed ${C.border}`, borderRadius: 16, minHeight: 160,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", marginBottom: 12, background: C.bg,
+            }}
+          >
             <div style={{ textAlign: "center", padding: 24 }}>
               <div style={{ fontSize: 40, marginBottom: 8 }}>📸</div>
-              <div style={{ fontSize: 12, color: C.ink2 }}>Appuie pour choisir une photo</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 4 }}>Appuie pour choisir</div>
+              <div style={{ fontSize: 11, color: C.ink2 }}>Tu peux sélectionner plusieurs photos</div>
             </div>
-          )}
-        </div>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+          </div>
+        ) : (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 8 }}>
+              {previews.map((src, i) => (
+                <div key={i} style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden" }}>
+                  <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <button
+                    onClick={() => removeFile(i)}
+                    style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 22, height: 22, color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >✕</button>
+                </div>
+              ))}
+              <div
+                onClick={() => fileRef.current?.click()}
+                style={{ aspectRatio: "1", borderRadius: 10, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: C.bg }}
+              >
+                <span style={{ fontSize: 24, color: C.ink2 }}>+</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: C.ink2 }}>{files.length} photo{files.length > 1 ? "s" : ""} sélectionnée{files.length > 1 ? "s" : ""}</div>
+          </div>
+        )}
+        <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
 
         {/* Légende */}
         <textarea
@@ -585,20 +614,29 @@ function PhotoUploadOverlay({ event, user, onClose, onSuccess }) {
           }}
         />
 
+        {loading && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ height: 4, background: C.pill, borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${progress}%`, background: C.accent, transition: "width 0.3s" }} />
+            </div>
+            <div style={{ fontSize: 11, color: C.ink2, marginTop: 4, textAlign: "center" }}>Publication {progress}%…</div>
+          </div>
+        )}
+
         {error && <div style={{ fontSize: 11, color: "#E53935", marginBottom: 10 }}>{error}</div>}
 
         <button
           onClick={handleSubmit}
-          disabled={loading || !file}
+          disabled={loading || !files.length}
           style={{
             width: "100%",
-            background: !file ? C.pill : loading ? "#ccc" : C.accent,
-            color: !file || loading ? C.ink2 : "#fff",
+            background: !files.length ? C.pill : loading ? "#ccc" : C.accent,
+            color: !files.length || loading ? C.ink2 : "#fff",
             border: "none", borderRadius: 14, padding: 14,
-            fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: !file ? "default" : "pointer",
+            fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: !files.length ? "default" : "pointer",
           }}
         >
-          {loading ? "Publication…" : "Publier dans la galerie"}
+          {loading ? `Publication…` : `Publier ${files.length > 1 ? `${files.length} photos` : "dans la galerie"}`}
         </button>
       </div>
     </div>
