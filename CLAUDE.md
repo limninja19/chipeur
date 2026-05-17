@@ -145,6 +145,16 @@ Fichiers modifiés : `chipeur_commerces.jsx`, `chipeur_onboarding.jsx`, `chipeur
 - `chipeur_profil_magasin.jsx`
   - Composant `GoogleResyncCard` dans le dashboard (visible si `google_place_id` non null)
   - Bouton "Resynchroniser avec Google" → appelle `places-details` + met à jour Supabase
+  - `GoogleLinkModal` : permet aux commerçants existants de lier leur fiche Google
+  - `convertGoogleHours()` : convertit `weekday_text` Google → format chipeur `[{j, h}]`
+  - Resync/Link met aussi à jour `quartier` (depuis `address`) et `horaires`
+  - Section "Photos du commerce" dans `EditProfilScreen` : voir, ajouter, supprimer les `photo_urls`
+
+### 16. Fiche commerce enrichie (chipeur_commerces.jsx)
+- `profileToCommerce` : `gallery` ← `p.photo_urls`, `cover` fallback sur `photo_urls[0]`, `open_now` depuis `current_opening_hours`
+- `ComGridCard` : badge "Ouvert"/"Fermé" (vert/rouge) visible sur les cards grille quand `open_now` est connu
+- `TabInfos` : badge "● Ouvert maintenant" / "● Fermé" à côté du titre HORAIRES
+- `TabInfos` : section galerie "📷 PHOTOS DU COMMERCE" affichant les `photo_urls` Google
 
 #### Secrets Supabase à ajouter
 - `GOOGLE_PLACES_API_KEY` (Google Cloud Console → Identifiants)

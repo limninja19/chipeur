@@ -118,8 +118,9 @@ function profileToCommerce(p, postCount) {
     shortCat: `${emoji} ${metier} · ${p.quartier || "Saint-Dié"}`,
     desc: p.bio || "",
     shortDesc: p.bio ? p.bio.substring(0, 80) + (p.bio.length > 80 ? "…" : "") : "",
-    cover: p.avatar_url || p.cover_url || null,
-    gallery: [],
+    cover: p.avatar_url || p.cover_url || (p.photo_urls && p.photo_urls[0]) || null,
+    gallery: p.photo_urls || [],
+    open_now: p.current_opening_hours?.open_now ?? null,
     vues: "—", int: "—",
     posts: postCount != null ? String(postCount) : "—",
     plan: "Découverte",
@@ -414,6 +415,13 @@ function ComGridCard({ com, onClick }) {
         <div style={{ position: "absolute", top: 7, right: 7, background: "rgba(255,255,255,0.92)", borderRadius: 8, padding: "3px 7px", fontSize: 13 }}>
           {themeEmoji}
         </div>
+        {/* Badge Ouvert / Fermé */}
+        {com.open_now !== null && com.open_now !== undefined && (
+          <div style={{ position: "absolute", top: 7, left: 7, background: com.open_now ? "#22C55E" : "#EF4444", borderRadius: 7, padding: "2px 7px", display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff", opacity: com.open_now ? 1 : 0.7 }} />
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "'DM Sans', sans-serif" }}>{com.open_now ? "Ouvert" : "Fermé"}</span>
+          </div>
+        )}
         {/* Posts count */}
         {com.posts !== "—" && (
           <div style={{ position: "absolute", top: 7, left: 7, background: "rgba(0,0,0,0.48)", borderRadius: 8, padding: "3px 7px", fontSize: 9, color: "#fff", fontFamily: dm, fontWeight: 600 }}>
@@ -1435,7 +1443,14 @@ function TabInfos({ com }) {
         <div style={rowStyle}>
           <div style={{ ...iconStyle, background: C.proBg }}>🕐</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 8 }}>HORAIRES</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.ink2 }}>HORAIRES</span>
+              {com.open_now !== null && com.open_now !== undefined && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: com.open_now ? "#DCFCE7" : "#FEE2E2", color: com.open_now ? "#16A34A" : "#DC2626" }}>
+                  {com.open_now ? "● Ouvert maintenant" : "● Fermé"}
+                </span>
+              )}
+            </div>
             {com.hours.map((h, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: i < com.hours.length - 1 ? 6 : 0, marginBottom: i < com.hours.length - 1 ? 6 : 0, borderBottom: i < com.hours.length - 1 ? `1px solid ${C.border}` : "none" }}>
                 <span style={{ fontSize: 13, color: C.ink2, fontWeight: 500 }}>{h.j || "—"}</span>
@@ -1456,6 +1471,22 @@ function TabInfos({ com }) {
           <a href={com.website} target="_blank" rel="noreferrer" style={{ background: C.pill, color: C.ink, border: "none", borderRadius: 12, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: dm, textDecoration: "none", alignSelf: "center", flexShrink: 0 }}>
             Visiter
           </a>
+        </div>
+      )}
+
+      {com.gallery && com.gallery.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.ink2, marginBottom: 10, letterSpacing: 0.4, display: "flex", alignItems: "center", gap: 6 }}>
+            📷 PHOTOS DU COMMERCE
+            <span style={{ fontSize: 9, background: "#F3F3F3", padding: "2px 6px", borderRadius: 6, color: C.ink2, fontWeight: 500 }}>Google</span>
+          </div>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+            {com.gallery.map((url, i) => (
+              <div key={i} style={{ flexShrink: 0, width: 110, height: 110, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

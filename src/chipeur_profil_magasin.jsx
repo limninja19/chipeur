@@ -114,6 +114,8 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
   const [instagram, setInstagram] = useState(profile?.instagram || "");
   const [facebook, setFacebook]   = useState(profile?.facebook || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
+  const [photoUrls, setPhotoUrls] = useState(profile?.photo_urls || []);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
@@ -128,6 +130,34 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
 
   const updateHoraire = (idx, val) => {
     setHoraires(prev => prev.map((h, i) => i === idx ? { ...h, h: val } : h));
+  };
+
+  // ─── Gestion des photos du commerce (photo_urls) ──────────────────────────
+  const handleAddGalleryPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setUploadingPhoto(true);
+    setError("");
+    const compressed = await compressImage(file);
+    const timestamp = Date.now();
+    const path = `merchant-photos/custom/${userId}/photo_${timestamp}.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from("merchant-photos")
+      .upload(path, compressed, { upsert: false, contentType: "image/jpeg" });
+    if (upErr) { setError("Erreur upload photo : " + upErr.message); setUploadingPhoto(false); return; }
+    const { data } = supabase.storage.from("merchant-photos").getPublicUrl(path);
+    const newUrl = data.publicUrl;
+    const newPhotos = [...photoUrls, newUrl];
+    setPhotoUrls(newPhotos);
+    // Sauvegarde immédiate dans la DB
+    await supabase.from("profiles").update({ photo_urls: newPhotos }).eq("id", userId);
+    setUploadingPhoto(false);
+  };
+
+  const handleDeleteGalleryPhoto = async (index) => {
+    const newPhotos = photoUrls.filter((_, i) => i !== index);
+    setPhotoUrls(newPhotos);
+    await supabase.from("profiles").update({ photo_urls: newPhotos }).eq("id", userId);
   };
 
   const handlePhoto = async (e) => {
@@ -157,6 +187,7 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
       phone, website, instagram, facebook,
       avatar_url: avatarUrl,
       horaires: horairesFiltres,
+      photo_urls: photoUrls,
     };
     const { error: err } = await supabase
       .from("profiles")
@@ -210,6 +241,48 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
             </label>
           </div>
           <div style={{ fontSize: 11, color: C.ink2 }}>Appuie sur 📷 pour changer la photo</div>
+        </div>
+
+        {/* Photos du commerce */}
+        <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink }}>Photos du commerce</div>
+            <label style={{
+              background: C.accent, color: "#fff", border: "none", borderRadius: 9,
+              padding: "5px 11px", fontSize: 10, fontWeight: 700, fontFamily: dm,
+              cursor: uploadingPhoto ? "not-allowed" : "pointer",
+              opacity: uploadingPhoto ? 0.6 : 1, display: "flex", alignItems: "center", gap: 5,
+            }}>
+              {uploadingPhoto ? "⏳" : "＋ Ajouter"}
+              <input type="file" accept="image/*" onChange={handleAddGalleryPhoto} style={{ display: "none" }} disabled={uploadingPhoto} />
+            </label>
+          </div>
+          {photoUrls.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "12px 0", color: C.ink2, fontSize: 11 }}>
+              Aucune photo — ajoute des photos de ta boutique
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}>
+              {photoUrls.map((url, i) => (
+                <div key={i} style={{ flexShrink: 0, position: "relative", width: 90, height: 90 }}>
+                  <img src={url} alt={`Photo ${i + 1}`} style={{ width: 90, height: 90, borderRadius: 12, objectFit: "cover", display: "block", border: `1px solid ${C.border}` }} />
+                  <button
+                    onClick={() => handleDeleteGalleryPhoto(i)}
+                    style={{
+                      position: "absolute", top: -6, right: -6,
+                      width: 22, height: 22, borderRadius: "50%",
+                      background: "#EF4444", border: "2px solid " + C.card,
+                      color: "#fff", fontSize: 10, fontWeight: 700,
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                      lineHeight: 1,
+                    }}
+                    title="Supprimer cette photo"
+                  >✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ fontSize: 10, color: C.ink2, marginTop: 8 }}>Ces photos apparaissent dans la galerie de ta fiche.</div>
         </div>
 
         {/* Infos de base */}
@@ -705,6 +778,21 @@ function MerchantXpBlock({ userId, merchantName }) {
 const SUPABASE_FN_URL_MAG = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const SUPABASE_ANON_KEY_MAG = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// ── Convertit les horaires Google (weekday_text) → format chipeur [{j, h}] ──
+function convertGoogleHours(opening_hours) {
+  if (!opening_hours?.weekday_text?.length) return null;
+  const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  return JOURS.map((jour, i) => {
+    const line = opening_hours.weekday_text[i] || "";
+    // Google retourne "Lundi : 9:00–19:00" ou "lundi : Fermé"
+    const colonIdx = line.indexOf(":");
+    const heures = colonIdx >= 0 ? line.slice(colonIdx + 1).trim() : "";
+    // Remplace le tiret long Unicode par un tiret lisible
+    const cleanH = heures.replace(/–/g, "–").replace(/—/g, "–");
+    return { j: jour, h: cleanH };
+  });
+}
+
 // ── Modale de recherche Google pour comptes existants ────────────────────────
 function GoogleLinkModal({ onClose, onLinked, userId }) {
   const [query, setQuery]       = useState("");
@@ -751,15 +839,19 @@ function GoogleLinkModal({ onClose, onLinked, userId }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
+      const horairesConverti = convertGoogleHours(data.opening_hours);
       const updates = {
         google_place_id:        data.place_id,
         google_synced_at:       new Date().toISOString(),
         google_data:            data.raw ?? null,
         opening_hours:          data.opening_hours ?? null,
         current_opening_hours:  data.current_opening_hours ?? null,
-        ...(data.phone    ? { phone: data.phone }     : {}),
-        ...(data.website  ? { website: data.website } : {}),
+        // Champs affichés directement dans la page commerçant
+        ...(data.address  ? { quartier: data.address }  : {}),
+        ...(data.phone    ? { phone: data.phone }        : {}),
+        ...(data.website  ? { website: data.website }    : {}),
         ...(data.lat      ? { lat: data.lat, lng: data.lng } : {}),
+        ...(horairesConverti ? { horaires: horairesConverti } : {}),
         ...(data.photo_urls?.length > 0 ? { photo_urls: data.photo_urls } : {}),
       };
 
@@ -892,6 +984,7 @@ function GoogleResyncCard({ profile, userId, onSaved }) {
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur");
+      const horairesConverti = convertGoogleHours(data.opening_hours);
       const updates = {
         phone:                 data.phone || profile.phone,
         website:               data.website || profile.website,
@@ -899,6 +992,9 @@ function GoogleResyncCard({ profile, userId, onSaved }) {
         current_opening_hours: data.current_opening_hours ?? profile.current_opening_hours,
         google_synced_at:      new Date().toISOString(),
         google_data:           data.raw ?? profile.google_data,
+        // Met à jour l'adresse et les horaires affichés
+        ...(data.address ? { quartier: data.address } : {}),
+        ...(horairesConverti ? { horaires: horairesConverti } : {}),
         ...(data.photo_urls?.length > 0 ? { photo_urls: data.photo_urls } : {}),
       };
       const { error: dbErr } = await supabase.from("profiles").update(updates).eq("id", userId);
