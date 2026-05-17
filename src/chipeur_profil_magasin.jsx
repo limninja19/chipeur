@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { SettingsDrawer } from "./chipeur_settings";
 import { addXP, addXPShop } from "./chipeur_xp";
@@ -705,13 +705,177 @@ function MerchantXpBlock({ userId, merchantName }) {
 const SUPABASE_FN_URL_MAG = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const SUPABASE_ANON_KEY_MAG = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-function GoogleResyncCard({ profile, userId, onSaved }) {
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError]     = useState("");
+// ── Modale de recherche Google pour comptes existants ────────────────────────
+function GoogleLinkModal({ onClose, onLinked, userId }) {
+  const [query, setQuery]       = useState("");
+  const [results, setResults]   = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [linking, setLinking]   = useState(false);
+  const [error, setError]       = useState("");
+  const debounceRef             = useRef(null);
 
-  // N'affiche la carte que si le profil a une fiche Google
-  if (!profile?.google_place_id) return null;
+  const fnHeaders = {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_ANON_KEY_MAG,
+    "Authorization": `Bearer ${SUPABASE_ANON_KEY_MAG}`,
+  };
+
+  const search = useCallback(async (q) => {
+    if (q.trim().length < 2) { setResults([]); return; }
+    setSearching(true);
+    setError("");
+    try {
+      const res = await fetch(`${SUPABASE_FN_URL_MAG}/places-search?q=${encodeURIComponent(q.trim())}`, { headers: fnHeaders });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setResults(data.results ?? []);
+      if ((data.results ?? []).length === 0) setError("Aucun résultat. Essaie avec le nom exact.");
+    } catch { setError("Impossible de contacter Google."); }
+    finally { setSearching(false); }
+  }, []);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (query.trim().length >= 2) debounceRef.current = setTimeout(() => search(query), 300);
+    else { setResults([]); setError(""); }
+    return () => clearTimeout(debounceRef.current);
+  }, [query, search]);
+
+  const handleLink = async () => {
+    if (!selected) return;
+    setLinking(true);
+    setError("");
+    try {
+      const res = await fetch(`${SUPABASE_FN_URL_MAG}/places-details?place_id=${encodeURIComponent(selected.place_id)}`, { headers: fnHeaders });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const updates = {
+        google_place_id:        data.place_id,
+        google_synced_at:       new Date().toISOString(),
+        google_data:            data.raw ?? null,
+        opening_hours:          data.opening_hours ?? null,
+        current_opening_hours:  data.current_opening_hours ?? null,
+        ...(data.phone    ? { phone: data.phone }     : {}),
+        ...(data.website  ? { website: data.website } : {}),
+        ...(data.lat      ? { lat: data.lat, lng: data.lng } : {}),
+        ...(data.photo_urls?.length > 0 ? { photo_urls: data.photo_urls } : {}),
+      };
+
+      const { error: dbErr } = await supabase.from("profiles").update(updates).eq("id", userId);
+      if (dbErr) throw new Error(dbErr.message);
+      onLinked(updates);
+    } catch (e) {
+      setError(e.message || "Erreur inconnue");
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
+      zIndex: 9999, display: "flex", alignItems: "flex-end",
+    }} onClick={onClose}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: "100%", background: C.bg, borderRadius: "20px 20px 0 0",
+          padding: "20px 18px 40px", maxHeight: "85vh", overflowY: "auto",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, flex: 1 }}>
+            🗺️ Lier ma fiche Google
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: C.ink2 }}>✕</button>
+        </div>
+
+        <div style={{ fontSize: 12, color: C.ink2, marginBottom: 14, fontFamily: dm, lineHeight: 1.5 }}>
+          Recherche ton commerce pour importer automatiquement tes horaires, photos et coordonnées depuis Google.
+        </div>
+
+        {/* Champ recherche */}
+        <div style={{ position: "relative", marginBottom: 8 }}>
+          <input
+            type="text"
+            placeholder="Nom du commerce, adresse…"
+            value={query}
+            onChange={e => { setQuery(e.target.value); setSelected(null); }}
+            autoFocus
+            style={{
+              width: "100%", background: C.card,
+              border: `1.5px solid rgba(232,73,10,0.4)`,
+              borderRadius: 14, padding: "12px 42px 12px 14px",
+              fontSize: 14, fontFamily: dm, color: C.ink,
+              outline: "none", boxSizing: "border-box",
+            }}
+          />
+          <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, pointerEvents: "none" }}>
+            {searching ? "⏳" : "🔍"}
+          </div>
+        </div>
+
+        {error && <div style={{ fontSize: 11, color: C.ink2, marginBottom: 10, fontFamily: dm }}>{error}</div>}
+
+        {/* Résultats */}
+        {results.map(place => (
+          <div
+            key={place.place_id}
+            onClick={() => { setSelected(place); setError(""); }}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "10px 12px", borderRadius: 14,
+              border: `2px solid ${selected?.place_id === place.place_id ? "#FF5733" : C.border}`,
+              background: selected?.place_id === place.place_id ? "#FFF8F6" : C.card,
+              cursor: "pointer", marginBottom: 8, transition: "all 0.15s",
+            }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: 10, background: C.pill, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+              {place.photo_url ? <img src={place.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🏪"}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{place.name}</div>
+              <div style={{ fontSize: 11, color: C.ink2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{place.address}</div>
+            </div>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${selected?.place_id === place.place_id ? "#FF5733" : C.border}`, background: selected?.place_id === place.place_id ? "#FF5733" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {selected?.place_id === place.place_id && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} />}
+            </div>
+          </div>
+        ))}
+
+        {selected && (
+          <button
+            onClick={handleLink}
+            disabled={linking}
+            style={{
+              width: "100%", background: linking ? "#ccc" : "#FF5733",
+              color: "#fff", border: "none", borderRadius: 14,
+              padding: 14, fontSize: 14, fontWeight: 700,
+              fontFamily: dm, cursor: linking ? "not-allowed" : "pointer", marginTop: 8,
+            }}
+          >
+            {linking ? "⏳ Liaison en cours…" : `✓ Lier « ${selected.name} »`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Carte Google dans le dashboard (gère les 2 cas : lié / non lié) ──────────
+function GoogleResyncCard({ profile, userId, onSaved }) {
+  const [loading, setLoading]     = useState(false);
+  const [success, setSuccess]     = useState(false);
+  const [error, setError]         = useState("");
+  const [showModal, setShowModal] = useState(false);
+
+  const fnHeaders = {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_ANON_KEY_MAG,
+    "Authorization": `Bearer ${SUPABASE_ANON_KEY_MAG}`,
+  };
 
   const lastSync = profile?.google_synced_at
     ? new Date(profile.google_synced_at).toLocaleDateString("fr-FR", {
@@ -720,42 +884,25 @@ function GoogleResyncCard({ profile, userId, onSaved }) {
     : null;
 
   const handleResync = async () => {
-    setLoading(true);
-    setSuccess(false);
-    setError("");
+    setLoading(true); setSuccess(false); setError("");
     try {
       const res = await fetch(
         `${SUPABASE_FN_URL_MAG}/places-details?place_id=${encodeURIComponent(profile.google_place_id)}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_ANON_KEY_MAG,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY_MAG}`,
-          },
-        }
+        { headers: fnHeaders }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erreur de synchronisation");
-
-      // Mise à jour Supabase avec les nouvelles données Google
+      if (!res.ok) throw new Error(data.error || "Erreur");
       const updates = {
-        phone:                  data.phone || profile.phone,
-        website:                data.website || profile.website,
-        opening_hours:          data.opening_hours ?? profile.opening_hours,
-        current_opening_hours:  data.current_opening_hours ?? profile.current_opening_hours,
-        google_synced_at:       new Date().toISOString(),
-        google_data:            data.raw ?? profile.google_data,
-        // On ne réécrase les photos que si Google en retourne de nouvelles
+        phone:                 data.phone || profile.phone,
+        website:               data.website || profile.website,
+        opening_hours:         data.opening_hours ?? profile.opening_hours,
+        current_opening_hours: data.current_opening_hours ?? profile.current_opening_hours,
+        google_synced_at:      new Date().toISOString(),
+        google_data:           data.raw ?? profile.google_data,
         ...(data.photo_urls?.length > 0 ? { photo_urls: data.photo_urls } : {}),
       };
-
-      const { error: dbErr } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", userId);
-
+      const { error: dbErr } = await supabase.from("profiles").update(updates).eq("id", userId);
       if (dbErr) throw new Error(dbErr.message);
-
       if (onSaved) onSaved(updates);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
@@ -766,31 +913,56 @@ function GoogleResyncCard({ profile, userId, onSaved }) {
     }
   };
 
+  // ── CAS 1 : pas encore de fiche Google liée ──────────────────────────────
+  if (!profile?.google_place_id) return (
+    <>
+      {showModal && (
+        <GoogleLinkModal
+          userId={userId}
+          onClose={() => setShowModal(false)}
+          onLinked={(updates) => {
+            if (onSaved) onSaved(updates);
+            setShowModal(false);
+          }}
+        />
+      )}
+      <div style={{
+        background: C.card, borderRadius: 16,
+        border: `1.5px dashed ${C.border}`,
+        padding: "12px 14px", marginTop: 10, marginBottom: 2,
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🗺️</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Fiche Google non liée</div>
+          <div style={{ fontSize: 10, color: C.ink2, marginTop: 1, fontFamily: dm }}>Importe tes horaires et photos automatiquement</div>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          style={{
+            background: "#FF5733", color: "#fff", border: "none", borderRadius: 10,
+            padding: "7px 12px", fontSize: 11, fontWeight: 700,
+            fontFamily: dm, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+          }}
+        >
+          🔗 Lier Google
+        </button>
+      </div>
+    </>
+  );
+
+  // ── CAS 2 : fiche Google déjà liée → bouton resync ───────────────────────
   return (
     <div style={{
       background: C.card, borderRadius: 16, border: `1px solid ${C.border}`,
       padding: "12px 14px", marginTop: 10, marginBottom: 2,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {/* Logo Google simulé */}
-        <div style={{
-          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-          background: "#E8F5E9", display: "flex", alignItems: "center",
-          justifyContent: "center", fontSize: 20,
-        }}>🗺️</div>
-
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: "#E8F5E9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🗺️</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>
-            Fiche Google connectée
-          </div>
-          {lastSync && (
-            <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>
-              Dernière synchro : {lastSync}
-            </div>
-          )}
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Fiche Google connectée</div>
+          {lastSync && <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>Dernière synchro : {lastSync}</div>}
         </div>
-
-        {/* Bouton resync */}
         <button
           onClick={handleResync}
           disabled={loading}
@@ -802,15 +974,10 @@ function GoogleResyncCard({ profile, userId, onSaved }) {
             whiteSpace: "nowrap", transition: "background 0.2s", flexShrink: 0,
           }}
         >
-          {loading ? "⏳" : success ? "✓ Synchro OK" : "🔄 Resynchroniser"}
+          {loading ? "⏳" : success ? "✓ OK" : "🔄 Resynchroniser"}
         </button>
       </div>
-
-      {error && (
-        <div style={{
-          marginTop: 8, fontSize: 11, color: "#C0392B", fontFamily: dm, lineHeight: 1.4,
-        }}>⚠️ {error}</div>
-      )}
+      {error && <div style={{ marginTop: 8, fontSize: 11, color: "#C0392B", fontFamily: dm }}>⚠️ {error}</div>}
     </div>
   );
 }
