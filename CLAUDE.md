@@ -194,6 +194,17 @@ Branche git : `feat/page-commerces-sections` (créer avec `git checkout -b feat/
 - Supabase query : ajoute `created_at, lieu_type` au SELECT + `role.eq.lieu` au OR filter
 - Nouveau rôle `lieu` pour médiathèque, musée, piscine, théâtre, cinéma, etc.
 
+### 18. Refonte vitrine (chipeur_commerces.jsx)
+
+- `VITRINE_MODES` réordonné : Posts (tout) en premier, puis Promos, Défis, Photos, Liés
+- Onglet par défaut : `activeMode` passe de `"galerie"` à `"tout"`
+- **Badge compteurs** sur chaque chip : `counts = { tout, promos, defis, galerie, postes }` passé à `VitrineChips`
+- **Stats conditionnelles** : si vitrine < 30j et tous à 0 → badge "🆕 Nouvelle vitrine · 📍 Commerce vérifié". Si stats existent : on affiche uniquement les non-nulles, "abonnés" → "voisins du quartier"
+- **♡ Suivre** déplacé dans le bandeau photo (top-right, bouton rond), plus de bouton flottant "Suivre cette vitrine"
+- **Boutons bas de page** : `📞 Contacter` (lien tel:) + `🗺️ Y aller` (Google Maps search sur nom + Saint-Dié-des-Vosges)
+- **États vides** retravaillés : emoji grand + titre + sous-titre pour chaque onglet (posts, promos, défis, galerie)
+- **Horaires dynamiques** : helper `nextOpeningText(hours)` → affiche "● Fermé · Ouvre lundi à 9h30" dans `TabInfos`
+
 ---
 
 ## À faire / en attente

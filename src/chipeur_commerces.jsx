@@ -1188,32 +1188,39 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
 
 // ─── CHIPS VITRINE ───
 const VITRINE_MODES = [
-  { id: "galerie", label: "Photos" },
-  { id: "tout",    label: "🃏 Posts" },
+  { id: "tout",    label: "Posts" },
   { id: "promos",  label: "🎁 Promos" },
   { id: "defis",   label: "🏆 Défis" },
+  { id: "galerie", label: "📷 Photos" },
   { id: "postes",  label: "📬 Liés", ownerOnly: true },
 ];
 
-function VitrineChips({ activeMode, onChange, isOwner }) {
+function VitrineChips({ activeMode, onChange, isOwner, counts = {} }) {
   const visible = VITRINE_MODES.filter(m => !m.ownerOnly || isOwner);
   return (
     <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "10px 16px 8px", scrollbarWidth: "none", background: C.bg }}>
       {visible.map(m => {
         const isActive = activeMode === m.id;
+        const count = counts[m.id];
         return (
           <button
             key={m.id}
             onClick={() => onChange(m.id)}
             style={{
               flexShrink: 0, border: "none", borderRadius: 20, cursor: "pointer",
-              padding: "7px 16px", fontSize: 12, fontWeight: 600, fontFamily: dm,
+              padding: "7px 14px", fontSize: 12, fontWeight: 600, fontFamily: dm,
               background: isActive ? C.ink : C.pill,
               color:      isActive ? "#fff" : C.ink2,
               transition: "background 0.15s, color 0.15s",
+              display: "flex", alignItems: "center", gap: 5,
             }}
           >
             {m.label}
+            {count > 0 && (
+              <span style={{ background: isActive ? "rgba(255,255,255,0.25)" : C.accent, color: "#fff", borderRadius: 10, fontSize: 10, fontWeight: 700, padding: "1px 6px", lineHeight: 1.4 }}>
+                {count}
+              </span>
+            )}
           </button>
         );
       })}
@@ -1275,7 +1282,7 @@ function DefiVitrine({ defi }) {
 // ─── ONGLET VITRINE ───
 function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const [posts, setPosts] = useState(realPosts);
-  const [activeMode, setActiveMode] = useState("galerie");
+  const [activeMode, setActiveMode] = useState("tout");
   const [selectedPost, setSelectedPost] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
@@ -1369,10 +1376,18 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const defisEnCours  = defis.filter(d => !d.ended);
   const defisTermines = defis.filter(d => !!d.ended);
 
+  const counts = {
+    tout:   posts.length,
+    promos: posts.filter(p => p.post_type === "bonplan" || p.post_type === "promo").length,
+    defis:  defis.length,
+    galerie: photoPosts.length,
+    postes: linkedPosts.filter(p => p.linked_status === "pending").length,
+  };
+
   return (
     <div style={{ padding: "0 0 100px" }}>
       {/* Chips mode */}
-      <VitrineChips activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} />
+      <VitrineChips activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} counts={counts} />
 
       {/* ── Mode POSTS LIÉS (owner seulement) ── */}
       {activeMode === "postes" && isOwner && (
@@ -1499,8 +1514,10 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
           {loadingDefis ? (
             <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
           ) : defis.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
-              Aucun défi lancé pour l'instant.
+            <div style={{ textAlign: "center", padding: "48px 24px" }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>🏆</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun défi lancé</div>
+              <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Ce commerce n'a pas encore lancé de défi. Guettez les futures annonces !</div>
             </div>
           ) : (
             <>
@@ -1530,7 +1547,11 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
         loadingPosts ? (
           <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
         ) : photoPosts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>Aucune photo pour l'instant.</div>
+          <div style={{ textAlign: "center", padding: "48px 24px" }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>📷</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucune photo pour l'instant</div>
+            <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Les photos partagées par le commerce et les voisins apparaîtront ici.</div>
+          </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3, padding: "0 2px" }}>
             {photoPosts.map((post, idx) => (
@@ -1557,8 +1578,16 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
         loadingPosts ? (
           <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
-            {activeMode === "promos" ? "Aucune promo pour l'instant." : "Aucun contenu pour l'instant."}
+          <div style={{ textAlign: "center", padding: "48px 24px" }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>{activeMode === "promos" ? "🎁" : "📸"}</div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>
+              {activeMode === "promos" ? "Aucune promo active" : "Vitrine vide pour l'instant"}
+            </div>
+            <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>
+              {activeMode === "promos"
+                ? "Ce commerce n'a pas encore partagé de bon plan. Revenez bientôt !"
+                : "Soyez parmi les premiers à le découvrir et à réagir !"}
+            </div>
           </div>
         ) : (
           <div style={{ padding: "0 16px" }}>
@@ -1645,6 +1674,24 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   );
 }
 
+// Calcule le texte "Ouvre lundi à 9h30" à partir du tableau d'horaires
+function nextOpeningText(hours) {
+  if (!hours || hours.length === 0) return null;
+  const daysFr = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+  const currentDayIndex = new Date().getDay();
+  for (let offset = 1; offset < 8; offset++) {
+    const dayIndex = (currentDayIndex + offset) % 7;
+    const dayName = daysFr[dayIndex];
+    const entry = hours.find(h => h.j && h.j.toLowerCase().startsWith(dayName.toLowerCase().substring(0, 3)));
+    if (entry && entry.h && entry.h !== "Fermé" && entry.h !== "—") {
+      const openTime = entry.h.split(/[–\-\/]/)[0].trim();
+      if (offset === 1) return `Ouvre demain à ${openTime}`;
+      return `Ouvre ${dayName.toLowerCase()} à ${openTime}`;
+    }
+  }
+  return null;
+}
+
 // ─── ONGLET INFOS ───
 function TabInfos({ com }) {
   const rowStyle = {
@@ -1691,7 +1738,10 @@ function TabInfos({ com }) {
               <span style={{ fontSize: 11, fontWeight: 600, color: C.ink2 }}>HORAIRES</span>
               {com.open_now !== null && com.open_now !== undefined && (
                 <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: com.open_now ? "#DCFCE7" : "#FEE2E2", color: com.open_now ? "#16A34A" : "#DC2626" }}>
-                  {com.open_now ? "● Ouvert maintenant" : "● Fermé"}
+                  {com.open_now ? "● Ouvert maintenant" : (() => {
+                    const next = nextOpeningText(com.hours);
+                    return next ? `● Fermé · ${next}` : "● Fermé";
+                  })()}
                 </span>
               )}
             </div>
@@ -1888,8 +1938,12 @@ function VitrineScreen({ com, onBack, user }) {
           <CoverImage src={com.cover} commerce={com} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%, rgba(26,23,20,0.7) 100%)" }} />
           <button onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>‹</button>
-          {com.isDemo && (
+          {com.isDemo ? (
             <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,87,51,0.92)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 10, letterSpacing: 0.5 }}>✨ EXEMPLE</div>
+          ) : (
+            <button onClick={handleSuivi} style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+              {suivi ? "❤️" : "🤍"}
+            </button>
           )}
           <div style={{ position: "absolute", bottom: 14, left: 16 }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff", lineHeight: 1 }}>{com.name}</div>
@@ -1897,20 +1951,46 @@ function VitrineScreen({ com, onBack, user }) {
           </div>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.card }}>
-          {[
-            { n: displayPosts,                   l: "posts",     icon: "📸" },
-            { n: reactionsCount ?? "—",          l: "réactions", icon: "❤️" },
-            { n: followersCount ?? "—",          l: "abonnés",   icon: "👥" },
-          ].map((s, i) => (
-            <div key={i} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: i < 2 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ fontSize: 11, marginBottom: 2 }}>{s.icon}</div>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>{s.n}</div>
-              <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
+        {/* Stats — badge nouvelle vitrine ou compteurs réels */}
+        {(() => {
+          const allStatsLoaded = realPostCount !== null && followersCount !== null && reactionsCount !== null;
+          const allZeroStats = allStatsLoaded && realPostCount === 0 && followersCount === 0 && reactionsCount === 0;
+          const isNewVitrine = !com.isDemo && com.created_at
+            && (Date.now() - new Date(com.created_at).getTime()) < 30 * 24 * 60 * 60 * 1000;
+
+          if (allZeroStats && isNewVitrine) {
+            return (
+              <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 14, background: "rgba(255,87,51,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🆕</div>
+                <div>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Nouvelle vitrine</div>
+                  <div style={{ fontSize: 11, color: C.ink2, marginTop: 2 }}>📍 Commerce vérifié · Venez les découvrir !</div>
+                </div>
+              </div>
+            );
+          }
+
+          const visibleStats = [
+            { n: displayPosts,          l: "posts",               icon: "📸", hide: !realPostCount },
+            { n: reactionsCount,        l: "réactions",           icon: "❤️", hide: !reactionsCount },
+            { n: followersCount,        l: "voisins du quartier", icon: "👥", hide: !followersCount },
+          ].filter(s => !s.hide);
+
+          if (!allStatsLoaded) return null; // loading silently
+          if (visibleStats.length === 0) return null;
+
+          return (
+            <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.card }}>
+              {visibleStats.map((s, i) => (
+                <div key={i} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: i < visibleStats.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                  <div style={{ fontSize: 11, marginBottom: 2 }}>{s.icon}</div>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>{s.n}</div>
+                  <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         {/* Onglets */}
         <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}` }}>
@@ -1938,10 +2018,21 @@ function VitrineScreen({ com, onBack, user }) {
         {activeTab === "infos" && <TabInfos com={com} />}
       </div>
 
-      {/* Bouton fixe */}
-      <button onClick={handleSuivi} style={{ position: "absolute", bottom: 90, left: 18, right: 18, border: "none", borderRadius: 16, padding: 15, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer", textAlign: "center", background: suivi ? C.ink : C.accent, color: "#fff", transition: "all 0.2s", zIndex: 10 }}>
-        {suivi ? "✓ Vitrine suivie" : "+ Suivre cette vitrine"}
-      </button>
+      {/* Boutons Contacter + Y aller */}
+      <div style={{ position: "absolute", bottom: 90, left: 18, right: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, zIndex: 10 }}>
+        {com.phone ? (
+          <a href={`tel:${(com.phone || "").replace(/\s/g, "")}`} style={{ borderRadius: 16, padding: "15px 0", fontSize: 14, fontWeight: 700, fontFamily: dm, textAlign: "center", background: C.accent, color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(255,87,51,0.35)" }}>
+            📞 Contacter
+          </a>
+        ) : (
+          <div style={{ borderRadius: 16, padding: "15px 0", fontSize: 14, fontWeight: 700, fontFamily: dm, textAlign: "center", background: "rgba(255,255,255,0.85)", color: C.ink2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            📞 Contacter
+          </div>
+        )}
+        <a href={`https://www.google.com/maps/search/${encodeURIComponent((com.name || "") + " Saint-Dié-des-Vosges")}`} target="_blank" rel="noreferrer" style={{ borderRadius: 16, padding: "15px 0", fontSize: 14, fontWeight: 700, fontFamily: dm, textAlign: "center", background: C.ink, color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(26,23,20,0.25)" }}>
+          🗺️ Y aller
+        </a>
+      </div>
     </div>
   );
 }
