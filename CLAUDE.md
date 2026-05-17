@@ -164,6 +164,38 @@ Fichiers modifiés : `chipeur_commerces.jsx`, `chipeur_onboarding.jsx`, `chipeur
 
 ---
 
+### 17. Refonte page Commerces — sections thématiques (chipeur_commerces.jsx)
+
+Branche git : `feat/page-commerces-sections` (créer avec `git checkout -b feat/page-commerces-sections`)
+
+#### Nouveaux fichiers
+- `supabase/migrations/20260517_lieu_role.sql` — index sur `role = 'lieu'` + colonne `lieu_type TEXT`
+
+#### Logique de la page
+- **Vue d'ensemble** (aucun filtre actif) → sections empilées :
+  1. 📸 Bandeau photos récentes (inchangé)
+  2. 🆕 Nouveaux membres — strip horizontal, derniers 6 inscrits (tri `created_at`)
+  3. 🏪 Commerces — grille 2 colonnes (Mode, Alim, Maison, Services, Sport, Culture, Autre)
+  4. 💄 Beauté & Bien-être — strip horizontal (visible si ≥1 membre)
+  5. 🍽️ Restauration — strip horizontal (visible si ≥1 membre)
+  6. 🎨 Artisans & Créateurs — strip horizontal (visible si ≥1 membre)
+  7. 🏛️ Vie locale — strip horizontal, accent vert pro (role = 'lieu') (visible si ≥1 membre)
+- **Vue filtrée** (chip catégorie ou recherche active) → grille 2 col flat (comportement précédent)
+- Sections 4-7 n'apparaissent que si elles ont du contenu (évite les sections vides)
+
+#### Nouveaux composants
+- `StripCard` — carte 150×130px pour les strips horizontaux
+- `SectionHeader` — en-tête de section réutilisable (emoji + titre + séparateur + compteur)
+- `SectionStrip` — section horizontale scrollable (utilise StripCard)
+- `NouveauxMembres` — strip avatars 64×64px avec nom + catégorie en dessous
+
+#### Modifications
+- `profileToCommerce` : ajoute `created_at`, `role`, `lieu_type`
+- Supabase query : ajoute `created_at, lieu_type` au SELECT + `role.eq.lieu` au OR filter
+- Nouveau rôle `lieu` pour médiathèque, musée, piscine, théâtre, cinéma, etc.
+
+---
+
 ## À faire / en attente
 - Tester fix iOS écran blanc sur l'iPhone de la mère de Jenny
 - Google Analytics : actif, données visibles sous 24-48h

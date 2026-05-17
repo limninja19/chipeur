@@ -134,6 +134,9 @@ function profileToCommerce(p, postCount) {
     facebook: p.facebook || null,
     hours: Array.isArray(p.horaires) ? p.horaires.filter(h => h.h) : [],
     products: [],
+    created_at: p.created_at || null,
+    role: p.role || null,
+    lieu_type: p.lieu_type || null,
   };
 }
 
@@ -447,6 +450,103 @@ function ComGridCard({ com, onClick }) {
             📍 {com.adresse}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── CARD STRIP (carte horizontale pour les sections) ───
+function StripCard({ com, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        flexShrink: 0, width: 150, borderRadius: 16, overflow: "hidden",
+        cursor: "pointer", background: C.card, border: `1px solid ${C.border}`,
+        boxShadow: "0 2px 8px rgba(26,23,20,0.06)",
+      }}
+    >
+      <div style={{ position: "relative", width: "100%", height: 100, overflow: "hidden" }}>
+        <CoverImage src={com.cover} commerce={com} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 30%, rgba(26,23,20,0.72))" }} />
+        {com.open_now !== null && com.open_now !== undefined && (
+          <div style={{ position: "absolute", top: 6, left: 6, background: com.open_now ? "#22C55E" : "#EF4444", borderRadius: 6, padding: "2px 6px", display: "flex", alignItems: "center", gap: 3 }}>
+            <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#fff" }} />
+            <span style={{ fontSize: 8, fontWeight: 700, color: "#fff" }}>{com.open_now ? "Ouvert" : "Fermé"}</span>
+          </div>
+        )}
+        <div style={{ position: "absolute", bottom: 6, left: 8, right: 8 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: "#fff", lineHeight: 1.2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            {com.name}
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: "6px 8px 8px" }}>
+        <div style={{ fontSize: 10, color: C.ink, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {catLabel(com.categorie || com.category || com.lieu_type || "Établissement")}
+        </div>
+        {com.adresse && (
+          <div style={{ fontSize: 9, color: C.ink2, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            📍 {com.adresse}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── EN-TÊTE DE SECTION ───
+function SectionHeader({ emoji, title, count, accent }) {
+  return (
+    <div style={{ fontSize: 10, fontWeight: 700, color: accent || C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6, padding: "0 16px" }}>
+      {emoji} {title}
+      <div style={{ flex: 1, height: 1, background: accent ? `${accent}33` : C.border }} />
+      {count != null && <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0, color: C.ink2 }}>{count}</span>}
+    </div>
+  );
+}
+
+// ─── SECTION STRIP HORIZONTAL ───
+function SectionStrip({ emoji, title, items, onOpen, accent }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div style={{ paddingTop: 16, paddingBottom: 4 }}>
+      <SectionHeader emoji={emoji} title={title} count={`${items.length} inscrit${items.length > 1 ? "s" : ""}`} accent={accent} />
+      <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "0 16px 4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+        {items.map((com, i) => (
+          <StripCard key={com.id || i} com={com} onClick={() => onOpen(com)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── NOUVEAUX MEMBRES ───
+function NouveauxMembres({ items, onOpen }) {
+  if (!items || items.length === 0) return null;
+  const sorted = [...items].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 6);
+  if (sorted.length === 0) return null;
+  return (
+    <div style={{ paddingTop: 14, paddingBottom: 4 }}>
+      <SectionHeader emoji="🆕" title="Nouveaux membres" count={null} accent={C.accent} />
+      <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "0 16px 4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+        {sorted.map((com, i) => (
+          <div
+            key={com.id || i}
+            onClick={() => onOpen(com)}
+            style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer", width: 72 }}
+          >
+            <div style={{ width: 64, height: 64, borderRadius: 18, overflow: "hidden", border: `2px solid ${C.accent}22`, boxShadow: "0 2px 8px rgba(26,23,20,0.1)", background: C.pill }}>
+              <CoverImage src={com.cover} commerce={com} />
+            </div>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 10, color: C.ink, textAlign: "center", lineHeight: 1.2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", width: "100%" }}>
+              {com.name}
+            </div>
+            <div style={{ fontSize: 9, color: C.ink2, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>
+              {catLabel(com.categorie || com.category || "Commerce")}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1728,8 +1828,8 @@ export default function ChipeurCommerces({ setPage, user }) {
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role, photo_urls, current_opening_hours")
-      .or("role.eq.magasin,categorie.not.is.null")
+      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role, photo_urls, current_opening_hours, created_at, lieu_type")
+      .or("role.eq.magasin,role.eq.lieu,categorie.not.is.null")
       .not("pseudo", "is", null)
       .neq("pseudo", "[Compte supprimé]")
       .then(async ({ data: rawProfiles }) => {
@@ -1770,6 +1870,15 @@ export default function ChipeurCommerces({ setPage, user }) {
   const featured = filtered.find(c => c.featured);
   const others = filtered.filter(c => !c.featured);
 
+  // ── Sections thématiques (mode vue d'ensemble sans filtre) ──
+  const lieuItems      = allCommerces.filter(c => c.role === "lieu");
+  const beauteItems    = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Beauté"));
+  const restoItems     = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Restauration"));
+  const artisanItems   = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Artisan"));
+  // "Commerces" = tout le reste (hors beauté/resto/artisan/lieu)
+  const specialIds = new Set([...beauteItems, ...restoItems, ...artisanItems, ...lieuItems].map(c => c.id));
+  const mainCommerces  = allCommerces.filter(c => !specialIds.has(c.id));
+
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
@@ -1808,26 +1917,29 @@ export default function ChipeurCommerces({ setPage, user }) {
           <div style={{ flex: 1, overflowY: "auto" }}>
             {loadingMerchants ? (
               <div style={{ textAlign: "center", padding: "20px 0", fontSize: 12, color: C.ink2 }}>⏳ Chargement…</div>
-            ) : (
+            ) : isAllCats && !search ? (
+              /* ══════════ VUE SECTIONS (sans filtre actif) ══════════ */
               <>
-                {/* ── Bandeau photos récentes ── */}
-                {isAllCats && !search && (
-                  <div style={{ padding: "12px 0 8px" }}>
-                    <RecentShopPhotos
-                      merchants={realMerchants}
-                      onOpenShop={(shop) => { setSelectedCom(shop); setScreen("vitrine"); }}
-                    />
-                  </div>
+                {/* Bandeau photos récentes */}
+                <div style={{ padding: "12px 0 4px" }}>
+                  <RecentShopPhotos
+                    merchants={realMerchants}
+                    onOpenShop={(shop) => { setSelectedCom(shop); setScreen("vitrine"); }}
+                  />
+                </div>
+
+                {/* Nouveaux membres */}
+                {allCommerces.length > 0 && (
+                  <NouveauxMembres
+                    items={allCommerces}
+                    onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
+                  />
                 )}
 
-                {/* ── Section DÉMO en premier ── */}
-                {!search && (
-                  <div style={{ padding: "8px 16px 4px" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                      ✨ Exemple de vitrine
-                      <div style={{ flex: 1, height: 1, background: "rgba(255,87,51,0.2)" }} />
-                      <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0, color: C.ink2 }}>aperçu</span>
-                    </div>
+                {/* Section DÉMO si aucun commerçant réel */}
+                {realMerchants.length === 0 && (
+                  <div style={{ padding: "12px 16px 4px" }}>
+                    <SectionHeader emoji="✨" title="Exemple de vitrine" accent={C.accent} />
                     <div style={{ position: "relative" }}>
                       <ComCard com={DEMO_COMMERCE} onClick={() => { setSelectedCom(DEMO_COMMERCE); setScreen("vitrine"); }} />
                       <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, background: "rgba(26,23,20,0.7)", borderRadius: 10, padding: "7px 12px", textAlign: "center" }}>
@@ -1837,40 +1949,83 @@ export default function ChipeurCommerces({ setPage, user }) {
                   </div>
                 )}
 
-                {/* ── Bandeau "bientôt" si peu de contenu ── */}
-                {!search && realMerchants.length > 0 && realMerchants.length < 8 && (
-                  <div style={{ margin: "4px 16px 4px", background: C.proBg, border: `1px solid rgba(10,61,46,0.12)`, borderRadius: 16, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+                {/* Bandeau "bientôt" si peu de contenu */}
+                {realMerchants.length > 0 && realMerchants.length < 5 && (
+                  <div style={{ margin: "12px 16px 4px", background: C.proBg, border: `1px solid rgba(10,61,46,0.12)`, borderRadius: 16, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                     <span style={{ fontSize: 24 }}>🌱</span>
                     <div>
                       <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.pro }}>Les vitrines arrivent !</div>
-                      <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>Les commerçants de Saint-Dié rejoignent Chipeur — les vitrines se mettent en place.</div>
+                      <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>Les commerçants de Saint-Dié rejoignent Chipeur.</div>
                     </div>
                   </div>
                 )}
 
-                {/* ── Liste boutiques ── */}
-                <div style={{ padding: "8px 16px 80px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                    🏪 Les boutiques
-                    <div style={{ flex: 1, height: 1, background: C.border }} />
-                    <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{filtered.length} inscrit{filtered.length > 1 ? "s" : ""}</span>
-                  </div>
-
-                  {filtered.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "40px 16px" }}>
-                      <div style={{ fontSize: 36, marginBottom: 10 }}>🏪</div>
-                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun commerce trouvé</div>
-                      <div style={{ fontSize: 12, color: C.ink2 }}>Essaie un autre filtre ou une autre recherche.</div>
-                    </div>
-                  ) : (
+                {/* ── Section Commerces (grille prioritaire) ── */}
+                {mainCommerces.length > 0 && (
+                  <div style={{ padding: "16px 16px 4px" }}>
+                    <SectionHeader emoji="🏪" title="Commerces" count={`${mainCommerces.length} inscrit${mainCommerces.length > 1 ? "s" : ""}`} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      {filtered.map((c, i) => (
-                        <ComGridCard key={i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
+                      {mainCommerces.map((c, i) => (
+                        <ComGridCard key={c.id || i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
                       ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* ── Beauté & Bien-être ── */}
+                <SectionStrip
+                  emoji="💄" title="Beauté & Bien-être"
+                  items={beauteItems}
+                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
+                />
+
+                {/* ── Restauration ── */}
+                <SectionStrip
+                  emoji="🍽️" title="Restauration"
+                  items={restoItems}
+                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
+                />
+
+                {/* ── Artisans ── */}
+                <SectionStrip
+                  emoji="🎨" title="Artisans & Créateurs"
+                  items={artisanItems}
+                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
+                />
+
+                {/* ── Vie locale ── */}
+                <SectionStrip
+                  emoji="🏛️" title="Vie locale"
+                  items={lieuItems}
+                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
+                  accent={C.pro}
+                />
+
+                <div style={{ height: 80 }} />
               </>
+            ) : (
+              /* ══════════ VUE FILTRÉE (chip ou recherche active) ══════════ */
+              <div style={{ padding: "8px 16px 80px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                  🔍 Résultats
+                  <div style={{ flex: 1, height: 1, background: C.border }} />
+                  <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{filtered.length} résultat{filtered.length > 1 ? "s" : ""}</span>
+                </div>
+
+                {filtered.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "40px 16px" }}>
+                    <div style={{ fontSize: 36, marginBottom: 10 }}>🏪</div>
+                    <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun résultat</div>
+                    <div style={{ fontSize: 12, color: C.ink2 }}>Essaie un autre filtre ou une autre recherche.</div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {filtered.map((c, i) => (
+                      <ComGridCard key={c.id || i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </>
