@@ -1993,6 +1993,7 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
       .select("*, profiles(id, pseudo, avatar_url, role), link_url")
       .neq("post_type", "defi_photo")
       .is("evenement_id", null)
+      .or("visibility.is.null,visibility.eq.public") // exclut les posts "vitrine seulement"
       .order("created_at", { ascending: false });
     if (nearbyOn) q = q.in("location", BASIN_CITIES);
     const { data: mainPosts, error } = await q;

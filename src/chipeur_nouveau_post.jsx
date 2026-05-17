@@ -894,6 +894,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   const [photoPreview, setPhotoPreview] = useState(null); // URL blob pour affichage contrôlé
   const [publishing, setPublishing] = useState(false);
   const [publishedPost, setPublishedPost] = useState(null); // { text, imageUrl } pour le partage
+  // Visibilité du post (commerçants uniquement)
+  const [visibility, setVisibility] = useState("public"); // "public" | "vitrine"
 
   // Callback centralisé pour la sélection/suppression photo (chope + bon plan)
   const handlePhotoSelect = (file, url) => {
@@ -1078,6 +1080,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
         magasin_id: magasinId || null,
         magasin_nom: magasinNom || null,
         linked_status: magasinId ? "pending" : null,
+        visibility,
       }).select("id").maybeSingle();
       setPublishing(false);
       if (error) { setPublishError("Erreur : " + error.message); return; }
@@ -1110,6 +1113,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
         post_type: "recherche",
         location: profile?.quartier || "Saint-Dié-des-Vosges",
         tags: rechercheTag ? [rechercheTag, "Je cherche 🔍"] : ["Je cherche 🔍"],
+        visibility,
       });
       setPublishing(false);
       if (error) { setPublishError("Erreur : " + error.message); return; }
@@ -1150,6 +1154,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
         location: profile?.quartier || "Saint-Dié-des-Vosges",
         tags: lieuFields.type ? [lieuFields.type] : [],
         post_type: "lieu",
+        visibility,
       });
       setPublishing(false);
       if (error) { setPublishError("Erreur Supabase : " + error.message); return; }
@@ -1236,6 +1241,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       magasin_nom: magasinNom || null,
       linked_status: magasinId ? "pending" : null,
       link_url: (linkUrl.trim().startsWith("http://") || linkUrl.trim().startsWith("https://")) ? linkUrl.trim() : null,
+      visibility,
     }).select("id").maybeSingle();
     setPublishing(false);
     if (error) {
@@ -1437,7 +1443,34 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
                 {formMap[selectedType]}
               </div>
 
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 16px 28px", background: C.card, borderTop: `1px solid ${C.border}` }}>
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 16px 28px", background: C.card, borderTop: `1px solid ${C.border}` }}>
+                {/* Toggle visibilité — commerçants seulement, sauf sortie/événement */}
+                {isMagasin && selectedType !== "sortie" && (
+                  <div style={{ display: "flex", background: C.pill, borderRadius: 12, padding: 3, marginBottom: 10 }}>
+                    {[
+                      { id: "public",  label: "📢 Fil + Vitrine",     desc: "Visible par tous les voisins" },
+                      { id: "vitrine", label: "🏪 Vitrine seulement", desc: "Visible sur ta fiche uniquement" },
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setVisibility(opt.id)}
+                        title={opt.desc}
+                        style={{
+                          flex: 1, fontSize: 11, fontWeight: 700,
+                          fontFamily: "'DM Sans', sans-serif",
+                          padding: "7px 6px", borderRadius: 10, border: "none",
+                          cursor: "pointer",
+                          background: visibility === opt.id ? C.card : "transparent",
+                          color: visibility === opt.id ? C.ink : C.ink2,
+                          boxShadow: visibility === opt.id ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button onClick={handlePublishClick} disabled={publishing} style={{ width: "100%", border: "none", borderRadius: 16, padding: "14px 0", fontSize: 14, fontWeight: 800, cursor: publishing ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", background: publishing ? "#ccc" : `linear-gradient(90deg, ${C.accent}, #FF8C42)`, color: "#fff", boxShadow: publishing ? "none" : "0 4px 16px rgba(255,87,51,0.4)" }}>
                   {publishing ? "Sauvegarde…" : isEditMode ? "Enregistrer ✓" : "Publier 🚀"}
                 </button>
