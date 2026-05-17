@@ -1029,8 +1029,9 @@ function EnrichModal({ post, onClose, onSaved }) {
 }
 
 // ─── CARTE POST VITRINE ───
-function VitrinePostCard({ post, userId, comId, isOwner, onEnrich }) {
+function VitrinePostCard({ post, userId, comId, isOwner, onEnrich, onDelete }) {
   const [lightbox, setLightbox] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
     if (diff < 1) return "À l'instant";
@@ -1039,7 +1040,14 @@ function VitrinePostCard({ post, userId, comId, isOwner, onEnrich }) {
     return Math.floor(diff / 1440) + "j";
   };
   const canEnrich = isOwner && post.magasin_id === comId;
+  const canDelete = !!onDelete && userId && post.author_id === userId;
   const hasEnrichment = post.product_label || post.product_price;
+
+  const handleDelete = async () => {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    await supabase.from("posts").delete().eq("id", post.id);
+    onDelete(post.id);
+  };
 
   return (
     <>
@@ -1057,16 +1065,32 @@ function VitrinePostCard({ post, userId, comId, isOwner, onEnrich }) {
             <div style={{ fontFamily: syne, fontSize: 13, fontWeight: 700, color: C.ink }}>{post.profiles?.pseudo || "Voisin·e"}</div>
             <div style={{ fontSize: 10, color: C.ink2 }}>{timeAgo(post.created_at)}</div>
           </div>
-          {canEnrich && (
-            <button onClick={onEnrich} style={{
-              background: hasEnrichment ? C.proBg : C.pill,
-              color: hasEnrichment ? C.pro : C.ink2,
-              border: "none", borderRadius: 10, padding: "5px 11px",
-              fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer",
-            }}>
-              {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
-            </button>
-          )}
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {canEnrich && (
+              <button onClick={onEnrich} style={{
+                background: hasEnrichment ? C.proBg : C.pill,
+                color: hasEnrichment ? C.pro : C.ink2,
+                border: "none", borderRadius: 10, padding: "5px 11px",
+                fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+              }}>
+                {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={handleDelete}
+                onBlur={() => setConfirmDelete(false)}
+                style={{
+                  background: confirmDelete ? "#FEE2E2" : C.pill,
+                  color: confirmDelete ? "#DC2626" : C.ink2,
+                  border: "none", borderRadius: 10, padding: "5px 10px",
+                  fontSize: 11, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+                  transition: "all 0.2s",
+                }}>
+                {confirmDelete ? "Confirmer ?" : "🗑"}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Image */}
@@ -1599,6 +1623,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                 comId={com.id}
                 isOwner={isOwner}
                 onEnrich={() => setEnrichingPost(post)}
+                onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
               />
             ))}
           </div>
