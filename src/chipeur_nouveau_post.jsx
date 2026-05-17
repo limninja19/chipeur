@@ -589,8 +589,101 @@ function DroitImagePopup({ onConfirm, onCancel }) {
   );
 }
 
+// ─── BOUTONS DE PARTAGE RÉSEAUX SOCIAUX ───
+export function ShareButtons({ text, imageUrl }) {
+  const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const appUrl = "https://chipeur.vercel.app";
+  const dmSans = "'DM Sans', sans-serif";
+
+  const handleNativeShare = async () => {
+    if (!navigator.share) return;
+    setSharing(true);
+    const shareData = {
+      title: "Chipeur — le réseau du quartier",
+      text: text || "Découvrez Chipeur, le réseau du quartier !",
+      url: appUrl,
+    };
+    // Essaye d'inclure l'image comme fichier (fonctionne sur iOS/Android)
+    if (imageUrl && navigator.canShare) {
+      try {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        const file = new File([blob], "chipeur.jpg", { type: blob.type || "image/jpeg" });
+        if (navigator.canShare({ files: [file] })) shareData.files = [file];
+      } catch (_) { /* partage sans image si erreur */ }
+    }
+    try { await navigator.share(shareData); } catch (_) {}
+    setSharing(false);
+  };
+
+  const handleFacebook = () => {
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(text || "")}&u=${encodeURIComponent(appUrl)}`;
+    window.open(fbUrl, "_blank", "noopener,noreferrer,width=620,height=500");
+  };
+
+  const handleCopy = () => {
+    const toCopy = text ? `${text}\n\n${appUrl}` : appUrl;
+    navigator.clipboard?.writeText(toCopy).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <div style={{ width: "100%", marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, textAlign: "center" }}>
+        Partager sur tes réseaux
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* Bouton natif — ouvre le menu du téléphone (Instagram, TikTok, WhatsApp…) */}
+        {typeof navigator !== "undefined" && navigator.share && (
+          <button
+            onClick={handleNativeShare}
+            disabled={sharing}
+            style={{
+              width: "100%", padding: "13px 0", borderRadius: 14,
+              background: C.ink, color: "#fff", border: "none",
+              fontFamily: dmSans, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              opacity: sharing ? 0.7 : 1,
+            }}
+          >
+            <span style={{ fontSize: 17 }}>📤</span>
+            {sharing ? "Préparation…" : "Instagram · TikTok · WhatsApp · …"}
+          </button>
+        )}
+        {/* Facebook */}
+        <button
+          onClick={handleFacebook}
+          style={{
+            width: "100%", padding: "12px 0", borderRadius: 14,
+            background: "#1877F2", color: "#fff", border: "none",
+            fontFamily: dmSans, fontSize: 13, fontWeight: 700, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          <span style={{ fontSize: 16 }}>👥</span> Facebook
+        </button>
+        {/* Copier */}
+        <button
+          onClick={handleCopy}
+          style={{
+            width: "100%", padding: "11px 0", borderRadius: 14,
+            background: copied ? "#DCFCE7" : C.pill,
+            color: copied ? "#16A34A" : C.ink2,
+            border: "none", fontFamily: dmSans, fontSize: 12, fontWeight: 600,
+            cursor: "pointer", transition: "all 0.2s",
+          }}
+        >
+          {copied ? "✅ Texte copié !" : "📋 Copier le texte"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── SUCCESS SCREEN ───
-function SuccessScreen({ type, onBack }) {
+function SuccessScreen({ type, onBack, shareData }) {
   const msgs = {
     decouverte:  "Ta chope est maintenant visible par tous les voisins ! 📸",
     tuvalides:   "Tes voisins vont voter pour toi ! Résultat dans le fil. 🤔",
@@ -604,16 +697,19 @@ function SuccessScreen({ type, onBack }) {
     <div style={{
       flex: 1, display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
-      padding: 24, textAlign: "center",
+      padding: 24, textAlign: "center", overflowY: "auto",
     }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
       <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 700, color: C.ink, marginBottom: 8 }}>Post publié !</div>
-      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 24 }}>{msgs[type] || msgs.decouverte}</div>
+      <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.6, marginBottom: 16 }}>{msgs[type] || msgs.decouverte}</div>
       <div style={{
         display: "inline-flex", alignItems: "center", gap: 6,
         background: "#FFF8E8", color: "#B45309", fontSize: 13, fontWeight: 700,
         padding: "8px 18px", borderRadius: 20, marginBottom: 24,
       }}>⚡ +10 XP gagnés</div>
+
+      <ShareButtons text={shareData?.text} imageUrl={shareData?.imageUrl} />
+
       <button onClick={onBack} style={{
         width: "100%", padding: 13, borderRadius: 16,
         background: C.accent, color: "#fff",
@@ -797,6 +893,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null); // URL blob pour affichage contrôlé
   const [publishing, setPublishing] = useState(false);
+  const [publishedPost, setPublishedPost] = useState(null); // { text, imageUrl } pour le partage
 
   // Callback centralisé pour la sélection/suppression photo (chope + bon plan)
   const handlePhotoSelect = (file, url) => {
@@ -949,6 +1046,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       }
       // ✅ Fix : XP pour création d'une sortie
       addXP(user.id, 10, "sortie_publiee");
+      setPublishedPost({ text: sortieFields.title.trim(), imageUrl: null });
       setScreen("success");
       return;
     }
@@ -994,6 +1092,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
           message: JSON.stringify({ pseudo: profile?.pseudo || "Un voisin" }),
         }).then(() => {});
       }
+      setPublishedPost({ text: content.trim() || tvCat || "Tu valides ?", imageUrl: image_url });
       setScreen("success");
       return;
     }
@@ -1015,6 +1114,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       setPublishing(false);
       if (error) { setPublishError("Erreur : " + error.message); return; }
       addXP(user.id, 5, "recherche_publie");
+      setPublishedPost({ text: content.trim(), imageUrl: null });
       setScreen("success");
       return;
     }
@@ -1055,6 +1155,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       if (error) { setPublishError("Erreur Supabase : " + error.message); return; }
       // ✅ Fix : XP pour publication d'un lieu
       addXP(user.id, 10, "lieu_publie");
+      setPublishedPost({ text: textContent, imageUrl: image_url });
       setScreen("success");
       return;
     }
@@ -1097,6 +1198,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       setPublishing(false);
       if (error) { setPublishError("Erreur : " + error.message); return; }
       addXP(user.id, 5, "defi_cree");
+      setPublishedPost({ text: defiFields.title.trim(), imageUrl: photo_url });
       setScreen("success");
       return;
     }
@@ -1152,6 +1254,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
         message: JSON.stringify({ pseudo: profile?.pseudo || "Un voisin" }),
       }).then(() => {});
     }
+    setPublishedPost({ text: content.trim(), imageUrl: image_url || null });
     setScreen("success");
   };
 
@@ -1345,7 +1448,7 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
 
         {screen === "success" && (
           <>
-            <SuccessScreen type={selectedType} onBack={() => setPage("fil")} />
+            <SuccessScreen type={selectedType} onBack={() => setPage("fil")} shareData={publishedPost} />
           </>
         )}
 

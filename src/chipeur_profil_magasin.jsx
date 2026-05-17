@@ -4,6 +4,7 @@ import { SettingsDrawer } from "./chipeur_settings";
 import { addXP, addXPShop } from "./chipeur_xp";
 import Avatar from "./Avatar";
 import safeStorage from "./safeStorage";
+import { ShareButtons } from "./chipeur_nouveau_post";
 
 // ─── COMPRESSION IMAGE (HEIC + taille) ──────────────────────────
 async function compressImage(file, maxPx = 1200, quality = 0.82) {
@@ -1442,6 +1443,7 @@ function TabCreer({ merchantName, setPage, user }) {
   const [typeRemise, setTypeRemise] = useState("pct");
   const [ciblage, setCiblage] = useState("all");
   const [published, setPublished] = useState(false);
+  const [publishedText, setPublishedText] = useState("");
   const [saving, setSaving] = useState(false);
   const [erreur, setErreur] = useState("");
   // Champs remise
@@ -1477,6 +1479,7 @@ function TabCreer({ merchantName, setPage, user }) {
     if (error) { setErreur(error.message); return; }
     // XP pour création d'une remise
     if (user?.id) addXP(user.id, 10, "remise_creee");
+    setPublishedText(`🏷️ Offre spéciale chez ${name} : ${titre}${valeur ? ` − ${valeur}${typeRemise === "pct" ? "%" : "€"}` : ""}${conditions ? ` (${conditions})` : ""}. Retrouvez-nous sur Chipeur !`);
     setPublished(true);
     setTitre(""); setValeur(""); setExpiry(""); setConditions("");
   }
@@ -1488,11 +1491,13 @@ function TabCreer({ merchantName, setPage, user }) {
       ))}
     </div>
     {published ? (
-      <div style={{ textAlign: "center", padding: "40px 20px" }}>
+      <div style={{ textAlign: "center", padding: "32px 16px 20px" }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 6 }}>{mode === "remise" ? "Remise publiée !" : "Défi lancé !"}</div>
-        <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16 }}>{mode === "remise" ? "Les voisins ciblés vont recevoir ta réduction." : "Ton défi apparaît dans la page Défis."}</div>
-        <button onClick={() => setPublished(false)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: "10px 24px", fontSize: 13, fontWeight: 600, fontFamily: dm, cursor: "pointer" }}>Créer un autre</button>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 6 }}>Remise publiée !</div>
+        <div style={{ fontSize: 12, color: C.ink2, marginBottom: 20, lineHeight: 1.5 }}>Les voisins ciblés vont recevoir ta réduction.</div>
+        {/* Partage réseaux */}
+        <ShareButtons text={publishedText} imageUrl={null} />
+        <button onClick={() => setPublished(false)} style={{ width: "100%", background: C.pill, color: C.ink2, border: "none", borderRadius: 14, padding: "11px 0", fontSize: 13, fontWeight: 600, fontFamily: dm, cursor: "pointer", marginTop: 4 }}>Créer une autre remise</button>
       </div>
     ) : mode === "remise" ? <>
       <Label>Titre de l'offre</Label>
