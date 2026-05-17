@@ -170,3 +170,21 @@ Fichiers modifiés : `chipeur_commerces.jsx`, `chipeur_onboarding.jsx`, `chipeur
 - Fix 5 Claude Code (vite.config.js — séparer icônes `any` et `maskable`) : non appliqué
 - Fix 6 Claude Code (`useProfile.js:22` — guard userId) : non appliqué
 - Fix 7 Claude Code (`chipeur_messages.jsx:59` — behavior auto) : non appliqué
+
+### 🎬 Feature vidéo / Reels — À planifier
+Demandée par Jenny. Chantier estimé à 1-2 jours de travail.
+
+**Règles métier :**
+- Voisins : 1 vidéo max par post, durée max **10 secondes**
+- Commerçants : jusqu'à **10 min de vidéo au total** (ex : 20 vidéos de 30s), durée max **1 min par vidéo**
+- Stockage : Supabase Storage (abonnement payant Jenny — bucket à créer `post-videos`, public)
+
+**Travail à faire :**
+1. Migration SQL : colonne `video_url TEXT` + `media_type TEXT DEFAULT 'image'` sur table `posts`
+2. Colonne `video_seconds_used INT DEFAULT 0` sur table `profiles` (quota commerçants)
+3. Mise à jour `PhotoZone` dans `chipeur_nouveau_post.jsx` : accepter `video/*`, valider durée via `videoEl.duration`, afficher preview `<video>`
+4. Upload vers bucket Supabase `post-videos` (pas `images`)
+5. Mise à jour affichage dans `chipeur_fil.jsx` : rendu `<video autoPlay muted loop playsInline>` si `media_type === 'video'`
+6. Même mise à jour dans `chipeur_commerces.jsx` (vitrine), `chipeur_profil_voisin_1.jsx` (profil voisin)
+7. Vérifier et décrémenter/incrémenter `video_seconds_used` à chaque publication commerçant
+8. Compression côté client : pas d'API native navigateur — envisager un service tiers (Cloudflare Stream, Mux) ou accepter la taille brute avec une limite de 50 Mo/vidéo

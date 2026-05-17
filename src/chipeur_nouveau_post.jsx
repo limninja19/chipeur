@@ -100,7 +100,8 @@ function PhotoZone({ onPhotoSelect, zoneId, externalPreview }) {
   const [fileName, setFileName] = useState("");
   const [previewFailed, setPreviewFailed] = useState(false);
   const [sizeError, setSizeError] = useState("");
-  const inputId = zoneId || "photo-input-main";
+  const cameraInputId = (zoneId || "photo-input-main") + "-camera";
+  const galleryInputId = (zoneId || "photo-input-main") + "-gallery";
 
   // On utilise externalPreview si fourni, sinon preview interne (sécurité)
   const preview = externalPreview !== undefined ? externalPreview : internalPreview;
@@ -137,50 +138,31 @@ function PhotoZone({ onPhotoSelect, zoneId, externalPreview }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <input type="file" accept="image/*,video/*,.heic,.heif" onChange={handleFile} style={{ display: "none" }} id={inputId} />
+      {/* Input caméra — ouvre directement l'appareil photo */}
+      <input type="file" accept="image/*,.heic,.heif" capture="environment" onChange={handleFile} style={{ display: "none" }} id={cameraInputId} />
+      {/* Input galerie — ouvre la bibliothèque de photos */}
+      <input type="file" accept="image/*,.heic,.heif" onChange={handleFile} style={{ display: "none" }} id={galleryInputId} />
+
       {sizeError && (
         <div style={{ background: "#FFF0EE", color: "#C0392B", fontSize: 11, padding: "8px 12px", borderRadius: 10, marginBottom: 8 }}>⚠️ {sizeError}</div>
       )}
-      <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", aspectRatio: "4/3" }}>
-        <label htmlFor={inputId} style={{
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          width: "100%", height: "100%", cursor: "pointer",
-          background: preview && !previewFailed
-            ? "#000"
-            : "#1A1714",
-          position: "relative",
-        }}>
-          {preview && !previewFailed && !isVideo ? (
-            <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setPreviewFailed(true)} />
-          ) : preview && isVideo ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 44 }}>🎬</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Vidéo prête ✓</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Appuie pour changer</div>
-            </div>
-          ) : preview && previewFailed ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 44 }}>📷</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Photo sélectionnée ✓</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", textAlign: "center", padding: "0 20px" }}>Aperçu indispo — la photo sera envoyée</div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "0 20px", textAlign: "center" }}>
-              {/* Icône cercle */}
-              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "2px dashed rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📷</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Ajouter une photo</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>Galerie · Appareil photo · Vidéo</div>
-            </div>
-          )}
 
-          {/* Overlay "Changer" si photo présente */}
-          {preview && !previewFailed && (
-            <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", color: "#fff", fontSize: 10, fontWeight: 600, padding: "5px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>
-              📷 Changer
-            </div>
-          )}
-        </label>
-
+      {/* Zone aperçu */}
+      <div style={{ position: "relative", borderRadius: 20, overflow: "hidden", aspectRatio: "4/3", background: "#1A1714", marginBottom: 8 }}>
+        {preview && !previewFailed ? (
+          <img src={preview} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setPreviewFailed(true)} />
+        ) : preview && previewFailed ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8 }}>
+            <div style={{ fontSize: 44 }}>📷</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Photo sélectionnée ✓</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", textAlign: "center", padding: "0 20px" }}>Aperçu indispo — la photo sera envoyée</div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 10 }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "2px dashed rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📷</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>Aucune photo</div>
+          </div>
+        )}
         {/* Bouton ✕ supprimer */}
         {preview && (
           <button onClick={removePhoto} style={{
@@ -190,6 +172,26 @@ function PhotoZone({ onPhotoSelect, zoneId, externalPreview }) {
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>✕</button>
         )}
+      </div>
+
+      {/* Deux boutons explicites */}
+      <div style={{ display: "flex", gap: 8 }}>
+        <label htmlFor={cameraInputId} style={{
+          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          padding: "11px 0", borderRadius: 14, cursor: "pointer",
+          background: "#1A1714", color: "#fff",
+          fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
+        }}>
+          <span style={{ fontSize: 18 }}>📷</span> Appareil photo
+        </label>
+        <label htmlFor={galleryInputId} style={{
+          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          padding: "11px 0", borderRadius: 14, cursor: "pointer",
+          background: C.pill, color: C.ink,
+          fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
+        }}>
+          <span style={{ fontSize: 18 }}>🖼️</span> Galerie
+        </label>
       </div>
     </div>
   );
