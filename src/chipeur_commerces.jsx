@@ -1212,10 +1212,10 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
 
 // ─── CHIPS VITRINE ───
 const VITRINE_MODES = [
+  { id: "galerie", label: "📷 Photos" },
   { id: "tout",    label: "Posts" },
   { id: "promos",  label: "🎁 Promos" },
   { id: "defis",   label: "🏆 Défis" },
-  { id: "galerie", label: "📷 Photos" },
   { id: "postes",  label: "📬 Liés", ownerOnly: true },
 ];
 
@@ -1306,7 +1306,7 @@ function DefiVitrine({ defi }) {
 // ─── ONGLET VITRINE ───
 function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const [posts, setPosts] = useState(realPosts);
-  const [activeMode, setActiveMode] = useState("tout");
+  const [activeMode, setActiveMode] = useState("galerie");
   const [selectedPost, setSelectedPost] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [enrichingPost, setEnrichingPost] = useState(null);
@@ -1586,7 +1586,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
             {photoPosts.map((post, idx) => (
               <div
                 key={post.id}
-                onClick={() => setLightboxIndex(idx)}
+                onClick={() => setSelectedPost(post)}
                 style={{ aspectRatio: "1", overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill }}
               >
                 <img src={post.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -1595,6 +1595,11 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
                 )}
                 {(post.post_type === "bonplan" || post.post_type === "promo") && (
                   <div style={{ position: "absolute", top: 4, left: 4, background: C.accent, borderRadius: 6, padding: "2px 5px", fontSize: 9, fontWeight: 700, color: "#fff" }}>🎁</div>
+                )}
+                {post.tags?.length > 0 && (
+                  <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.55)", borderRadius: 6, padding: "2px 6px", fontSize: 9, color: "#fff", fontWeight: 500 }}>
+                    {post.tags[0]}
+                  </div>
                 )}
               </div>
             ))}
