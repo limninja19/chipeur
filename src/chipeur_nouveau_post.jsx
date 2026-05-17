@@ -1259,8 +1259,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       return;
     }
     addXP(user.id, 10, "post_publie");
-    // Analyse IA de la photo en arrière-plan (tags automatiques)
-    if (image_url && postData?.id) tagPhotoAsync(postData.id, image_url);
+    // Analyse IA de la photo — uniquement pour les commerçants
+    if (image_url && postData?.id && profile?.role === "magasin") tagPhotoAsync(postData.id, image_url);
     if (magasinId && postData?.id) {
       supabase.from("notifications").insert({
         user_id: magasinId,
