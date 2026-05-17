@@ -207,6 +207,24 @@ Branche git : `feat/page-commerces-sections` (créer avec `git checkout -b feat/
 
 ---
 
+### 19. Analyse IA des photos (post-tag)
+
+- `supabase/migrations/20260517_post_tags.sql` : colonne `tags TEXT[]` sur `posts` + index GIN
+- `supabase/functions/post-tag/index.ts` : Edge Function — reçoit `post_id` + `image_url`, appelle Claude Vision (haiku), retourne 5-8 mots-clés FR, met à jour `posts.tags`
+- `chipeur_nouveau_post.jsx` : helper `tagPhotoAsync()` appelé en fire & forget après chaque insert avec image (flow decouverte/bonplan)
+- Secret Supabase à ajouter : `ANTHROPIC_API_KEY`
+- Tags affichés dans la lightbox vitrine (sous le contenu du post)
+
+### 20. Refonte vitrine — drawer Infos + bannière simplifiée
+
+- Suppression des onglets "Vitrine / Infos"
+- `VitrineScreen` : bannière plein cadre (220px + safe-area) avec bouton "ℹ️ Infos" en bas-droite → ouvre un bottom drawer
+- Bottom drawer : fond semi-transparent, panneau qui monte, poignée, contenu `TabInfos`
+- Seul `TabVitrine` est affiché en contenu principal (plus de `activeTab`)
+- Lightbox enrichie : date du post, tags IA en pills sous le contenu
+
+---
+
 ## À faire / en attente
 - Tester fix iOS écran blanc sur l'iPhone de la mère de Jenny
 - Google Analytics : actif, données visibles sous 24-48h

@@ -1637,14 +1637,29 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
               )}
             </div>
             {photo && (
-              <div style={{ background: C.card, borderRadius: "20px 20px 0 0", padding: "14px 18px 32px", flexShrink: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ background: C.card, borderRadius: "20px 20px 0 0", padding: "14px 18px 28px", flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: photo.content || (photo.tags?.length > 0) ? 10 : 0 }}>
                   <Avatar pseudo={photo.profiles?.pseudo} avatarUrl={photo.profiles?.avatar_url} size={34} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>{photo.profiles?.pseudo || "Voisin·e"}</div>
-                    {photo.content && <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{photo.content}</div>}
+                    <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>
+                      {new Date(photo.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+                    </div>
                   </div>
                 </div>
+                {photo.content && (
+                  <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5, marginBottom: 10 }}>{photo.content}</div>
+                )}
+                {/* Tags IA */}
+                {photo.tags && photo.tags.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {photo.tags.map((tag, i) => (
+                      <span key={i} style={{ fontSize: 11, background: C.pill, color: C.ink2, borderRadius: 8, padding: "3px 9px", fontWeight: 500 }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1848,7 +1863,7 @@ function VitrineScreen({ com, onBack, user }) {
       if (error) { console.error("Erreur suppression follow:", error); setSuivi(prev); }
     }
   };
-  const [activeTab, setActiveTab] = useState("vitrine");
+  const [showInfos, setShowInfos] = useState(false);
   const [realPosts, setRealPosts] = useState(com.isDemo ? DEMO_POSTS : []);
   const [loadingPosts, setLoadingPosts] = useState(!com.isDemo);
   const [realPostCount, setRealPostCount] = useState(com.isDemo ? DEMO_POSTS.length : null);
@@ -1945,9 +1960,15 @@ function VitrineScreen({ com, onBack, user }) {
               {suivi ? "❤️" : "🤍"}
             </button>
           )}
-          <div style={{ position: "absolute", bottom: 14, left: 16 }}>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff", lineHeight: 1 }}>{com.name}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>{com.cat}</div>
+          {/* Nom + catégorie + bouton Infos */}
+          <div style={{ position: "absolute", bottom: 14, left: 16, right: 16, display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+            <div style={{ flex: 1, minWidth: 0, marginRight: 10 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{com.name}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>{com.cat}</div>
+            </div>
+            <button onClick={() => setShowInfos(true)} style={{ background: "rgba(255,255,255,0.92)", border: "none", borderRadius: 12, padding: "7px 13px", fontSize: 12, fontWeight: 700, fontFamily: dm, color: C.ink, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 5, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+              ℹ️ Infos
+            </button>
           </div>
         </div>
 
@@ -1992,30 +2013,19 @@ function VitrineScreen({ com, onBack, user }) {
           );
         })()}
 
-        {/* Onglets */}
-        <div style={{ display: "flex", background: C.card, borderBottom: `1px solid ${C.border}` }}>
-          {[{ id: "vitrine", label: "🖼 Vitrine" }, { id: "infos", label: "ℹ️ Infos" }].map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, padding: "12px 0 10px", border: "none", background: "transparent", fontSize: 13, fontWeight: 600, fontFamily: dm, cursor: "pointer", color: activeTab === t.id ? C.accent : C.ink2, borderBottom: `2.5px solid ${activeTab === t.id ? C.accent : "transparent"}`, transition: "all 0.2s" }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === "vitrine" && (
-          <>
-            {com.isDemo && (
-              <div style={{ margin: "12px 16px 0", background: "rgba(255,87,51,0.07)", border: "1px solid rgba(255,87,51,0.2)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 20 }}>✨</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.accent }}>Exemple de vitrine</div>
-                  <div style={{ fontSize: 11, color: C.ink2, marginTop: 1, lineHeight: 1.4 }}>Voici à quoi ressemble une vitrine remplie — posts, promos, défis et infos.</div>
-                </div>
-              </div>
-            )}
-            <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} user={user} demoDefis={com.isDemo ? DEMO_DEFIS : undefined} />
-          </>
+        {/* Bannière demo */}
+        {com.isDemo && (
+          <div style={{ margin: "12px 16px 0", background: "rgba(255,87,51,0.07)", border: "1px solid rgba(255,87,51,0.2)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 20 }}>✨</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.accent }}>Exemple de vitrine</div>
+              <div style={{ fontSize: 11, color: C.ink2, marginTop: 1, lineHeight: 1.4 }}>Voici à quoi ressemble une vitrine remplie — posts, promos, défis et photos.</div>
+            </div>
+          </div>
         )}
-        {activeTab === "infos" && <TabInfos com={com} />}
+
+        {/* Feed principal */}
+        <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} user={user} demoDefis={com.isDemo ? DEMO_DEFIS : undefined} />
       </div>
 
       {/* Boutons Contacter + Y aller */}
@@ -2033,6 +2043,28 @@ function VitrineScreen({ com, onBack, user }) {
           🗺️ Y aller
         </a>
       </div>
+
+      {/* ── DRAWER INFOS ── */}
+      {showInfos && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          {/* Fond semi-transparent */}
+          <div onClick={() => setShowInfos(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
+          {/* Panneau */}
+          <div style={{ position: "relative", background: C.card, borderRadius: "22px 22px 0 0", paddingBottom: "env(safe-area-inset-bottom, 16px)", maxHeight: "82vh", display: "flex", flexDirection: "column" }}>
+            {/* Poignée */}
+            <div style={{ width: 38, height: 4, borderRadius: 2, background: C.border, margin: "12px auto 0" }} />
+            {/* En-tête */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 0" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>{com.name}</div>
+              <button onClick={() => setShowInfos(false)} style={{ background: C.pill, border: "none", borderRadius: "50%", width: 30, height: 30, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", color: C.ink2 }}>✕</button>
+            </div>
+            {/* Scroll */}
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              <TabInfos com={com} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

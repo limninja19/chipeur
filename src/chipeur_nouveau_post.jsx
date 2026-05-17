@@ -4,6 +4,13 @@ import heic2any from "heic2any";
 import { addXP } from "./chipeur_xp";
 import safeStorage from "./safeStorage";
 
+// Analyse la photo d'un post avec Claude Vision (fire & forget — n'attend pas la réponse)
+function tagPhotoAsync(postId, imageUrl) {
+  if (!postId || !imageUrl) return;
+  supabase.functions.invoke("post-tag", { body: { post_id: postId, image_url: imageUrl } })
+    .catch(err => console.warn("post-tag silencieux:", err));
+}
+
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
   accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
@@ -1252,6 +1259,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
       return;
     }
     addXP(user.id, 10, "post_publie");
+    // Analyse IA de la photo en arrière-plan (tags automatiques)
+    if (image_url && postData?.id) tagPhotoAsync(postData.id, image_url);
     if (magasinId && postData?.id) {
       supabase.from("notifications").insert({
         user_id: magasinId,
