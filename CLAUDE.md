@@ -83,6 +83,36 @@ Fichiers modifiés : `chipeur_commerces.jsx`, `chipeur_onboarding.jsx`, `chipeur
 - `X-XSS-Protection: 1; mode=block`
 - `Permissions-Policy` : caméra/micro/paiement bloqués
 
+### 9. Fix iOS — supabase.js (SecurityError localStorage)
+- `supabase.js` : ajout d'un adapteur `safeStorage` passé à `auth: { storage: safeStorage }`
+- Empêche le crash `SecurityError: The operation is insecure` sur iOS WebView / navigation privée
+- Cause racine : `createClient()` appelle `localStorage` en interne dès le démarrage
+
+### 10. safeStorage.js — nouveau fichier
+- Wrapper sécurisé pour tous les appels `localStorage` de l'app
+- Tous les fichiers qui utilisaient `localStorage` directement ont été migrés vers `safeStorage`
+
+### 11. Changement de type de compte (chipeur_settings.jsx)
+- Dans les paramètres du profil, bouton "Changer de type de compte"
+- Voisin → commerçant : redirige vers l'inscription commerçant
+- Commerçant → voisin : supprime l'entrée dans `magasins`, remet `role: "voisin"` dans `profiles` ET dans `user_metadata`
+- `App.jsx` : routing profil basé uniquement sur `profile.role` (table), plus sur `user.user_metadata.role` (obsolète après switch)
+
+### 12. Événements — photos multiples + fix null content (chipeur_sorties.jsx)
+- `content: caption.trim() || null` → `content: caption.trim() || ""` (fix erreur NOT NULL Supabase)
+- `PhotoUploadOverlay` réécrit : sélection multiple, grille de preview, suppression individuelle, barre de progression
+
+### 13. Classement XP gloire — déplacé dans page Voisins
+- `BandeauClassement` retiré du fil (`chipeur_fil.jsx`)
+- Composant recréé dans `chipeur_page_voisins.jsx` avec click adapté (`openVoisin` interne)
+- Placé tout en haut de la liste scrollable dans la page Voisins
+- Design identique : header dark collapsible, top 5, médailles, lot du mois
+
+### 14. Souvenirs de sorties — collapsible (chipeur_fil.jsx)
+- `BandeauSortiesPhotos` redesigné avec le même pattern dark header que le classement
+- Header sombre avec compteur "X sortie(s) · Y photo(s)", fermé par défaut
+- Clic pour dérouler la liste des événements avec photos
+
 ---
 
 ## Couleurs du design system
@@ -96,6 +126,31 @@ Fichiers modifiés : `chipeur_commerces.jsx`, `chipeur_onboarding.jsx`, `chipeur
 ## Fonts
 - Titres : `Syne` (700, 800)
 - Corps : `DM Sans` (400, 500, 600)
+
+### 15. Import Google Business Profile (mai 2026)
+
+#### Nouveaux fichiers
+- `supabase/migrations/20260517_google_places.sql` — colonnes Google dans `profiles`
+- `supabase/functions/places-search/index.ts` — proxy Text Search → 5 résultats
+- `supabase/functions/places-details/index.ts` — détails + upload 3 photos → Supabase Storage `merchant-photos`
+- `supabase/functions/places-refresh-hours/index.ts` — cron quotidien (03h UTC), rafraîchit `current_opening_hours`
+
+#### Modifications
+- `chipeur_inscription.jsx`
+  - Nouvel écran `ScreenGoogleSearch` intercalé entre "choix" et "magasin"
+  - Flow magasin : "choix" → **google_search** → "magasin" → "success"
+  - `ScreenMagasin` : accept `initialData` prop, badge "Fiche Google importée", champs phone/website pré-remplis
+  - `handleMagasinValidate` : enregistre `google_place_id`, `google_data`, `opening_hours`, `current_opening_hours`, `photo_urls`, `lat`, `lng`
+  - Lien de secours "Mon commerce n'est pas sur Google → saisie manuelle"
+- `chipeur_profil_magasin.jsx`
+  - Composant `GoogleResyncCard` dans le dashboard (visible si `google_place_id` non null)
+  - Bouton "Resynchroniser avec Google" → appelle `places-details` + met à jour Supabase
+
+#### Secrets Supabase à ajouter
+- `GOOGLE_PLACES_API_KEY` (Google Cloud Console → Identifiants)
+
+#### Bucket Storage à créer
+- `merchant-photos` (public)
 
 ---
 

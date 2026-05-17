@@ -698,6 +698,123 @@ function MerchantXpBlock({ userId, merchantName }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CARTE GOOGLE RESYNC — affichée dans l'onglet Dashboard si le profil
+// est lié à une fiche Google (google_place_id non null).
+// ─────────────────────────────────────────────────────────────────────────────
+const SUPABASE_FN_URL_MAG = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const SUPABASE_ANON_KEY_MAG = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+function GoogleResyncCard({ profile, userId, onSaved }) {
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError]     = useState("");
+
+  // N'affiche la carte que si le profil a une fiche Google
+  if (!profile?.google_place_id) return null;
+
+  const lastSync = profile?.google_synced_at
+    ? new Date(profile.google_synced_at).toLocaleDateString("fr-FR", {
+        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+      })
+    : null;
+
+  const handleResync = async () => {
+    setLoading(true);
+    setSuccess(false);
+    setError("");
+    try {
+      const res = await fetch(
+        `${SUPABASE_FN_URL_MAG}/places-details?place_id=${encodeURIComponent(profile.google_place_id)}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY_MAG,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY_MAG}`,
+          },
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur de synchronisation");
+
+      // Mise à jour Supabase avec les nouvelles données Google
+      const updates = {
+        phone:                  data.phone || profile.phone,
+        website:                data.website || profile.website,
+        opening_hours:          data.opening_hours ?? profile.opening_hours,
+        current_opening_hours:  data.current_opening_hours ?? profile.current_opening_hours,
+        google_synced_at:       new Date().toISOString(),
+        google_data:            data.raw ?? profile.google_data,
+        // On ne réécrase les photos que si Google en retourne de nouvelles
+        ...(data.photo_urls?.length > 0 ? { photo_urls: data.photo_urls } : {}),
+      };
+
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", userId);
+
+      if (dbErr) throw new Error(dbErr.message);
+
+      if (onSaved) onSaved(updates);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 4000);
+    } catch (e) {
+      setError(e.message || "Erreur inconnue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      background: C.card, borderRadius: 16, border: `1px solid ${C.border}`,
+      padding: "12px 14px", marginTop: 10, marginBottom: 2,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Logo Google simulé */}
+        <div style={{
+          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+          background: "#E8F5E9", display: "flex", alignItems: "center",
+          justifyContent: "center", fontSize: 20,
+        }}>🗺️</div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>
+            Fiche Google connectée
+          </div>
+          {lastSync && (
+            <div style={{ fontSize: 10, color: C.ink2, marginTop: 1 }}>
+              Dernière synchro : {lastSync}
+            </div>
+          )}
+        </div>
+
+        {/* Bouton resync */}
+        <button
+          onClick={handleResync}
+          disabled={loading}
+          style={{
+            background: loading ? "#ccc" : success ? "#2E7D32" : C.pro,
+            color: "#fff", border: "none", borderRadius: 10,
+            padding: "7px 12px", fontSize: 11, fontWeight: 700,
+            fontFamily: dm, cursor: loading ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap", transition: "background 0.2s", flexShrink: 0,
+          }}
+        >
+          {loading ? "⏳" : success ? "✓ Synchro OK" : "🔄 Resynchroniser"}
+        </button>
+      </div>
+
+      {error && (
+        <div style={{
+          marginTop: 8, fontSize: 11, color: "#C0392B", fontFamily: dm, lineHeight: 1.4,
+        }}>⚠️ {error}</div>
+      )}
+    </div>
+  );
+}
+
 function TabDashboard({ onEnrich, postCount, merchantName, userId, onGoMentions }) {
   const [period, setPeriod] = useState("semaine");
   const [chartData, setChartData] = useState([]);
@@ -2012,7 +2129,10 @@ export default function ChipeurProfilMagasin({ setPage, user, profile, updatePro
           ))}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
-          {activeTab === "dashboard" && <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} onGoMentions={() => setActiveTab("mentions")} />}
+          {activeTab === "dashboard" && <>
+            <GoogleResyncCard profile={localProfile} userId={user?.id} onSaved={handleSaved} />
+            <TabDashboard onEnrich={handleEnrich} postCount={postCount} merchantName={localProfile?.pseudo} userId={user?.id} onGoMentions={() => setActiveTab("mentions")} />
+          </>}
           {activeTab === "posts" && <TabPosts userId={user?.id} />}
           {activeTab === "mentions" && <TabMentions pseudo={localProfile?.pseudo} userId={user?.id} merchantName={localProfile?.pseudo} />}
           {activeTab === "creer" && <TabCreer merchantName={localProfile?.pseudo} setPage={setPage} user={user} />}

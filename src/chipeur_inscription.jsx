@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import { addXP } from "./chipeur_xp";
 
@@ -456,15 +456,269 @@ function ScreenChoixCompte({ onChoose }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN 2.5 : RECHERCHE GOOGLE BUSINESS
+// Intercalé entre le choix "J'ai un magasin" et le formulaire commerçant.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// URL de base pour les Edge Functions (sans slash final)
+const SUPABASE_FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// En-têtes communs pour appeler les Edge Functions
+const fnHeaders = {
+  "Content-Type": "application/json",
+  "apikey": SUPABASE_ANON_KEY,
+  "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+};
+
+// ── Composant miniature résultat ─────────────────────────────────────────────
+function PlaceResult({ place, onSelect, isSelected }) {
+  return (
+    <div
+      onClick={() => onSelect(place)}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 14px",
+        borderRadius: 16,
+        border: `2px solid ${isSelected ? COLORS.accent : COLORS.border}`,
+        background: isSelected ? "#FFF8F6" : COLORS.card,
+        cursor: "pointer",
+        transition: "all 0.15s",
+        marginBottom: 10,
+      }}
+    >
+      {/* Miniature photo */}
+      <div style={{
+        width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+        background: COLORS.pill, overflow: "hidden",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 22,
+      }}>
+        {place.photo_url
+          ? <img src={place.photo_url} alt={place.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : "🏪"}
+      </div>
+
+      {/* Texte */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 14,
+          color: COLORS.ink, marginBottom: 2,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>{place.name}</div>
+        <div style={{
+          fontSize: 11, color: COLORS.ink2, lineHeight: 1.4,
+          fontFamily: "'DM Sans', sans-serif",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>{place.address}</div>
+      </div>
+
+      {/* Radio */}
+      <div style={{
+        width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+        border: `2px solid ${isSelected ? COLORS.accent : COLORS.border}`,
+        background: isSelected ? COLORS.accent : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        {isSelected && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />}
+      </div>
+    </div>
+  );
+}
+
+// ── Écran principal recherche Google ────────────────────────────────────────
+function ScreenGoogleSearch({ onBack, onSelect, onSkip }) {
+  const [query, setQuery]         = useState("");
+  const [results, setResults]     = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [selected, setSelected]   = useState(null);
+  const [error, setError]         = useState("");
+  const debounceRef               = useRef(null);
+
+  // ── Recherche debounced (300ms) ────────────────────────────────────────────
+  const search = useCallback(async (q) => {
+    if (q.trim().length < 2) {
+      setResults([]);
+      setError("");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(
+        `${SUPABASE_FN_URL}/places-search?q=${encodeURIComponent(q.trim())}`,
+        { headers: fnHeaders }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur de recherche");
+      setResults(data.results ?? []);
+      if ((data.results ?? []).length === 0) {
+        setError("Aucun résultat. Essaie avec le nom exact ou l'adresse.");
+      }
+    } catch (e) {
+      setError("Impossible de contacter Google. Vérifie ta connexion.");
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (query.trim().length >= 2) {
+      debounceRef.current = setTimeout(() => search(query), 300);
+    } else {
+      setResults([]);
+      setError("");
+    }
+    return () => clearTimeout(debounceRef.current);
+  }, [query, search]);
+
+  // ── Confirmation du lieu sélectionné → fetch détails ────────────────────
+  const handleConfirm = async () => {
+    if (!selected) return;
+    setLoadingDetails(true);
+    setError("");
+    try {
+      const res = await fetch(
+        `${SUPABASE_FN_URL}/places-details?place_id=${encodeURIComponent(selected.place_id)}`,
+        { headers: fnHeaders }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur de chargement");
+      onSelect(data); // passe toutes les infos au formulaire
+    } catch (e) {
+      setError("Impossible de charger les détails. Réessaie ou saisis manuellement.");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      {/* Bouton retour */}
+      <div style={{ padding: "10px 20px 0", flexShrink: 0 }}>
+        <button onClick={onBack} style={{
+          background: "none", border: "none", fontSize: 13, color: COLORS.ink2,
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+          fontFamily: "'DM Sans', sans-serif",
+        }}>‹ Retour</button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 32px", display: "flex", flexDirection: "column" }}>
+        <StepDots current={2} />
+
+        {/* Titre */}
+        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, color: COLORS.ink, marginBottom: 4 }}>
+          Trouve ton commerce
+        </div>
+        <div style={{ fontSize: 13, color: COLORS.ink2, marginBottom: 22, lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif" }}>
+          On pré-remplit ta fiche depuis Google. Plus rapide que tout saisir à la main !
+        </div>
+
+        {/* Champ de recherche */}
+        <div style={{ position: "relative", marginBottom: 6 }}>
+          <input
+            type="text"
+            placeholder="Nom du commerce, adresse…"
+            value={query}
+            onChange={e => { setQuery(e.target.value); setSelected(null); }}
+            autoFocus
+            style={{
+              width: "100%", background: COLORS.card,
+              border: `1.5px solid ${COLORS.borderFocus}`,
+              borderRadius: 14, padding: "13px 42px 13px 16px",
+              fontSize: 15, fontFamily: "'DM Sans', sans-serif",
+              color: COLORS.ink, outline: "none", boxSizing: "border-box",
+            }}
+          />
+          {/* Icône loupe / spinner */}
+          <div style={{
+            position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
+            fontSize: 18, pointerEvents: "none",
+          }}>
+            {loading ? "⏳" : "🔍"}
+          </div>
+        </div>
+
+        {/* Message d'erreur / "aucun résultat" */}
+        {error && (
+          <div style={{
+            fontSize: 12, color: COLORS.ink2, marginBottom: 12, marginTop: 2,
+            fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5,
+          }}>⚠️ {error}</div>
+        )}
+
+        {/* Résultats */}
+        {results.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            {results.map(place => (
+              <PlaceResult
+                key={place.place_id}
+                place={place}
+                isSelected={selected?.place_id === place.place_id}
+                onSelect={p => { setSelected(p); setError(""); }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Bouton Confirmer */}
+        {selected && (
+          <button
+            onClick={handleConfirm}
+            disabled={loadingDetails}
+            style={{
+              width: "100%",
+              background: loadingDetails ? "#ccc" : COLORS.accent,
+              color: "#fff", border: "none", borderRadius: 16,
+              padding: 15, fontSize: 15, fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: loadingDetails ? "not-allowed" : "pointer",
+              marginTop: 8, transition: "background 0.2s",
+            }}
+          >
+            {loadingDetails ? "⏳ Chargement de la fiche…" : `Utiliser « ${selected.name} » →`}
+          </button>
+        )}
+
+        {/* Lien de secours — saisie manuelle */}
+        <div style={{ textAlign: "center", marginTop: 24 }}>
+          <div style={{ fontSize: 12, color: COLORS.ink2, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+            Mon commerce n'est pas sur Google ?
+          </div>
+          <button
+            onClick={onSkip}
+            style={{
+              background: "none", border: `1.5px solid ${COLORS.border}`,
+              borderRadius: 12, padding: "10px 20px",
+              fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
+              color: COLORS.ink2, cursor: "pointer",
+            }}
+          >
+            ✏️ Saisie manuelle
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── SCREEN 3 : INSCRIPTION MAGASIN ───
-function ScreenMagasin({ onBack, onValidate, loading }) {
+function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
+  const isFromGoogle = Boolean(initialData?.place_id);
+
   const [selectedPlan, setSelectedPlan] = useState("test");
   const [focused, setFocused] = useState(null);
-  const [nomMagasin, setNomMagasin] = useState("");
+  const [nomMagasin, setNomMagasin] = useState(initialData?.name ?? "");
   const [categorie, setCategorie] = useState("");
   const [metiersSelected, setMetiersSelected] = useState([]);
   const [metierCustom, setMetierCustom] = useState("");
-  const [adresse, setAdresse] = useState("");
+  const [adresse, setAdresse] = useState(initialData?.address ?? "");
+  const [phone, setPhone] = useState(initialData?.phone ?? "");
+  const [website, setWebsite] = useState(initialData?.website ?? "");
   const [description, setDescription] = useState("");
   const [acceptCGUM, setAcceptCGUM] = useState(false);
 
@@ -562,6 +816,25 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
           fontSize: 12, color: COLORS.ink2, marginBottom: 20,
           fontFamily: "'DM Sans', sans-serif",
         }}>Ces infos apparaîtront sur ta page Vitrine publique.</div>
+
+        {/* Badge "Données importées depuis Google" */}
+        {isFromGoogle && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "#E8F5E9", border: "1.5px solid #A5D6A7",
+            borderRadius: 12, padding: "10px 14px", marginBottom: 16,
+          }}>
+            <div style={{ fontSize: 20 }}>✅</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: "#2E7D32" }}>
+                Fiche Google importée
+              </div>
+              <div style={{ fontSize: 11, color: "#4CAF50", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>
+                Tous les champs sont éditables — modifie ce que tu veux.
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{
           fontSize: 11, fontWeight: 700, color: COLORS.ink2,
@@ -681,6 +954,24 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
           onBlur={() => setFocused(null)}
           style={inputStyle("adr")}
         />
+        <input
+          placeholder="Téléphone (optionnel)"
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+          onFocus={() => setFocused("phone")}
+          onBlur={() => setFocused(null)}
+          style={inputStyle("phone")}
+          type="tel"
+        />
+        <input
+          placeholder="Site web (optionnel)"
+          value={website}
+          onChange={e => setWebsite(e.target.value)}
+          onFocus={() => setFocused("web")}
+          onBlur={() => setFocused(null)}
+          style={inputStyle("web")}
+          type="url"
+        />
         <textarea
           placeholder="Présentation courte (max 200 car.)"
           rows={2}
@@ -724,7 +1015,24 @@ function ScreenMagasin({ onBack, onValidate, loading }) {
         </div>
 
         <button
-          onClick={() => onValidate({ nom: nomMagasin, cat: categorie, metier: metiersSelected.join(", ") || categorie, adr: adresse, desc: description, plan: selectedPlan })}
+          onClick={() => onValidate({
+            nom: nomMagasin,
+            cat: categorie,
+            metier: metiersSelected.join(", ") || categorie,
+            adr: adresse,
+            phone,
+            website,
+            desc: description,
+            plan: selectedPlan,
+            // Données Google pour audit et resync
+            google_place_id:       initialData?.place_id       ?? null,
+            google_data:           initialData?.raw            ?? null,
+            opening_hours:         initialData?.opening_hours  ?? null,
+            current_opening_hours: initialData?.current_opening_hours ?? null,
+            photo_urls:            initialData?.photo_urls     ?? [],
+            lat:                   initialData?.lat            ?? null,
+            lng:                   initialData?.lng            ?? null,
+          })}
           disabled={loading || !nomMagasin.trim() || !acceptCGUM}
           style={{
             width: "100%", background: loading || !nomMagasin.trim() || !acceptCGUM ? "#ccc" : COLORS.accent,
@@ -809,6 +1117,8 @@ export default function ChipeurInscription({ setPage, onAuth }) {
   const [creds, setCreds] = useState({ prenom: "", email: "", mdp: "" });
   const [signupError, setSignupError] = useState("");
   const [loadingSignup, setLoadingSignup] = useState(false);
+  // Données pré-remplies depuis Google Places (null si saisie manuelle)
+  const [googleData, setGoogleData] = useState(null);
 
   const handleChoose = async (type) => {
     setAccountType(type);
@@ -849,11 +1159,16 @@ export default function ChipeurInscription({ setPage, onAuth }) {
       if (error) { setSignupError(error.message); return; }
       setScreen("success");
     } else {
-      setScreen("magasin");
+      // → étape intermédiaire : recherche Google Business
+      setScreen("google_search");
     }
   };
 
-  const handleMagasinValidate = async ({ nom, cat, metier, adr, desc, plan }) => {
+  const handleMagasinValidate = async ({
+    nom, cat, metier, adr, phone, website, desc, plan,
+    google_place_id, google_data, opening_hours, current_opening_hours,
+    photo_urls, lat, lng,
+  }) => {
     setSignupError("");
     setLoadingSignup(true);
 
@@ -898,14 +1213,25 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     // 2. Mettre à jour le profil avec les infos du magasin (complète le trigger auth)
     if (data?.user) {
       const { error: upsertErr } = await supabase.from("profiles").upsert({
-        id: data.user.id,
-        pseudo: nom,
-        bio: desc || "",
-        quartier: adr || "",
-        categorie: catFinal,
-        metier: metierFinal,
-        age_range: ageRange,
-        role: "magasin",
+        id:                     data.user.id,
+        pseudo:                 nom,
+        bio:                    desc || "",
+        quartier:               adr || "",
+        categorie:              catFinal,
+        metier:                 metierFinal,
+        age_range:              ageRange,
+        role:                   "magasin",
+        // Champs Google Places (null si saisie manuelle)
+        phone:                  phone || null,
+        website:                website || null,
+        lat:                    lat || null,
+        lng:                    lng || null,
+        google_place_id:        google_place_id || null,
+        google_data:            google_data || null,
+        google_synced_at:       google_place_id ? new Date().toISOString() : null,
+        opening_hours:          opening_hours || null,
+        current_opening_hours:  current_opening_hours || null,
+        photo_urls:             photo_urls?.length > 0 ? photo_urls : null,
       });
       if (upsertErr) console.warn("Upsert profil magasin:", upsertErr.message);
     }
@@ -937,11 +1263,20 @@ export default function ChipeurInscription({ setPage, onAuth }) {
           <ScreenChoixCompte onChoose={handleChoose} />
         )}
 
+        {screen === "google_search" && (
+          <ScreenGoogleSearch
+            onBack={() => setScreen("choix")}
+            onSkip={() => { setGoogleData(null); setScreen("magasin"); }}
+            onSelect={(data) => { setGoogleData(data); setScreen("magasin"); }}
+          />
+        )}
+
         {screen === "magasin" && (
           <ScreenMagasin
-            onBack={() => setScreen("choix")}
+            onBack={() => setScreen("google_search")}
             onValidate={handleMagasinValidate}
             loading={loadingSignup}
+            initialData={googleData}
           />
         )}
 
