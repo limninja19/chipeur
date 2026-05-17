@@ -4,7 +4,6 @@ import { addXP } from "./chipeur_xp";
 import Avatar from "./Avatar";
 import { ChallengeMedia, RewardBadge } from "./ChallengeUI";
 import SwipeVoteModal from "./SwipeVoteModal";
-import { ShareButtons } from "./chipeur_nouveau_post";
 
 // ─── HEIC → JPEG conversion (photos iPhone) ─────────────────────
 async function convertImageFile(file) {
@@ -772,6 +771,34 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
           border: "none", display: "flex", alignItems: "center",
           justifyContent: "center", fontSize: 18, color: "#fff", cursor: "pointer",
         }}>‹</button>
+        {/* Bouton partager */}
+        <button
+          onClick={async () => {
+            const text = `🏆 Défi "${d.title}"${d.sub ? ` — ${d.sub}` : ""}${d.reward ? `. À gagner : ${d.reward}` : ""}. Participe sur Chipeur !`;
+            const appUrl = "https://chipeur.vercel.app";
+            if (navigator.share) {
+              const shareData = { title: "Chipeur — Défi", text, url: appUrl };
+              if (d.photo_url && navigator.canShare) {
+                try {
+                  const res = await fetch(d.photo_url);
+                  const blob = await res.blob();
+                  const file = new File([blob], "defi.jpg", { type: blob.type || "image/jpeg" });
+                  if (navigator.canShare({ files: [file] })) shareData.files = [file];
+                } catch (_) {}
+              }
+              try { await navigator.share(shareData); } catch (_) {}
+            } else {
+              window.open(`https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(text)}&u=${encodeURIComponent(appUrl)}`, "_blank", "noopener,width=620,height=500");
+            }
+          }}
+          style={{
+            position: "absolute", top: 14, right: 14,
+            width: 34, height: 34, background: "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(8px)", borderRadius: "50%",
+            border: "none", display: "flex", alignItems: "center",
+            justifyContent: "center", fontSize: 16, color: "#fff", cursor: "pointer",
+          }}
+        >📤</button>
         {/* Badge récompense */}
         {d.reward && (
           <div style={{ position: "absolute", bottom: 14, left: 14 }}>
@@ -965,13 +992,8 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
         ))}
       </div>
 
-      <div style={{ position: "absolute", bottom: 90, left: 20, right: 20, zIndex: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Bouton Partager — toujours visible pour inviter des participants */}
-        <ShareButtons
-          text={`🏆 Défi "${d.title}"${d.sub ? ` — ${d.sub}` : ""}${d.reward ? `. À gagner : ${d.reward}` : ""}. Participe sur Chipeur !`}
-          imageUrl={d.photo_url || null}
-        />
-        {!d.ended && (
+      {!d.ended && (
+        <div style={{ position: "absolute", bottom: 90, left: 20, right: 20, zIndex: 10 }}>
           <button
             onClick={onParticipe}
             style={{
@@ -981,8 +1003,8 @@ function DetailScreen({ d, user, onBack, onParticipe, onShowResults }) {
               color: "#fff", background: d.fill,
             }}
           >+ Participer à ce défi</button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
