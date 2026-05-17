@@ -260,9 +260,8 @@ export default function App() {
       {page === "messages"     && user && <Messages     {...sharedProps} />}
       {page === "profil" && (() => {
         if (!user) return null;
-        const roleProfil = profile?.role;
-        const roleMeta   = user?.user_metadata?.role;
-        const isMarchand = ["magasin","artisan","commercant"].includes(roleProfil) || ["magasin","artisan","commercant"].includes(roleMeta);
+        // On se base uniquement sur profiles.role (table) — pas sur user_metadata qui ne se met pas à jour
+        const isMarchand = ["magasin","artisan","commercant"].includes(profile?.role);
         return isMarchand ? <ProfilMagasin {...sharedProps} /> : <ProfilVoisin {...sharedProps} />;
       })()}
       {/* Fil = page par défaut, visible aussi sans compte */}

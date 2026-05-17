@@ -140,6 +140,8 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile, onProfil
           .update({ role: "voisin", categorie: null, metier: null, website: null, instagram: null, facebook: null })
           .eq("id", user.id);
         if (error) throw error;
+        // Mettre à jour aussi les user_metadata pour cohérence
+        await supabase.auth.updateUser({ data: { role: "voisin" } });
         onProfileUpdate?.();
         onClose();
       } else {
