@@ -19,11 +19,11 @@ const THEMES = [
   { key: "Tous",          emoji: "🛍️", match: [], short: "Tous" },
   { key: "Mode",          emoji: "👗", match: ["mode","prêt-à-porter","vêtement","chaussure","accessoire","lingerie"], short: "Mode" },
   { key: "Beauté",        emoji: "💄", match: ["beauté","bien-être","coiffure","esthétique","massage","spa","ongle","tatouage"], short: "Beauté" },
-  { key: "Restauration",  emoji: "🍽️", match: ["restauration","traiteur","resto","café","boulangerie","pizza","kebab"], short: "Resto" },
+  { key: "Restauration",  emoji: "🍽️", match: ["restauration","traiteur","resto","café","boulangerie","pizza","kebab","bar","pub","brasserie","bistrot","lounge","cocktail","bière","terrasse","snack","sandwicherie"], short: "Resto" },
   { key: "Alimentation",  emoji: "🧀", match: ["alimentation","épicerie","bio","fromagerie","boucherie","poissonnerie","fruits"], short: "Alim." },
   { key: "Artisan",       emoji: "🎨", match: ["artisan","bijoux","poterie","couture","bois","cuir","création"], short: "Artisan" },
   { key: "Maison",        emoji: "🏠", match: ["maison","décoration","mobilier","bricolage","jardinage"], short: "Maison" },
-  { key: "Sport",         emoji: "🏃", match: ["sport","loisirs","vélo","outdoor","jeux"], short: "Sport" },
+  { key: "Sport",         emoji: "🏃", match: ["sport","loisirs","vélo","outdoor","jeux","fitness","gym","musculation","yoga","pilates","crossfit","salle","natation","danse","arts martiaux","boxe","escalade"], short: "Sport" },
   { key: "Culture",       emoji: "📚", match: ["culture","librairie","papeterie","cadeaux","art","musique"], short: "Culture" },
   { key: "Services",      emoji: "🔧", match: ["services","plomberie","électricité","informatique","pressing"], short: "Services" },
   { key: "Autre",         emoji: "✨", match: [], short: "Autre", isAutre: true },
@@ -31,6 +31,26 @@ const THEMES = [
 
 // Pour compat avec l'ancien code
 const CATEGORIES = THEMES;
+
+// ─── TUILES DE NAVIGATION PAR SECTION ───
+const SECTION_TILES = [
+  { key: "commerces",    emoji: "🏪", label: "Commerces",         desc: "Mode, Maison, Services…",       bg: "#FF5733" },
+  { key: "beaute",       emoji: "💄", label: "Beauté & Bien-être", desc: "Coiffure, Spa, Esthétique",     bg: "#C2185B" },
+  { key: "restauration", emoji: "🍽️", label: "Resto & Ambiance",    desc: "Bar, Café, Boulangerie, Resto", bg: "#E65100" },
+  { key: "artisan",      emoji: "🎨", label: "Artisans",           desc: "Bijoux, Poterie, Créateurs",    bg: "#4527A0" },
+  { key: "lieu",         emoji: "🏛️", label: "Vie locale",         desc: "Musée, Médiathèque, Piscine",   bg: "#0A3D2E" },
+  { key: "all",          emoji: "✨", label: "Tout voir",          desc: "Tous les membres",              bg: "#37474F" },
+];
+
+const SECTION_LABELS = {
+  commerces:    { emoji: "🏪", label: "Commerces" },
+  beaute:       { emoji: "💄", label: "Beauté & Bien-être" },
+  restauration: { emoji: "🍽️", label: "Resto & Ambiance" },
+  artisan:      { emoji: "🎨", label: "Artisans & Créateurs" },
+  lieu:         { emoji: "🏛️", label: "Vie locale" },
+  all:          { emoji: "✨", label: "Tous les membres" },
+  nouveaux:     { emoji: "🆕", label: "Nouveaux membres" },
+};
 
 function matchesTheme(commerce, themeKey) {
   if (themeKey === "Tous") return true;
@@ -522,15 +542,27 @@ function SectionStrip({ emoji, title, items, onOpen, accent }) {
 }
 
 // ─── NOUVEAUX MEMBRES ───
-function NouveauxMembres({ items, onOpen }) {
+function NouveauxMembres({ items, onOpen, limit = 6, onVoirTout }) {
   if (!items || items.length === 0) return null;
-  const sorted = [...items].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 6);
-  if (sorted.length === 0) return null;
+  const sorted = [...items].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const visible = limit ? sorted.slice(0, limit) : sorted;
+  if (visible.length === 0) return null;
+  const hasMore = sorted.length > limit;
   return (
     <div style={{ paddingTop: 14, paddingBottom: 4 }}>
-      <SectionHeader emoji="🆕" title="Nouveaux membres" count={null} accent={C.accent} />
+      <div style={{ display: "flex", alignItems: "center", padding: "0 16px", marginBottom: 10 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+          🆕 Nouveaux membres
+          <div style={{ flex: 1, height: 1, background: `${C.accent}33` }} />
+        </div>
+        {(hasMore || onVoirTout) && (
+          <button onClick={onVoirTout} style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: C.accent, cursor: "pointer", fontFamily: dm, padding: "0 0 0 8px", whiteSpace: "nowrap" }}>
+            Voir tout →
+          </button>
+        )}
+      </div>
       <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "0 16px 4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-        {sorted.map((com, i) => (
+        {visible.map((com, i) => (
           <div
             key={com.id || i}
             onClick={() => onOpen(com)}
@@ -547,6 +579,111 @@ function NouveauxMembres({ items, onOpen }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── PHOTOS D'UNE SECTION (1 ligne + lightbox 20 photos) ───
+function SectionPhotos({ merchants, onOpenShop }) {
+  const [photos, setPhotos] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+
+  const merchantIds = (merchants || []).map(m => m.id).filter(id => id && !String(id).startsWith("__"));
+
+  useEffect(() => {
+    if (merchantIds.length === 0) return;
+    setPhotos([]);
+    supabase.from("posts")
+      .select("id, image_url, content, author_id, created_at, magasin_id")
+      .not("image_url", "is", null)
+      .in("author_id", merchantIds)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => setPhotos(data || []));
+  }, [merchantIds.join(",")]);
+
+  if (photos.length === 0) return null;
+  const preview = photos.slice(0, 5);
+
+  return (
+    <>
+      {lightboxIndex !== null && (
+        <ShopPhotosLightbox
+          photos={photos}
+          merchants={merchants}
+          startIndex={lightboxIndex}
+          onOpenShop={onOpenShop}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+      <div style={{ paddingBottom: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "0 16px", marginBottom: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, flex: 1, display: "flex", alignItems: "center", gap: 6 }}>
+            📸 Dernières photos
+            <div style={{ flex: 1, height: 1, background: C.border }} />
+          </div>
+          <button
+            onClick={() => setLightboxIndex(0)}
+            style={{ background: "none", border: "none", fontSize: 11, fontWeight: 700, color: C.accent, cursor: "pointer", fontFamily: dm, padding: "0 0 0 10px", whiteSpace: "nowrap" }}
+          >
+            Voir tout ({photos.length}) →
+          </button>
+        </div>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 16px 4px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+          {preview.map((photo, i) => {
+            const shop = (merchants || []).find(m => m.id === photo.author_id || m.id === photo.magasin_id);
+            if (!shop) return null;
+            return (
+              <div
+                key={photo.id}
+                onClick={() => setLightboxIndex(i)}
+                style={{ flexShrink: 0, width: 110, height: 110, borderRadius: 14, overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
+              >
+                <img src={photo.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 45%, rgba(26,23,20,0.78))" }} />
+                <div style={{ position: "absolute", bottom: 6, left: 7, right: 7 }}>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 10, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{shop.name}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── TUILES CATÉGORIES ───
+function CategoryTiles({ counts, onSelect }) {
+  return (
+    <div style={{ padding: "14px 16px 8px" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+        🗺️ Découvrir par catégorie
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {SECTION_TILES.map(t => {
+          const count = counts[t.key] || 0;
+          return (
+            <div
+              key={t.key}
+              onClick={() => onSelect(t.key)}
+              style={{ background: t.bg, borderRadius: 18, padding: "14px 14px 12px", cursor: "pointer", minHeight: 100, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 3px 12px rgba(0,0,0,0.15)", position: "relative", overflow: "hidden" }}
+            >
+              <div style={{ fontSize: 28 }}>{t.emoji}</div>
+              <div>
+                <div style={{ fontFamily: syne, fontWeight: 600, fontSize: 13, color: "#fff", lineHeight: 1.3, marginBottom: 3 }}>{t.label}</div>
+                <div style={{ fontFamily: dm, fontSize: 10, fontWeight: 400, color: "rgba(255,255,255,0.7)", lineHeight: 1.4 }}>{t.desc}</div>
+                {count > 0 && (
+                  <div style={{ marginTop: 6, fontFamily: dm, fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.85)", background: "rgba(0,0,0,0.18)", display: "inline-block", padding: "2px 8px", borderRadius: 8 }}>
+                    {count} membre{count > 1 ? "s" : ""}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1809,6 +1946,8 @@ export default function ChipeurCommerces({ setPage, user }) {
   const [selectedCom, setSelectedCom] = useState(null);
   const [activeCats, setActiveCats] = useState(new Set(["Tous"]));
   const [search, setSearch] = useState("");
+  const [activeSection, setActiveSection] = useState(null);
+  // null = accueil tuiles | "commerces" | "beaute" | "restauration" | "artisan" | "lieu" | "all" | "nouveaux"
 
   const toggleCat = (key) => {
     setActiveCats(prev => {
@@ -1820,6 +1959,9 @@ export default function ChipeurCommerces({ setPage, user }) {
       return next;
     });
   };
+
+  const goToSection = (key) => setActiveSection(key);
+  const backToHome = () => setActiveSection(null);
   const [realMerchants, setRealMerchants] = useState([]);
   const [loadingMerchants, setLoadingMerchants] = useState(true);
 
@@ -1828,7 +1970,7 @@ export default function ChipeurCommerces({ setPage, user }) {
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role, photo_urls, current_opening_hours, created_at, lieu_type")
+      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role, photo_urls, current_opening_hours, created_at")
       .or("role.eq.magasin,role.eq.lieu,categorie.not.is.null")
       .not("pseudo", "is", null)
       .neq("pseudo", "[Compte supprimé]")
@@ -1870,73 +2012,166 @@ export default function ChipeurCommerces({ setPage, user }) {
   const featured = filtered.find(c => c.featured);
   const others = filtered.filter(c => !c.featured);
 
-  // ── Sections thématiques (mode vue d'ensemble sans filtre) ──
+  // ── Sections thématiques ──
   const lieuItems      = allCommerces.filter(c => c.role === "lieu");
   const beauteItems    = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Beauté"));
   const restoItems     = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Restauration"));
   const artisanItems   = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Artisan"));
-  // "Commerces" = tout le reste (hors beauté/resto/artisan/lieu)
-  const specialIds = new Set([...beauteItems, ...restoItems, ...artisanItems, ...lieuItems].map(c => c.id));
+  const specialIds     = new Set([...beauteItems, ...restoItems, ...artisanItems, ...lieuItems].map(c => c.id));
   const mainCommerces  = allCommerces.filter(c => !specialIds.has(c.id));
+  const nouveauxItems  = [...allCommerces].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  const sectionItemsMap = {
+    commerces:    mainCommerces,
+    beaute:       beauteItems,
+    restauration: restoItems,
+    artisan:      artisanItems,
+    lieu:         lieuItems,
+    all:          allCommerces,
+    nouveaux:     nouveauxItems,
+  };
+
+  const tileCounts = {
+    commerces:    mainCommerces.length,
+    beaute:       beauteItems.length,
+    restauration: restoItems.length,
+    artisan:      artisanItems.length,
+    lieu:         lieuItems.length,
+    all:          allCommerces.length,
+  };
 
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: C.bg, overflow: "hidden", fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column" }}>
 
       {screen === "list" && (
         <>
-          {/* ── HEADER style fil ── */}
+          {/* ── HEADER ── */}
           <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px 8px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <svg width="26" height="26" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs><linearGradient id="pinGradC" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#FF5733"/><stop offset="100%" stopColor="#FF8C42"/></linearGradient></defs>
-                  <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradC)"/>
-                  <circle cx="36" cy="26" r="10" fill="white"/>
-                  <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
-                </svg>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 19, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>chi<span style={{ color: C.accent }}>p</span>eur</div>
-                  <div style={{ fontFamily: dm, fontSize: 10, color: C.accent, lineHeight: 1.5, marginTop: 3 }}>Découvre ta ville,<br />à travers tes voisins</div>
-                </div>
-              </div>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Boutiques 🏪</div>
-              <div style={{ fontSize: 11, color: C.ink2 }}>{filtered.length} vitrines</div>
+
+            {/* Ligne logo / titre / compteur — ou bouton retour si section active */}
+            <div style={{ display: "flex", alignItems: "center", padding: "10px 16px 8px", gap: 10 }}>
+              {activeSection && !search ? (
+                <>
+                  <button onClick={backToHome} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink, padding: 0, lineHeight: 1 }}>←</button>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>
+                      {SECTION_LABELS[activeSection]?.emoji} {SECTION_LABELS[activeSection]?.label}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.ink2 }}>{(sectionItemsMap[activeSection] || []).length} membre{(sectionItemsMap[activeSection] || []).length > 1 ? "s" : ""}</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <svg width="26" height="26" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs><linearGradient id="pinGradC" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#FF5733"/><stop offset="100%" stopColor="#FF8C42"/></linearGradient></defs>
+                      <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradC)"/>
+                      <circle cx="36" cy="26" r="10" fill="white"/>
+                      <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
+                    </svg>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 19, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>chi<span style={{ color: C.accent }}>p</span>eur</div>
+                      <div style={{ fontFamily: dm, fontSize: 10, color: C.accent, lineHeight: 1.5, marginTop: 3 }}>Découvre ta ville, à travers tes voisins</div>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }} />
+                  <div style={{ fontSize: 11, color: C.ink2 }}>{allCommerces.length} vitrines</div>
+                </>
+              )}
             </div>
 
-            {/* Recherche */}
-            <div style={{ margin: "0 14px 8px", display: "flex", alignItems: "center", gap: 8, background: C.bg, borderRadius: 14, padding: "8px 14px", border: `1px solid ${C.border}` }}>
+            {/* Barre de recherche */}
+            <div style={{ margin: "0 14px 10px", display: "flex", alignItems: "center", gap: 8, background: C.bg, borderRadius: 14, padding: "8px 14px", border: `1px solid ${C.border}` }}>
               <span style={{ fontSize: 13, color: C.ink2 }}>🔍</span>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Recherche un commerce, artisan…" style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }} />
+              <input
+                value={search}
+                onChange={e => { setSearch(e.target.value); if (e.target.value) setActiveSection(null); }}
+                placeholder="Recherche un commerce, artisan…"
+                style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }}
+              />
               {search && <span onClick={() => setSearch("")} style={{ fontSize: 13, cursor: "pointer", color: C.ink2 }}>✕</span>}
             </div>
-
-            {/* Chips filtres catégories */}
-            <CategoryChips active={activeCats} onToggle={toggleCat} />
           </div>
 
+          {/* ── CONTENU SCROLLABLE ── */}
           <div style={{ flex: 1, overflowY: "auto" }}>
             {loadingMerchants ? (
               <div style={{ textAlign: "center", padding: "20px 0", fontSize: 12, color: C.ink2 }}>⏳ Chargement…</div>
-            ) : isAllCats && !search ? (
-              /* ══════════ VUE SECTIONS (sans filtre actif) ══════════ */
-              <>
-                {/* Bandeau photos récentes */}
-                <div style={{ padding: "12px 0 4px" }}>
-                  <RecentShopPhotos
-                    merchants={realMerchants}
-                    onOpenShop={(shop) => { setSelectedCom(shop); setScreen("vitrine"); }}
-                  />
+
+            ) : search.trim() ? (
+              /* ══ RECHERCHE ══ */
+              <div style={{ padding: "8px 16px 80px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                  🔍 Résultats
+                  <div style={{ flex: 1, height: 1, background: C.border }} />
+                  <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{filtered.length} résultat{filtered.length > 1 ? "s" : ""}</span>
                 </div>
-
-                {/* Nouveaux membres */}
-                {allCommerces.length > 0 && (
-                  <NouveauxMembres
-                    items={allCommerces}
-                    onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
-                  />
+                {filtered.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "40px 16px" }}>
+                    <div style={{ fontSize: 36, marginBottom: 10 }}>🏪</div>
+                    <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun résultat</div>
+                    <div style={{ fontSize: 12, color: C.ink2 }}>Essaie un autre terme.</div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {filtered.map((c, i) => <ComGridCard key={c.id || i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />)}
+                  </div>
                 )}
+              </div>
 
-                {/* Section DÉMO si aucun commerçant réel */}
+            ) : activeSection ? (
+              /* ══ VUE SECTION (catégorie sélectionnée) ══ */
+              <div style={{ padding: "8px 0 80px" }}>
+                {/* Photos de la section */}
+                {activeSection !== "nouveaux" && (
+                  <div style={{ padding: "8px 0 4px" }}>
+                    <SectionPhotos
+                      merchants={sectionItemsMap[activeSection] || []}
+                      onOpenShop={(shop) => { setSelectedCom(shop); setScreen("vitrine"); }}
+                    />
+                  </div>
+                )}
+                <div style={{ padding: "0 16px" }}>
+                {(sectionItemsMap[activeSection] || []).length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "60px 16px" }}>
+                    <div style={{ fontSize: 40, marginBottom: 12 }}>{SECTION_LABELS[activeSection]?.emoji}</div>
+                    <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun membre pour l'instant</div>
+                    <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Les premiers membres de cette catégorie apparaîtront ici dès leur inscription.</div>
+                  </div>
+                ) : activeSection === "nouveaux" ? (
+                  /* Nouveaux membres : vue liste verticale */
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {(sectionItemsMap.nouveaux || []).map((c, i) => (
+                      <div key={c.id || i} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} style={{ display: "flex", alignItems: "center", gap: 12, background: C.card, borderRadius: 16, padding: "12px 14px", cursor: "pointer", border: `1px solid ${C.border}` }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 14, overflow: "hidden", flexShrink: 0, background: C.pill }}>
+                          <CoverImage src={c.cover} commerce={c} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+                          <div style={{ fontSize: 11, color: C.ink2, marginTop: 2 }}>{catLabel(c.categorie || c.category || "Commerce")}</div>
+                        </div>
+                        <div style={{ fontSize: 11, color: C.ink2 }}>›</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Section standard : grille 2 col */
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {(sectionItemsMap[activeSection] || []).map((c, i) => (
+                      <ComGridCard key={c.id || i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
+                    ))}
+                  </div>
+                )}
+                </div>
+              </div>
+
+            ) : (
+              /* ══ ACCUEIL — TUILES ══ */
+              <>
+                {/* Tuiles catégories */}
+                <CategoryTiles counts={tileCounts} onSelect={goToSection} />
+
+                {/* DÉMO si aucun commerçant */}
                 {realMerchants.length === 0 && (
                   <div style={{ padding: "12px 16px 4px" }}>
                     <SectionHeader emoji="✨" title="Exemple de vitrine" accent={C.accent} />
@@ -1949,83 +2184,8 @@ export default function ChipeurCommerces({ setPage, user }) {
                   </div>
                 )}
 
-                {/* Bandeau "bientôt" si peu de contenu */}
-                {realMerchants.length > 0 && realMerchants.length < 5 && (
-                  <div style={{ margin: "12px 16px 4px", background: C.proBg, border: `1px solid rgba(10,61,46,0.12)`, borderRadius: 16, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 24 }}>🌱</span>
-                    <div>
-                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.pro }}>Les vitrines arrivent !</div>
-                      <div style={{ fontSize: 11, color: C.ink2, marginTop: 2, lineHeight: 1.4 }}>Les commerçants de Saint-Dié rejoignent Chipeur.</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Section Commerces (grille prioritaire) ── */}
-                {mainCommerces.length > 0 && (
-                  <div style={{ padding: "16px 16px 4px" }}>
-                    <SectionHeader emoji="🏪" title="Commerces" count={`${mainCommerces.length} inscrit${mainCommerces.length > 1 ? "s" : ""}`} />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      {mainCommerces.map((c, i) => (
-                        <ComGridCard key={c.id || i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Beauté & Bien-être ── */}
-                <SectionStrip
-                  emoji="💄" title="Beauté & Bien-être"
-                  items={beauteItems}
-                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
-                />
-
-                {/* ── Restauration ── */}
-                <SectionStrip
-                  emoji="🍽️" title="Restauration"
-                  items={restoItems}
-                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
-                />
-
-                {/* ── Artisans ── */}
-                <SectionStrip
-                  emoji="🎨" title="Artisans & Créateurs"
-                  items={artisanItems}
-                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
-                />
-
-                {/* ── Vie locale ── */}
-                <SectionStrip
-                  emoji="🏛️" title="Vie locale"
-                  items={lieuItems}
-                  onOpen={(c) => { setSelectedCom(c); setScreen("vitrine"); }}
-                  accent={C.pro}
-                />
-
                 <div style={{ height: 80 }} />
               </>
-            ) : (
-              /* ══════════ VUE FILTRÉE (chip ou recherche active) ══════════ */
-              <div style={{ padding: "8px 16px 80px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                  🔍 Résultats
-                  <div style={{ flex: 1, height: 1, background: C.border }} />
-                  <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{filtered.length} résultat{filtered.length > 1 ? "s" : ""}</span>
-                </div>
-
-                {filtered.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "40px 16px" }}>
-                    <div style={{ fontSize: 36, marginBottom: 10 }}>🏪</div>
-                    <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>Aucun résultat</div>
-                    <div style={{ fontSize: 12, color: C.ink2 }}>Essaie un autre filtre ou une autre recherche.</div>
-                  </div>
-                ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    {filtered.map((c, i) => (
-                      <ComGridCard key={c.id || i} com={c} onClick={() => { setSelectedCom(c); setScreen("vitrine"); }} />
-                    ))}
-                  </div>
-                )}
-              </div>
             )}
           </div>
         </>
