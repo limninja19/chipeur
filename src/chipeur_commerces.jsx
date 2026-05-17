@@ -415,19 +415,20 @@ function ComGridCard({ com, onClick }) {
         <div style={{ position: "absolute", top: 7, right: 7, background: "rgba(255,255,255,0.92)", borderRadius: 8, padding: "3px 7px", fontSize: 13 }}>
           {themeEmoji}
         </div>
-        {/* Badge Ouvert / Fermé */}
-        {com.open_now !== null && com.open_now !== undefined && (
-          <div style={{ position: "absolute", top: 7, left: 7, background: com.open_now ? "#22C55E" : "#EF4444", borderRadius: 7, padding: "2px 7px", display: "flex", alignItems: "center", gap: 4 }}>
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff", opacity: com.open_now ? 1 : 0.7 }} />
-            <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "'DM Sans', sans-serif" }}>{com.open_now ? "Ouvert" : "Fermé"}</span>
-          </div>
-        )}
-        {/* Posts count */}
-        {com.posts !== "—" && (
-          <div style={{ position: "absolute", top: 7, left: 7, background: "rgba(0,0,0,0.48)", borderRadius: 8, padding: "3px 7px", fontSize: 9, color: "#fff", fontFamily: dm, fontWeight: 600 }}>
-            📸 {com.posts}
-          </div>
-        )}
+        {/* Badge Ouvert / Fermé + compteur photos (colonne en haut à gauche) */}
+        <div style={{ position: "absolute", top: 7, left: 7, display: "flex", flexDirection: "column", gap: 4 }}>
+          {com.open_now !== null && com.open_now !== undefined && (
+            <div style={{ background: com.open_now ? "#22C55E" : "#EF4444", borderRadius: 7, padding: "2px 7px", display: "flex", alignItems: "center", gap: 4, alignSelf: "flex-start" }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff", opacity: com.open_now ? 1 : 0.7 }} />
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: "'DM Sans', sans-serif" }}>{com.open_now ? "Ouvert" : "Fermé"}</span>
+            </div>
+          )}
+          {com.posts !== "—" && (
+            <div style={{ background: "rgba(0,0,0,0.48)", borderRadius: 8, padding: "2px 7px", fontSize: 9, color: "#fff", fontFamily: dm, fontWeight: 600, alignSelf: "flex-start" }}>
+              📸 {com.posts}
+            </div>
+          )}
+        </div>
         {/* Nom en overlay bas */}
         <div style={{ position: "absolute", bottom: 7, left: 8, right: 8 }}>
           <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: "#fff", lineHeight: 1.2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
