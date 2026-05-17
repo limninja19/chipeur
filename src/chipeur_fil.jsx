@@ -551,16 +551,14 @@ function BandeauDefis({ setPage, user }) {
   );
 }
 
-// ─── BANDEAU SORTIES PHOTOS ───
+// ─── BANDEAU SORTIES PHOTOS (collapsible) ───
 function BandeauSortiesPhotos({ setPage, setSelectedSortieId }) {
   const [events, setEvents] = useState([]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    // Charger les événements des 7 derniers jours + aujourd'hui qui ont des photos
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
 
     supabase
       .from("posts")
@@ -571,12 +569,10 @@ function BandeauSortiesPhotos({ setPage, setSelectedSortieId }) {
       .limit(100)
       .then(({ data }) => {
         if (!data || data.length === 0) return;
-        // Grouper les photos par événement
         const byEvent = {};
         data.forEach(post => {
           if (!post.sorties) return;
           const ev = post.sorties;
-          // Vérifier que l'événement est dans les 7 derniers jours
           if (!ev.date_text) return;
           const parts = ev.date_text.split("/");
           if (parts.length !== 3) return;
@@ -584,7 +580,6 @@ function BandeauSortiesPhotos({ setPage, setSelectedSortieId }) {
           evDate.setHours(0, 0, 0, 0);
           const diff = Math.floor((today - evDate) / (1000 * 60 * 60 * 24));
           if (diff < 0 || diff > 7) return;
-
           if (!byEvent[ev.id]) byEvent[ev.id] = { ev, photos: [] };
           byEvent[ev.id].photos.push(post);
         });
@@ -595,57 +590,77 @@ function BandeauSortiesPhotos({ setPage, setSelectedSortieId }) {
 
   if (events.length === 0) return null;
 
+  const totalPhotos = events.reduce((sum, { photos }) => sum + photos.length, 0);
+
   return (
-    <div style={{ padding: "0 12px 10px", flexShrink: 0 }}>
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase",
-        letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
-      }}>
-        📸 Souvenirs de sorties
-        <div style={{ flex: 1, height: 1, background: C.border }} />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {events.map(({ ev, photos }) => (
-          <div
-            key={ev.id}
-            onClick={() => { setSelectedSortieId(ev.id); setPage("sorties"); }}
-            style={{
-              background: C.card, borderRadius: 16, padding: "10px 12px",
-              border: `1px solid ${C.border}`, cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 10,
-            }}
-          >
-            {/* 2 preview photos */}
-            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-              {photos.slice(0, 2).map(p => (
-                <div key={p.id} style={{ width: 52, height: 52, borderRadius: 10, overflow: "hidden", background: C.pill }}>
-                  <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-              ))}
-              {photos.length > 2 && (
-                <div style={{
-                  width: 52, height: 52, borderRadius: 10,
-                  background: "#FF5733",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#fff", fontWeight: 700, fontSize: 15,
-                }}>
-                  +{photos.length - 2}
-                </div>
-              )}
-            </div>
-            {/* Texte */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {ev.title}
-              </div>
-              <div style={{ fontSize: 11, color: C.ink2 }}>
-                {photos.length} photo{photos.length > 1 ? "s" : ""} partagée{photos.length > 1 ? "s" : ""}
-              </div>
-            </div>
-            <div style={{ fontSize: 16, color: C.ink2, flexShrink: 0 }}>›</div>
+    <div style={{ marginBottom: 8 }}>
+      {/* Header cliquable */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: C.ink, borderRadius: open ? "18px 18px 0 0" : 18,
+          padding: "12px 16px", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <div style={{ fontFamily: syne, fontWeight: 600, fontSize: 13, color: "#fff" }}>
+            📸 Souvenirs de sorties
           </div>
-        ))}
+          <div style={{ fontFamily: dm, fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+            {events.length} sortie{events.length > 1 ? "s" : ""} · {totalPhotos} photo{totalPhotos > 1 ? "s" : ""}
+          </div>
+        </div>
+        <div style={{ fontSize: 18, color: "rgba(255,255,255,0.4)" }}>{open ? "▲" : "▼"}</div>
       </div>
+
+      {/* Liste déroulée */}
+      {open && (
+        <div style={{
+          background: C.card, borderRadius: "0 0 18px 18px",
+          border: `1px solid ${C.border}`, borderTop: "none",
+          padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8,
+        }}>
+          {events.map(({ ev, photos }) => (
+            <div
+              key={ev.id}
+              onClick={() => { setSelectedSortieId(ev.id); setPage("sorties"); }}
+              style={{
+                background: C.bg, borderRadius: 14, padding: "10px 12px",
+                border: `1px solid ${C.border}`, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                {photos.slice(0, 2).map(p => (
+                  <div key={p.id} style={{ width: 48, height: 48, borderRadius: 10, overflow: "hidden", background: C.pill }}>
+                    <img src={p.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                ))}
+                {photos.length > 2 && (
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 10,
+                    background: C.accent,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", fontWeight: 700, fontSize: 13,
+                  }}>
+                    +{photos.length - 2}
+                  </div>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {ev.title}
+                </div>
+                <div style={{ fontSize: 11, color: C.ink2 }}>
+                  {photos.length} photo{photos.length > 1 ? "s" : ""} partagée{photos.length > 1 ? "s" : ""}
+                </div>
+              </div>
+              <div style={{ fontSize: 16, color: C.ink2, flexShrink: 0 }}>›</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2033,7 +2048,6 @@ export default function Fil({ setPage, profile, user, setSelectedVoisinId, requi
         )}
         <BandeauDefis setPage={setPage} user={user} />
         <BandeauSortiesPhotos setPage={setPage} setSelectedSortieId={setSelectedSortieId} />
-        <BandeauClassement user={user} setSelectedVoisinId={setSelectedVoisinId} setPage={setPage} />
         <BandeauXPShop setPage={setPage} user={user} profile={profile} />
         <TuValidesNotif user={user} />
         <BandeauTuValides user={user} />
