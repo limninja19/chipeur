@@ -1934,14 +1934,14 @@ function VitrineScreen({ com, onBack, user }) {
       <div style={{ flex: 1, overflowY: "auto" }}>
 
         {/* Bannière */}
-        <div style={{ position: "relative", width: "100%", height: 200, overflow: "hidden" }}>
+        <div style={{ position: "relative", width: "100%", height: "calc(200px + env(safe-area-inset-top, 0px))", overflow: "hidden" }}>
           <CoverImage src={com.cover} commerce={com} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%, rgba(26,23,20,0.7) 100%)" }} />
-          <button onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>‹</button>
+          <button onClick={onBack} style={{ position: "absolute", top: "calc(14px + env(safe-area-inset-top, 0px))", left: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>‹</button>
           {com.isDemo ? (
-            <div style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,87,51,0.92)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 10, letterSpacing: 0.5 }}>✨ EXEMPLE</div>
+            <div style={{ position: "absolute", top: "calc(14px + env(safe-area-inset-top, 0px))", right: 14, background: "rgba(255,87,51,0.92)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 10, letterSpacing: 0.5 }}>✨ EXEMPLE</div>
           ) : (
-            <button onClick={handleSuivi} style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+            <button onClick={handleSuivi} style={{ position: "absolute", top: "calc(14px + env(safe-area-inset-top, 0px))", right: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
               {suivi ? "❤️" : "🤍"}
             </button>
           )}
