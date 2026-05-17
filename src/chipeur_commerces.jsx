@@ -18,15 +18,17 @@ const STATIC_COMMERCES = [];
 const THEMES = [
   { key: "Tous",          emoji: "🛍️", match: [], short: "Tous" },
   { key: "Mode",          emoji: "👗", match: ["mode","prêt-à-porter","vêtement","chaussure","accessoire","lingerie"], short: "Mode" },
-  { key: "Beauté",        emoji: "💄", match: ["beauté","bien-être","coiffure","esthétique","massage","spa","ongle","tatouage"], short: "Beauté" },
-  { key: "Restauration",  emoji: "🍽️", match: ["restauration","traiteur","resto","café","boulangerie","pizza","kebab","bar","pub","brasserie","bistrot","lounge","cocktail","bière","terrasse","snack","sandwicherie"], short: "Resto" },
+  { key: "Beauté",        emoji: "💄", match: ["beauté","bien-être","coiffure","esthétique","massage","spa","ongle","tatouage","barbier","nail"], short: "Beauté" },
+  { key: "Restauration",  emoji: "🍽️", match: ["restauration","ambiance","traiteur","resto","café","boulangerie","pizza","kebab","bar","pub","brasserie","bistrot","lounge","cocktail","bière","terrasse","snack","sandwicherie","pâtisserie","salon de thé"], short: "Resto" },
   { key: "Alimentation",  emoji: "🧀", match: ["alimentation","épicerie","bio","fromagerie","boucherie","poissonnerie","fruits"], short: "Alim." },
-  { key: "Artisan",       emoji: "🎨", match: ["artisan","bijoux","poterie","couture","bois","cuir","création"], short: "Artisan" },
+  { key: "Artisan",       emoji: "🎨", match: ["artisan","créateur","bijoux","poterie","couture","bois","cuir","création","photographe","céramiste","relieur"], short: "Artisan" },
   { key: "Maison",        emoji: "🏠", match: ["maison","décoration","mobilier","bricolage","jardinage"], short: "Maison" },
   { key: "Sport",         emoji: "🏃", match: ["sport","loisirs","vélo","outdoor","jeux","fitness","gym","musculation","yoga","pilates","crossfit","salle","natation","danse","arts martiaux","boxe","escalade"], short: "Sport" },
-  { key: "Culture",       emoji: "📚", match: ["culture","librairie","papeterie","cadeaux","art","musique"], short: "Culture" },
-  { key: "Services",      emoji: "🔧", match: ["services","plomberie","électricité","informatique","pressing"], short: "Services" },
-  { key: "Autre",         emoji: "✨", match: [], short: "Autre", isAutre: true },
+  { key: "Culture",        emoji: "📚", match: ["culture","librairie","papeterie","cadeaux","art","musique"], short: "Culture" },
+  { key: "Services",       emoji: "🔧", match: ["services","plomberie","électricité","informatique","pressing"], short: "Services" },
+  { key: "Divertissement", emoji: "🎭", match: ["divertissement","cinéma","musée","piscine","théâtre","concert","bowling","escape","karting","médiathèque","bibliothèque","galerie","spectacle","accrobranche","patinoire","parc d'attractions","animation","aqua","laser"], short: "Divert." },
+  { key: "Vie locale",     emoji: "🏛️", match: ["vie locale","administratif","mairie","préfecture","caf","cpam","pôle emploi","impôts","tribunal","gendarmerie","école","collège","lycée","université","office de tourisme","service public","maison des services","sécurité sociale"], short: "Vie loc." },
+  { key: "Autre",          emoji: "✨", match: [], short: "Autre", isAutre: true },
 ];
 
 // Pour compat avec l'ancien code
@@ -34,22 +36,24 @@ const CATEGORIES = THEMES;
 
 // ─── TUILES DE NAVIGATION PAR SECTION ───
 const SECTION_TILES = [
-  { key: "commerces",    emoji: "🏪", label: "Commerces",         desc: "Mode, Maison, Services…",       bg: "#FF5733" },
-  { key: "beaute",       emoji: "💄", label: "Beauté & Bien-être", desc: "Coiffure, Spa, Esthétique",     bg: "#C2185B" },
-  { key: "restauration", emoji: "🍽️", label: "Resto & Ambiance",    desc: "Bar, Café, Boulangerie, Resto", bg: "#E65100" },
-  { key: "artisan",      emoji: "🎨", label: "Artisans",           desc: "Bijoux, Poterie, Créateurs",    bg: "#4527A0" },
-  { key: "lieu",         emoji: "🏛️", label: "Vie locale",         desc: "Musée, Médiathèque, Piscine",   bg: "#0A3D2E" },
-  { key: "all",          emoji: "✨", label: "Tout voir",          desc: "Tous les membres",              bg: "#37474F" },
+  { key: "commerces",      emoji: "🏪", label: "Commerces",         desc: "Mode, Maison, Services…",        bg: "#FF5733" },
+  { key: "beaute",         emoji: "💄", label: "Beauté & Bien-être", desc: "Coiffure, Spa, Esthétique",      bg: "#C2185B" },
+  { key: "restauration",   emoji: "🍽️", label: "Resto & Ambiance",   desc: "Bar, Café, Boulangerie, Resto",  bg: "#E65100" },
+  { key: "artisan",        emoji: "🎨", label: "Artisans",           desc: "Bijoux, Poterie, Créateurs",     bg: "#4527A0" },
+  { key: "divertissement", emoji: "🎭", label: "Divertissement",     desc: "Cinéma, Piscine, Musée, Bowling",bg: "#1565C0" },
+  { key: "vie_locale",     emoji: "🏛️", label: "Vie locale",         desc: "Mairie, CAF, École, Office…",   bg: "#2E7D32" },
+  { key: "all",            emoji: "✨", label: "Tout voir",          desc: "Tous les membres",               bg: "#37474F" },
 ];
 
 const SECTION_LABELS = {
-  commerces:    { emoji: "🏪", label: "Commerces" },
-  beaute:       { emoji: "💄", label: "Beauté & Bien-être" },
-  restauration: { emoji: "🍽️", label: "Resto & Ambiance" },
-  artisan:      { emoji: "🎨", label: "Artisans & Créateurs" },
-  lieu:         { emoji: "🏛️", label: "Vie locale" },
-  all:          { emoji: "✨", label: "Tous les membres" },
-  nouveaux:     { emoji: "🆕", label: "Nouveaux membres" },
+  commerces:      { emoji: "🏪", label: "Commerces" },
+  beaute:         { emoji: "💄", label: "Beauté & Bien-être" },
+  restauration:   { emoji: "🍽️", label: "Resto & Ambiance" },
+  artisan:        { emoji: "🎨", label: "Artisans & Créateurs" },
+  divertissement: { emoji: "🎭", label: "Divertissement" },
+  vie_locale:     { emoji: "🏛️", label: "Vie locale" },
+  all:            { emoji: "✨", label: "Tous les membres" },
+  nouveaux:       { emoji: "🆕", label: "Nouveaux membres" },
 };
 
 function matchesTheme(commerce, themeKey) {
@@ -663,13 +667,15 @@ function CategoryTiles({ counts, onSelect }) {
         <div style={{ flex: 1, height: 1, background: C.border }} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {SECTION_TILES.map(t => {
+        {SECTION_TILES.map((t, idx) => {
           const count = counts[t.key] || 0;
+          const isLast = idx === SECTION_TILES.length - 1;
+          const isOdd = SECTION_TILES.length % 2 !== 0;
           return (
             <div
               key={t.key}
               onClick={() => onSelect(t.key)}
-              style={{ background: t.bg, borderRadius: 18, padding: "14px 14px 12px", cursor: "pointer", minHeight: 100, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 3px 12px rgba(0,0,0,0.15)", position: "relative", overflow: "hidden" }}
+              style={{ background: t.bg, borderRadius: 18, padding: "14px 14px 12px", cursor: "pointer", minHeight: 100, display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 3px 12px rgba(0,0,0,0.15)", position: "relative", overflow: "hidden", ...(isLast && isOdd ? { gridColumn: "1 / -1", minHeight: 70, flexDirection: "row", alignItems: "center", gap: 14 } : {}) }}
             >
               <div style={{ fontSize: 28 }}>{t.emoji}</div>
               <div>
@@ -2013,31 +2019,34 @@ export default function ChipeurCommerces({ setPage, user }) {
   const others = filtered.filter(c => !c.featured);
 
   // ── Sections thématiques ──
-  const lieuItems      = allCommerces.filter(c => c.role === "lieu");
-  const beauteItems    = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Beauté"));
-  const restoItems     = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Restauration"));
-  const artisanItems   = allCommerces.filter(c => c.role !== "lieu" && matchesTheme(c, "Artisan"));
-  const specialIds     = new Set([...beauteItems, ...restoItems, ...artisanItems, ...lieuItems].map(c => c.id));
-  const mainCommerces  = allCommerces.filter(c => !specialIds.has(c.id));
-  const nouveauxItems  = [...allCommerces].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const beauteItems         = allCommerces.filter(c => matchesTheme(c, "Beauté"));
+  const restoItems          = allCommerces.filter(c => matchesTheme(c, "Restauration"));
+  const artisanItems        = allCommerces.filter(c => matchesTheme(c, "Artisan"));
+  const divertissementItems = allCommerces.filter(c => matchesTheme(c, "Divertissement"));
+  const vieLocaleItems      = allCommerces.filter(c => matchesTheme(c, "Vie locale") || (c.role === "lieu" && !matchesTheme(c, "Divertissement")));
+  const specialIds          = new Set([...beauteItems, ...restoItems, ...artisanItems, ...divertissementItems, ...vieLocaleItems].map(c => c.id));
+  const mainCommerces       = allCommerces.filter(c => !specialIds.has(c.id));
+  const nouveauxItems       = [...allCommerces].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   const sectionItemsMap = {
-    commerces:    mainCommerces,
-    beaute:       beauteItems,
-    restauration: restoItems,
-    artisan:      artisanItems,
-    lieu:         lieuItems,
-    all:          allCommerces,
-    nouveaux:     nouveauxItems,
+    commerces:      mainCommerces,
+    beaute:         beauteItems,
+    restauration:   restoItems,
+    artisan:        artisanItems,
+    divertissement: divertissementItems,
+    vie_locale:     vieLocaleItems,
+    all:            allCommerces,
+    nouveaux:       nouveauxItems,
   };
 
   const tileCounts = {
-    commerces:    mainCommerces.length,
-    beaute:       beauteItems.length,
-    restauration: restoItems.length,
-    artisan:      artisanItems.length,
-    lieu:         lieuItems.length,
-    all:          allCommerces.length,
+    commerces:      mainCommerces.length,
+    beaute:         beauteItems.length,
+    restauration:   restoItems.length,
+    artisan:        artisanItems.length,
+    divertissement: divertissementItems.length,
+    vie_locale:     vieLocaleItems.length,
+    all:            allCommerces.length,
   };
 
   return (

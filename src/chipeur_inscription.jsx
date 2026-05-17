@@ -723,15 +723,25 @@ function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
   const [acceptCGUM, setAcceptCGUM] = useState(false);
 
   const METIER_SUGGESTIONS = {
-    "Mode & Prêt-à-porter":    ["Boutique de mode", "Prêt-à-porter femme", "Prêt-à-porter homme", "Accessoires", "Lingerie", "Chaussures"],
-    "Beauté & Bien-être":      ["Institut de beauté", "Coiffeur", "Barbier", "Esthéticienne", "Nail art", "Spa & massages", "Tatoueur"],
-    "Artisan":                 ["Photographe", "Graphiste", "Céramiste", "Bijoutier", "Menuisier", "Couturier", "Illustrateur", "Potier"],
-    "Restauration & Traiteur": ["Restaurant", "Boulangerie", "Pâtisserie", "Traiteur", "Pizzeria", "Kebab", "Salon de thé", "Food truck"],
-    "Épicerie & Alimentation": ["Épicerie fine", "Fromagerie", "Boucherie", "Primeur", "Cave à vins", "Bio & vrac"],
-    "Sport & Loisirs":         ["Salle de sport", "Coach sportif", "Yoga & pilates", "Arts martiaux", "Vélo", "Randonnée"],
-    "Décoration & Maison":     ["Décoration intérieure", "Mobilier", "Luminaires", "Plantes & fleurs", "Bricolage", "Antiquités"],
-    "Services de proximité":   ["Imprimerie", "Pressing", "Cordonnerie", "Serrurier", "Électricien", "Plombier", "Garde d'enfants"],
-    "Autre":                   [],
+    // ── Commerces ──
+    "Mode & Prêt-à-porter":       ["Boutique de mode", "Prêt-à-porter femme", "Prêt-à-porter homme", "Accessoires", "Lingerie", "Chaussures", "Maroquinerie"],
+    "Alimentation & Épicerie":    ["Épicerie fine", "Fromagerie", "Boucherie", "Primeur", "Cave à vins", "Bio & vrac", "Poissonnerie", "Traiteur"],
+    "Décoration & Maison":        ["Décoration intérieure", "Mobilier", "Luminaires", "Plantes & fleurs", "Bricolage", "Antiquités", "Literie"],
+    "Sport & Fitness":            ["Salle de sport", "Fitness & Musculation", "Yoga & pilates", "Arts martiaux", "Natation", "Danse", "Escalade", "Coach sportif"],
+    "Services de proximité":      ["Imprimerie", "Pressing", "Cordonnerie", "Serrurier", "Électricien", "Plombier", "Garde d'enfants", "Informatique", "Auto"],
+    "Culture & Librairie":        ["Librairie", "Papeterie", "Disquaire", "Galerie d'art", "Instruments de musique", "Cadeaux & souvenirs"],
+    // ── Beauté ──
+    "Beauté & Bien-être":         ["Institut de beauté", "Coiffeur", "Barbier", "Esthéticienne", "Nail art", "Spa & massages", "Tatoueur", "Onglerie"],
+    // ── Resto & Ambiance ──
+    "Restauration & Ambiance":    ["Restaurant", "Boulangerie", "Pâtisserie", "Bar", "Pub", "Brasserie", "Café", "Bistrot", "Pizzeria", "Kebab", "Salon de thé", "Food truck", "Cocktail bar", "Lounge"],
+    // ── Artisans ──
+    "Artisan & Créateur":         ["Photographe", "Graphiste", "Céramiste", "Bijoutier", "Menuisier", "Couturier", "Illustrateur", "Potier", "Sculpteur", "Relieur", "Luthier"],
+    // ── Divertissement ──
+    "Divertissement":             ["Cinéma", "Musée", "Piscine", "Théâtre", "Salle de concert", "Bowling", "Escape game", "Karting", "Médiathèque", "Bibliothèque", "Patinoire", "Accrobranche", "Laser game", "Aquaparc"],
+    // ── Vie locale ──
+    "Vie locale & Administratif": ["Mairie", "Office de tourisme", "CAF", "CPAM", "Pôle emploi", "Centre des impôts", "Gendarmerie", "École", "Collège", "Lycée", "Université", "Maison des services", "Tribunal"],
+    // ── Autre ──
+    "Autre":                      [],
   };
 
   const inputStyle = (name) => ({
@@ -865,16 +875,33 @@ function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
               backgroundPosition: "right 14px center",
               marginBottom: 0,
             }}>
-            <option value="" disabled>Catégorie…</option>
-            <option>Mode & Prêt-à-porter</option>
-            <option>Beauté & Bien-être</option>
-            <option>Artisan</option>
-            <option>Restauration & Traiteur</option>
-            <option>Épicerie & Alimentation</option>
-            <option>Sport & Loisirs</option>
-            <option>Décoration & Maison</option>
-            <option>Services de proximité</option>
-            <option>Autre</option>
+            <option value="" disabled>Choisir une catégorie…</option>
+            <optgroup label="🏪 Commerces">
+              <option>Mode & Prêt-à-porter</option>
+              <option>Alimentation & Épicerie</option>
+              <option>Décoration & Maison</option>
+              <option>Sport & Fitness</option>
+              <option>Services de proximité</option>
+              <option>Culture & Librairie</option>
+            </optgroup>
+            <optgroup label="💄 Beauté & Bien-être">
+              <option>Beauté & Bien-être</option>
+            </optgroup>
+            <optgroup label="🍽️ Resto & Ambiance">
+              <option>Restauration & Ambiance</option>
+            </optgroup>
+            <optgroup label="🎨 Artisans">
+              <option>Artisan & Créateur</option>
+            </optgroup>
+            <optgroup label="🎭 Divertissement">
+              <option>Divertissement</option>
+            </optgroup>
+            <optgroup label="🏛️ Vie locale">
+              <option>Vie locale & Administratif</option>
+            </optgroup>
+            <optgroup label="✨ Autre">
+              <option>Autre</option>
+            </optgroup>
           </select>
         </div>
         {/* Spécialités — chips multi-sélection */}
