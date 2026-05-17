@@ -1727,7 +1727,7 @@ export default function ChipeurCommerces({ setPage, user }) {
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role")
+      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role, photo_urls, current_opening_hours")
       .or("role.eq.magasin,categorie.not.is.null")
       .not("pseudo", "is", null)
       .neq("pseudo", "[Compte supprimé]")
