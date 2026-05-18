@@ -150,6 +150,7 @@ function profileToCommerce(p, postCount) {
     plan: p.plan || "premium",
     planBg: C.pill,
     planColor: C.ink2,
+    vitrine_filtres: p.vitrine_filtres || [],
     tag: `#${cat}`,
     phone: p.phone || null,
     adresse: p.quartier || null,
@@ -176,7 +177,8 @@ const DEMO_COMMERCE = {
   shortDesc: "Mode indépendante au cœur de Saint-Dié — créations locales et pièces uniques.",
   cover: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop",
   gallery: [], vues: "284", int: "47", posts: "5",
-  plan: "Mixte", planBg: "rgba(255,87,51,0.12)", planColor: "#FF5733", tag: "#Mode",
+  plan: "premium", planBg: "rgba(255,87,51,0.12)", planColor: "#FF5733", tag: "#Mode",
+  vitrine_filtres: ["Robes", "Pulls", "Accessoires", "Soldes", "Nouveautés"],
   phone: "03 29 56 78 90", adresse: "12 rue Thiers, Saint-Dié-des-Vosges",
   website: "https://lapetiteboutique.fr", instagram: "@lapetiteboutique_saintdie", facebook: "La Petite Boutique",
   hours: [
@@ -1210,6 +1212,117 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
   );
 }
 
+// ─── MODAL GESTION DES FILTRES VITRINE ───
+function FilterManagerModal({ com, existingFilters, onClose, onSaved }) {
+  const [filtres, setFiltres] = useState(existingFilters || []);
+  const [suggestedTags, setSuggestedTags] = useState([]);
+  const [newFilter, setNewFilter] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Charger les tags IA les plus fréquents comme suggestions
+  useEffect(() => {
+    if (!com.id || com.isDemo) return;
+    supabase.from("posts")
+      .select("tags")
+      .eq("author_id", com.id)
+      .not("tags", "is", null)
+      .then(({ data }) => {
+        if (!data) return;
+        const freq = {};
+        data.flatMap(p => p.tags || []).forEach(t => { freq[t] = (freq[t] || 0) + 1; });
+        const sorted = Object.entries(freq)
+          .sort((a, b) => b[1] - a[1])
+          .map(([t]) => t)
+          .filter(t => !(existingFilters || []).includes(t))
+          .slice(0, 15);
+        setSuggestedTags(sorted);
+      });
+  }, [com.id]);
+
+  const addFilter = (f) => {
+    const trimmed = (f || "").trim();
+    if (!trimmed || filtres.includes(trimmed)) return;
+    setFiltres(prev => [...prev, trimmed]);
+    setSuggestedTags(prev => prev.filter(t => t !== trimmed));
+    setNewFilter("");
+  };
+
+  const removeFilter = (f) => setFiltres(prev => prev.filter(t => t !== f));
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({ vitrine_filtres: filtres }).eq("id", com.id);
+    setSaving(false);
+    if (error) { alert("Erreur : " + error.message); return; }
+    onSaved(filtres);
+    onClose();
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 300, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.card, borderRadius: "24px 24px 0 0", padding: "0 20px 40px", maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "12px auto 18px" }} />
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 17, color: C.ink, marginBottom: 4 }}>⚙️ Filtres de ta vitrine</div>
+        <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5, marginBottom: 20 }}>
+          Ces filtres permettent aux voisins de trouver rapidement ce qu'ils cherchent dans ta boutique.
+        </div>
+
+        {/* Filtres actifs */}
+        {filtres.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Filtres actifs</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {filtres.map(f => (
+                <div key={f} style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(255,87,51,0.08)", border: "1.5px solid rgba(255,87,51,0.3)", borderRadius: 20, padding: "5px 8px 5px 12px" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.accent, fontFamily: dm }}>{f}</span>
+                  <button onClick={() => removeFilter(f)} style={{ background: "rgba(255,87,51,0.12)", border: "none", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", color: C.accent, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ajouter manuellement */}
+        <div style={{ marginBottom: suggestedTags.length > 0 ? 20 : 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Ajouter un filtre</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={newFilter}
+              onChange={e => setNewFilter(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && addFilter(newFilter)}
+              placeholder="ex : Robes, Brunch, Poterie…"
+              style={{ flex: 1, border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 14px", fontSize: 13, fontFamily: dm, color: C.ink, background: C.bg, outline: "none" }}
+            />
+            <button onClick={() => addFilter(newFilter)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 12, padding: "10px 20px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>+</button>
+          </div>
+        </div>
+
+        {/* Suggestions depuis les tags IA */}
+        {suggestedTags.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.pro, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>✦ Détectés depuis tes photos (tags IA)</div>
+            <div style={{ fontSize: 11, color: C.ink2, marginBottom: 10, lineHeight: 1.4 }}>Ces mots-clés ont été analysés automatiquement sur tes photos. Clique pour les ajouter.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {suggestedTags.map(t => (
+                <button key={t} onClick={() => addFilter(t)} style={{ background: C.proBg, border: `1px solid rgba(10,61,46,0.2)`, borderRadius: 20, padding: "6px 12px", fontSize: 12, fontWeight: 600, color: C.pro, cursor: "pointer", fontFamily: dm }}>
+                  + {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, background: C.pill, color: C.ink, border: "none", borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 600, fontFamily: dm, cursor: "pointer" }}>Annuler</button>
+          <button onClick={handleSave} disabled={saving} style={{ flex: 2, background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer" }}>
+            {saving ? "Enregistrement…" : "Enregistrer ✓"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── CHIPS VITRINE ───
 const VITRINE_MODES = [
   { id: "galerie", label: "📷 Photos" },
@@ -1327,6 +1440,10 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
   const [linkedPosts, setLinkedPosts] = useState([]);
   const [loadingLinked, setLoadingLinked] = useState(false);
   const [subFilter, setSubFilter] = useState("Tous");
+  const [vitrineFilters, setVitrineFilters] = useState(
+    com.vitrine_filtres && com.vitrine_filtres.length > 0 ? com.vitrine_filtres : null
+  );
+  const [showFilterManager, setShowFilterManager] = useState(false);
   const touchXVit = useRef(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
@@ -1343,6 +1460,29 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
 
   // Réinitialiser le sous-filtre quand on change d'onglet
   useEffect(() => { setSubFilter("Tous"); }, [activeMode]);
+
+  // Auto-initialiser les filtres depuis les tags IA si le commerçant n'en a pas encore configuré
+  useEffect(() => {
+    const isOwnerLocal = user?.id === com.id;
+    if (!isOwnerLocal || com.isDemo || vitrineFilters !== null || !com.id) return;
+    supabase.from("posts")
+      .select("tags")
+      .eq("author_id", com.id)
+      .not("tags", "is", null)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        const freq = {};
+        data.flatMap(p => p.tags || []).forEach(t => { freq[t] = (freq[t] || 0) + 1; });
+        const topTags = Object.entries(freq)
+          .sort((a, b) => b[1] - a[1])
+          .map(([t]) => t)
+          .slice(0, 8);
+        if (topTags.length === 0) return;
+        setVitrineFilters(topTags);
+        // Sauvegarder silencieusement en base
+        supabase.from("profiles").update({ vitrine_filtres: topTags }).eq("id", com.id).then(() => {});
+      });
+  }, [user?.id, com.id]);
 
   // Charger les posts liés quand on passe en mode "postes" (owner seulement)
   useEffect(() => {
@@ -1411,8 +1551,9 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
 
   const isOwner = user?.id === com.id;
 
-  // Sous-filtres selon la catégorie du commerce (plan mixe / premium)
+  // Sous-filtres : priorité aux filtres custom du commerçant, sinon détection auto par catégorie
   const subfiltres = (() => {
+    if (vitrineFilters && vitrineFilters.length > 0) return vitrineFilters;
     const cat = (com.categorie || com.category || "").toLowerCase();
     for (const [themeKey, filters] of Object.entries(VITRINE_SUBFILTRES)) {
       const theme = THEMES.find(t => t.key === themeKey);
@@ -1461,29 +1602,52 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
       {/* Chips mode */}
       <VitrineChips activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} counts={counts} />
 
-      {/* ── Sous-filtres catégorie (plan mixe / premium) ── */}
-      {(com.plan === "mixe" || com.plan === "premium") && (activeMode === "galerie" || activeMode === "tout") && subfiltres.length > 0 && (
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "0 16px 10px", scrollbarWidth: "none", background: C.bg }}>
-          {["Tous", ...subfiltres].map(f => {
-            const isOn = subFilter === f;
-            return (
-              <button
-                key={f}
-                onClick={() => setSubFilter(f)}
-                style={{
-                  flexShrink: 0,
-                  border: `1.5px solid ${isOn ? C.accent : "transparent"}`,
-                  borderRadius: 20, cursor: "pointer",
-                  padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: dm,
-                  background: isOn ? "rgba(255,87,51,0.08)" : C.pill,
-                  color: isOn ? C.accent : C.ink2,
-                  transition: "all 0.15s",
-                }}
-              >
-                {f}
-              </button>
-            );
-          })}
+      {/* ── Sous-filtres catégorie + bouton config owner ── */}
+      {(com.plan === "mixe" || com.plan === "premium") && (activeMode === "galerie" || activeMode === "tout") && (subfiltres.length > 0 || isOwner) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 16px 10px", background: C.bg }}>
+          {/* Chips filtres */}
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, scrollbarWidth: "none" }}>
+            {subfiltres.length > 0 ? (
+              ["Tous", ...subfiltres].map(f => {
+                const isOn = subFilter === f;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setSubFilter(f)}
+                    style={{
+                      flexShrink: 0,
+                      border: `1.5px solid ${isOn ? C.accent : "transparent"}`,
+                      borderRadius: 20, cursor: "pointer",
+                      padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: dm,
+                      background: isOn ? "rgba(255,87,51,0.08)" : C.pill,
+                      color: isOn ? C.accent : C.ink2,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {f}
+                  </button>
+                );
+              })
+            ) : isOwner ? (
+              <span style={{ fontSize: 12, color: C.ink2, fontStyle: "italic", alignSelf: "center" }}>
+                Aucun filtre — configure les tiens ⚙️
+              </span>
+            ) : null}
+          </div>
+          {/* Bouton config (owner uniquement) */}
+          {isOwner && (
+            <button
+              onClick={() => setShowFilterManager(true)}
+              style={{
+                flexShrink: 0, background: C.pill, border: "none", borderRadius: 10,
+                padding: "6px 10px", fontSize: 13, cursor: "pointer", color: C.ink2,
+                display: "flex", alignItems: "center", gap: 4,
+              }}
+              title="Gérer les filtres"
+            >
+              ⚙️ <span style={{ fontSize: 10, fontWeight: 600, fontFamily: dm }}>Filtres</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -1808,6 +1972,16 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
           post={enrichingPost}
           onClose={() => setEnrichingPost(null)}
           onSaved={(updated) => setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))}
+        />
+      )}
+
+      {/* Modal gestion des filtres vitrine */}
+      {showFilterManager && (
+        <FilterManagerModal
+          com={com}
+          existingFilters={vitrineFilters || []}
+          onClose={() => setShowFilterManager(false)}
+          onSaved={(newFilters) => setVitrineFilters(newFilters)}
         />
       )}
     </div>
@@ -2175,7 +2349,7 @@ export default function ChipeurCommerces({ setPage, user }) {
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role, photo_urls, current_opening_hours, created_at")
+      .select("id, pseudo, bio, quartier, avatar_url, categorie, metier, phone, website, instagram, facebook, horaires, role, photo_urls, current_opening_hours, created_at, plan, vitrine_filtres")
       .or("role.eq.magasin,role.eq.lieu,categorie.not.is.null")
       .not("pseudo", "is", null)
       .neq("pseudo", "[Compte supprimé]")
