@@ -1445,6 +1445,7 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
     com.vitrine_filtres && com.vitrine_filtres.length > 0 ? com.vitrine_filtres : null
   );
   const [showFilterManager, setShowFilterManager] = useState(false);
+  const [showAllFilters, setShowAllFilters] = useState(false);
   const touchXVit = useRef(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
@@ -1611,53 +1612,73 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
       <VitrineChips activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} counts={counts} />
 
       {/* ── Sous-filtres catégorie + bouton config owner ── */}
-      {(com.plan === "mixe" || com.plan === "premium") && (activeMode === "galerie" || activeMode === "tout") && (subfiltres.length > 0 || isOwner) && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 16px 10px", background: C.bg }}>
-          {/* Chips filtres */}
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, scrollbarWidth: "none" }}>
-            {subfiltres.length > 0 ? (
-              ["Tous", ...subfiltres].map(f => {
-                const isOn = subFilter === f;
-                return (
-                  <button
-                    key={f}
-                    onClick={() => setSubFilter(f)}
-                    style={{
-                      flexShrink: 0,
-                      border: `1.5px solid ${isOn ? C.accent : "transparent"}`,
-                      borderRadius: 20, cursor: "pointer",
-                      padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: dm,
-                      background: isOn ? "rgba(255,87,51,0.08)" : C.pill,
-                      color: isOn ? C.accent : C.ink2,
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {f}
-                  </button>
-                );
-              })
-            ) : isOwner ? (
-              <span style={{ fontSize: 12, color: C.ink2, fontStyle: "italic", alignSelf: "center" }}>
-                Aucun filtre — configure les tiens ⚙️
-              </span>
-            ) : null}
+      {(com.plan === "mixe" || com.plan === "premium") && (activeMode === "galerie" || activeMode === "tout") && (subfiltres.length > 0 || isOwner) && (() => {
+        const MAX_VISIBLE = 4;
+        const allFilters = ["Tous", ...subfiltres];
+        const hasMore = allFilters.length > MAX_VISIBLE + 1;
+        const visibleFilters = showAllFilters ? allFilters : allFilters.slice(0, MAX_VISIBLE + 1);
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 16px 10px", background: C.bg }}>
+            {/* Chips filtres */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
+              {subfiltres.length > 0 ? (
+                <>
+                  {visibleFilters.map(f => {
+                    const isOn = subFilter === f;
+                    return (
+                      <button
+                        key={f}
+                        onClick={() => setSubFilter(f)}
+                        style={{
+                          flexShrink: 0,
+                          border: `1.5px solid ${isOn ? C.accent : "transparent"}`,
+                          borderRadius: 20, cursor: "pointer",
+                          padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: dm,
+                          background: isOn ? "rgba(255,87,51,0.08)" : C.pill,
+                          color: isOn ? C.accent : C.ink2,
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                  {hasMore && (
+                    <button
+                      onClick={() => setShowAllFilters(v => !v)}
+                      style={{
+                        flexShrink: 0, border: "none", borderRadius: 20, cursor: "pointer",
+                        padding: "5px 12px", fontSize: 11, fontWeight: 700, fontFamily: dm,
+                        background: C.pill, color: C.ink2, transition: "all 0.15s",
+                      }}
+                    >
+                      {showAllFilters ? "Moins −" : `+${allFilters.length - (MAX_VISIBLE + 1)}`}
+                    </button>
+                  )}
+                </>
+              ) : isOwner ? (
+                <span style={{ fontSize: 12, color: C.ink2, fontStyle: "italic", alignSelf: "center" }}>
+                  Aucun filtre — configure les tiens ⚙️
+                </span>
+              ) : null}
+            </div>
+            {/* Bouton config (owner uniquement) */}
+            {isOwner && (
+              <button
+                onClick={() => setShowFilterManager(true)}
+                style={{
+                  flexShrink: 0, background: C.pill, border: "none", borderRadius: 10,
+                  padding: "6px 10px", fontSize: 13, cursor: "pointer", color: C.ink2,
+                  display: "flex", alignItems: "center", gap: 4,
+                }}
+                title="Gérer les filtres"
+              >
+                ⚙️ <span style={{ fontSize: 10, fontWeight: 600, fontFamily: dm }}>Filtres</span>
+              </button>
+            )}
           </div>
-          {/* Bouton config (owner uniquement) */}
-          {isOwner && (
-            <button
-              onClick={() => setShowFilterManager(true)}
-              style={{
-                flexShrink: 0, background: C.pill, border: "none", borderRadius: 10,
-                padding: "6px 10px", fontSize: 13, cursor: "pointer", color: C.ink2,
-                display: "flex", alignItems: "center", gap: 4,
-              }}
-              title="Gérer les filtres"
-            >
-              ⚙️ <span style={{ fontSize: 10, fontWeight: 600, fontFamily: dm }}>Filtres</span>
-            </button>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Mode POSTS LIÉS (owner seulement) ── */}
       {activeMode === "postes" && isOwner && (
