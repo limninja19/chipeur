@@ -1328,7 +1328,8 @@ const VITRINE_MODES = [
   { id: "galerie", label: "📷 Photos" },
   { id: "tout",    label: "Posts" },
   { id: "offres",  label: "🎯 Offres" },
-  { id: "postes",  label: "📬 Liés", ownerOnly: true },
+  { id: "postes",  label: "📬 Liés",  ownerOnly: true },
+  { id: "stats",   label: "📊 Stats", ownerOnly: true },
 ];
 
 // Sous-catégories vitrine par type de commerce (plan mixe / premium)
@@ -1982,6 +1983,11 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
         />
       )}
 
+      {/* ── Mode STATS (owner only) ── */}
+      {activeMode === "stats" && isOwner && (
+        <TabStats com={com} user={user} />
+      )}
+
       {/* Modal gestion des filtres vitrine */}
       {showFilterManager && (
         <FilterManagerModal
@@ -2135,6 +2141,141 @@ function TabInfos({ com }) {
         <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>
           Ce commerçant n'a pas encore renseigné ses coordonnées.
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ONGLET STATS (owner only) ───
+function TabStats({ com }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState(30); // jours
+
+  useEffect(() => {
+    if (!com.id || com.isDemo) { setLoading(false); return; }
+    const since = new Date(Date.now() - period * 86400000).toISOString();
+    supabase
+      .from("search_logs")
+      .select("query, results_count, created_at")
+      .eq("commerce_id", com.id)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(500)
+      .then(({ data }) => {
+        if (!data) { setLoading(false); return; }
+        // Regrouper par query, compter les occurrences
+        const freq = {};
+        data.forEach(l => {
+          const q = l.query.trim().toLowerCase();
+          if (!freq[q]) freq[q] = { count: 0, results: l.results_count, last: l.created_at };
+          freq[q].count++;
+          if (l.created_at > freq[q].last) freq[q].last = l.created_at;
+        });
+        const sorted = Object.entries(freq)
+          .sort((a, b) => b[1].count - a[1].count)
+          .map(([query, info]) => ({ query, ...info }));
+        setRows(sorted);
+        setLoading(false);
+      });
+  }, [com.id, period]);
+
+  const total = rows.reduce((acc, r) => acc + r.count, 0);
+  const top = rows.slice(0, 12);
+
+  return (
+    <div style={{ padding: "16px 16px 100px" }}>
+      {/* En-tête */}
+      <div style={{ background: C.proBg, border: "1.5px solid rgba(10,61,46,0.15)", borderRadius: 18, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.pro, marginBottom: 4 }}>
+          📊 Recherches produit
+        </div>
+        <div style={{ fontSize: 12, color: "#1A5C40", lineHeight: 1.5 }}>
+          Ces données montrent ce que les voisins ont tapé sur Chipeur et qui a trouvé vos produits via les tags IA.
+        </div>
+      </div>
+
+      {/* Sélecteur période */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {[7, 30, 90].map(d => (
+          <button
+            key={d}
+            onClick={() => { setPeriod(d); setLoading(true); }}
+            style={{
+              border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 600,
+              fontFamily: dm, cursor: "pointer",
+              background: period === d ? C.ink : C.pill,
+              color: period === d ? "#fff" : C.ink2,
+              transition: "all 0.15s",
+            }}
+          >
+            {d}j
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+      ) : rows.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px 24px" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 8 }}>
+            Pas encore de données
+          </div>
+          <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.6 }}>
+            Les données apparaîtront ici quand des voisins chercheront des produits
+            dans la barre de recherche principale et que leurs résultats incluront votre vitrine.
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Compteur global */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+            <div style={{ flex: 1, background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "14px 16px", textAlign: "center" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 26, color: C.accent }}>{total}</div>
+              <div style={{ fontSize: 11, color: C.ink2, marginTop: 2 }}>recherches totales</div>
+            </div>
+            <div style={{ flex: 1, background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "14px 16px", textAlign: "center" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 26, color: C.pro }}>{rows.length}</div>
+              <div style={{ fontSize: 11, color: C.ink2, marginTop: 2 }}>mots-clés uniques</div>
+            </div>
+          </div>
+
+          {/* Top recherches */}
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 12, fontFamily: dm }}>
+            🔥 Top recherches
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {top.map((r, i) => {
+              const pct = Math.round((r.count / top[0].count) * 100);
+              return (
+                <div key={r.query} style={{ background: C.card, borderRadius: 14, padding: "10px 14px", border: `1px solid ${C.border}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: 8, background: i < 3 ? "rgba(255,87,51,0.12)" : C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: i < 3 ? C.accent : C.ink2, flexShrink: 0 }}>
+                      {i + 1}
+                    </div>
+                    <div style={{ flex: 1, fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>{r.query}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: C.ink2, flexShrink: 0 }}>
+                      {r.count}×
+                    </div>
+                  </div>
+                  {/* Barre de progression */}
+                  <div style={{ height: 4, borderRadius: 2, background: C.pill, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: i === 0 ? C.accent : C.pro, borderRadius: 2, transition: "width 0.4s" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Conseil si données */}
+          <div style={{ marginTop: 20, background: "rgba(255,87,51,0.06)", border: "1.5px solid rgba(255,87,51,0.15)", borderRadius: 16, padding: "12px 14px" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, marginBottom: 4 }}>💡 Conseil</div>
+            <div style={{ fontSize: 11, color: C.ink2, lineHeight: 1.6 }}>
+              Pour apparaître dans plus de recherches, postez des photos de vos produits — les tags IA les indexent automatiquement.
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -2326,14 +2467,113 @@ function VitrineScreen({ com, onBack, user }) {
   );
 }
 
+// ─── GRILLE RÉSULTATS PRODUIT ───
+function ProductSearchGrid({ results, loading, onOpenShop }) {
+  if (loading) {
+    return <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Recherche…</div>;
+  }
+  if (results.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 20px" }}>
+        <div style={{ fontSize: 36, marginBottom: 10 }}>🔍</div>
+        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun produit trouvé</div>
+        <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Essaie un autre mot-clé (ex : robe, croissant, massage…)</div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ padding: "0 0 80px" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, margin: "0 16px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+        🛍️ Produits correspondants
+        <div style={{ flex: 1, height: 1, background: C.border }} />
+        <span style={{ fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{results.length} résultat{results.length > 1 ? "s" : ""}</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3, padding: "0 2px" }}>
+        {results.map((r) => (
+          <div
+            key={r.post_id}
+            onClick={() => onOpenShop(r)}
+            style={{ aspectRatio: "1", overflow: "hidden", cursor: "pointer", position: "relative", background: C.pill }}
+          >
+            {r.image_url ? (
+              <img src={r.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            ) : (
+              <div style={{ width: "100%", height: "100%", background: C.pill, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🏪</div>
+            )}
+            {/* Tag matché */}
+            {r.matched_tag && (
+              <div style={{ position: "absolute", top: 4, left: 4, background: "rgba(255,87,51,0.88)", borderRadius: 6, padding: "2px 6px", fontSize: 9, fontWeight: 700, color: "#fff" }}>
+                {r.matched_tag}
+              </div>
+            )}
+            {/* Nom boutique */}
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.65))", padding: "16px 5px 4px" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#fff", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "0 3px" }}>
+                {r.commerce_nom}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── PAGE PRINCIPALE ───
 export default function ChipeurCommerces({ setPage, user }) {
   const [screen, setScreen] = useState("list");
   const [selectedCom, setSelectedCom] = useState(null);
   const [activeCats, setActiveCats] = useState(new Set(["Tous"]));
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState("commerce"); // "commerce" | "produit"
+  const [productResults, setProductResults] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
+  const searchTimer = useRef(null);
   // null = accueil tuiles | "commerces" | "beaute" | "restauration" | "artisan" | "lieu" | "all" | "nouveaux"
+
+  // ── Recherche produit : debounce 400ms + appel RPC + log ──
+  useEffect(() => {
+    if (searchMode !== "produit" || !search.trim() || search.trim().length < 2) {
+      setProductResults([]);
+      setLoadingProducts(false);
+      return;
+    }
+    setLoadingProducts(true);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      const q = search.trim();
+      const { data, error } = await supabase.rpc("search_posts_by_tag", { query: q });
+      const results = error ? [] : (data || []);
+      setProductResults(results);
+      setLoadingProducts(false);
+
+      // Log fire-and-forget — une entrée par commerce trouvé
+      const seen = new Set();
+      for (const r of results) {
+        if (!seen.has(r.commerce_id)) {
+          seen.add(r.commerce_id);
+          supabase.from("search_logs").insert({
+            query: q,
+            type: "produit",
+            results_count: results.filter(x => x.commerce_id === r.commerce_id).length,
+            commerce_id: r.commerce_id,
+            user_id: user?.id || null,
+          }).then(() => {});
+        }
+      }
+      // Log si aucun résultat
+      if (results.length === 0) {
+        supabase.from("search_logs").insert({
+          query: q,
+          type: "produit",
+          results_count: 0,
+          user_id: user?.id || null,
+        }).then(() => {});
+      }
+    }, 400);
+    return () => clearTimeout(searchTimer.current);
+  }, [search, searchMode]);
 
   const toggleCat = (key) => {
     setActiveCats(prev => {
@@ -2469,16 +2709,38 @@ export default function ChipeurCommerces({ setPage, user }) {
               )}
             </div>
 
+            {/* Toggle mode recherche */}
+            <div style={{ display: "flex", margin: "0 14px 8px", background: C.pill, borderRadius: 12, padding: 3, gap: 2 }}>
+              {[
+                { id: "commerce", label: "🏪 Commerce" },
+                { id: "produit",  label: "🛍️ Produit" },
+              ].map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => { setSearchMode(m.id); setSearch(""); setProductResults([]); }}
+                  style={{
+                    flex: 1, border: "none", borderRadius: 10, padding: "6px 0",
+                    fontSize: 12, fontWeight: 700, fontFamily: dm, cursor: "pointer",
+                    background: searchMode === m.id ? C.card : "transparent",
+                    color: searchMode === m.id ? C.ink : C.ink2,
+                    boxShadow: searchMode === m.id ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
             {/* Barre de recherche */}
-            <div style={{ margin: "0 14px 10px", display: "flex", alignItems: "center", gap: 8, background: C.bg, borderRadius: 14, padding: "8px 14px", border: `1px solid ${C.border}` }}>
+            <div style={{ margin: "0 14px 10px", display: "flex", alignItems: "center", gap: 8, background: C.bg, borderRadius: 14, padding: "8px 14px", border: `1px solid ${search && searchMode === "produit" ? C.accent : C.border}`, transition: "border-color 0.15s" }}>
               <span style={{ fontSize: 13, color: C.ink2 }}>🔍</span>
               <input
                 value={search}
-                onChange={e => { setSearch(e.target.value); if (e.target.value) setActiveSection(null); }}
-                placeholder="Recherche un commerce, artisan…"
+                onChange={e => { setSearch(e.target.value); if (e.target.value && searchMode === "commerce") setActiveSection(null); }}
+                placeholder={searchMode === "commerce" ? "Recherche un commerce, artisan…" : "Recherche un produit : robe, pizza, massage…"}
                 style={{ border: "none", outline: "none", fontSize: 13, fontFamily: dm, color: C.ink, flex: 1, background: "transparent" }}
               />
-              {search && <span onClick={() => setSearch("")} style={{ fontSize: 13, cursor: "pointer", color: C.ink2 }}>✕</span>}
+              {search && <span onClick={() => { setSearch(""); setProductResults([]); }} style={{ fontSize: 13, cursor: "pointer", color: C.ink2 }}>✕</span>}
             </div>
           </div>
 
@@ -2487,8 +2749,40 @@ export default function ChipeurCommerces({ setPage, user }) {
             {loadingMerchants ? (
               <div style={{ textAlign: "center", padding: "20px 0", fontSize: 12, color: C.ink2 }}>⏳ Chargement…</div>
 
-            ) : search.trim() ? (
-              /* ══ RECHERCHE ══ */
+            ) : searchMode === "produit" && search.trim() ? (
+              /* ══ RECHERCHE PRODUIT ══ */
+              <div style={{ padding: "8px 0" }}>
+                <ProductSearchGrid
+                  results={productResults}
+                  loading={loadingProducts}
+                  onOpenShop={(r) => {
+                    // Trouver le commerce correspondant dans allCommerces ou construire un objet minimal
+                    const found = allCommerces.find(c => c.id === r.commerce_id);
+                    if (found) { setSelectedCom(found); setScreen("vitrine"); }
+                    else {
+                      // Commerce pas encore chargé, construire un objet minimal pour ouvrir la vitrine
+                      setSelectedCom({
+                        id: r.commerce_id,
+                        name: r.commerce_nom,
+                        categorie: r.commerce_cat,
+                        category: r.commerce_cat,
+                        metier: r.commerce_cat,
+                        cat: r.commerce_cat,
+                        cover: null,
+                        plan: "premium",
+                        vitrine_filtres: [],
+                        gallery: [],
+                        hours: [],
+                        products: [],
+                      });
+                      setScreen("vitrine");
+                    }
+                  }}
+                />
+              </div>
+
+            ) : searchMode === "commerce" && search.trim() ? (
+              /* ══ RECHERCHE COMMERCE ══ */
               <div style={{ padding: "8px 16px 80px" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                   🔍 Résultats

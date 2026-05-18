@@ -270,6 +270,45 @@ Branche git : `feat/page-commerces-sections` (créer avec `git checkout -b feat/
 - Colonne `plan TEXT DEFAULT 'premium' CHECK (IN découverte/mixe/premium)` sur `profiles`
 - Migration à appliquer via interface Supabase → SQL Editor
 
+#### supabase/migrations/20260518_vitrine_filtres.sql
+- Colonne `vitrine_filtres TEXT[] DEFAULT '{}'` sur `profiles`
+- Index GIN pour recherche rapide
+
+### 21. Tags IA contextualisés par métier (mai 2026)
+
+#### supabase/functions/post-tag/index.ts (réécrit)
+- Reçoit `metier` et `categorie` en plus de `post_id` + `image_url`
+- Si non fournis : fetch `author_id` depuis le post, puis profil commerçant depuis `profiles`
+- Prompt contextualisé : "Ce post est publié par un commerce de type : X. Génère des tags pertinents pour CE type d'activité. Ignore les vêtements/personnes."
+- Retourne `{ tags, metier, categorie }`
+
+#### chipeur_commerces.jsx
+- `handleAcceptPost` passe `metier` + `categorie` à `post-tag` invoke
+
+#### chipeur_nouveau_post.jsx
+- `tagPhotoAsync(postId, imageUrl, metier, categorie)` — signature étendue
+
+### 22. Filtres vitrine custom + auto-init depuis tags IA (mai 2026)
+
+#### chipeur_commerces.jsx
+- `FilterManagerModal` : modal pour gérer les filtres custom (ajouter/retirer, suggestions depuis tags IA)
+- `TabVitrine` : auto-init des filtres depuis les tags IA si le commerçant n'en a pas (sauvegarde silencieuse)
+- `vitrineFilters` : priorité filtres custom, sinon `VITRINE_SUBFILTRES` par catégorie
+- Bouton ⚙️ Filtres visible seulement pour l'owner (plan mixe/premium)
+
+### 23. Recherche produit + stats vitrine (mai 2026)
+
+#### supabase/migrations/20260518_search_logs.sql
+- Table `search_logs` (id, query, type, results_count, user_id, commerce_id, created_at)
+- RPC `search_posts_by_tag(query TEXT)` : cherche posts dont les tags contiennent la query, retourne post + info commerce
+- RLS : insert ouvert, select restreint owner par commerce_id
+
+#### chipeur_commerces.jsx
+- **VITRINE_MODES** : ajout `{ id: "stats", label: "📊 Stats", ownerOnly: true }`
+- **`TabStats`** : onglet owner-only, top recherches qui ont trouvé les produits du commerce (depuis search_logs), sélecteur période 7/30/90j, barres de progression
+- **`ProductSearchGrid`** : grille 3 colonnes de photos produit avec tag matché + nom commerce, clic → ouvre vitrine
+- **`ChipeurCommerces`** : toggle 🏪 Commerce / 🛍️ Produit avant la barre de recherche ; mode produit → debounce 400ms → RPC `search_posts_by_tag` → `ProductSearchGrid` + log dans `search_logs` (par commerce trouvé)
+
 ---
 
 ## À faire / prochaine session
