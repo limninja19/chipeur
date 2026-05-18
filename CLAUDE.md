@@ -194,58 +194,114 @@ Branche git : `feat/page-commerces-sections` (créer avec `git checkout -b feat/
 - Supabase query : ajoute `created_at, lieu_type` au SELECT + `role.eq.lieu` au OR filter
 - Nouveau rôle `lieu` pour médiathèque, musée, piscine, théâtre, cinéma, etc.
 
-### 18. Refonte vitrine (chipeur_commerces.jsx)
+### 18. Refonte vitrine complète (chipeur_commerces.jsx — mai 2026)
 
-- `VITRINE_MODES` réordonné : Posts (tout) en premier, puis Promos, Défis, Photos, Liés
-- Onglet par défaut : `activeMode` passe de `"galerie"` à `"tout"`
-- **Badge compteurs** sur chaque chip : `counts = { tout, promos, defis, galerie, postes }` passé à `VitrineChips`
-- **Stats conditionnelles** : si vitrine < 30j et tous à 0 → badge "🆕 Nouvelle vitrine · 📍 Commerce vérifié". Si stats existent : on affiche uniquement les non-nulles, "abonnés" → "voisins du quartier"
-- **♡ Suivre** déplacé dans le bandeau photo (top-right, bouton rond), plus de bouton flottant "Suivre cette vitrine"
-- **Boutons bas de page** : `📞 Contacter` (lien tel:) + `🗺️ Y aller` (Google Maps search sur nom + Saint-Dié-des-Vosges)
-- **États vides** retravaillés : emoji grand + titre + sous-titre pour chaque onglet (posts, promos, défis, galerie)
-- **Horaires dynamiques** : helper `nextOpeningText(hours)` → affiche "● Fermé · Ouvre lundi à 9h30" dans `TabInfos`
+#### Structure
+- Suppression des onglets "Vitrine / Infos" → un seul feed `TabVitrine`
+- Bannière plein cadre `calc(220px + safe-area-inset-top)` avec :
+  - Bouton ‹ retour (top-left, décalé safe-area)
+  - ♡ Suivre (top-right, rond blanc) — sauf mode démo
+  - Nom commerce + catégorie (bottom-left)
+  - Bouton "ℹ️ Infos" (bottom-right) → ouvre bottom drawer avec TabInfos
+- Bottom drawer infos : fond semi-transparent, panneau qui monte, poignée, scroll
+- Boutons fixes bas : `📞 Contacter` (lien tel:) + `🗺️ Y aller` (Google Maps)
+
+#### VITRINE_MODES (ordre actuel)
+```js
+{ id: "galerie", label: "📷 Photos" },  // PAR DÉFAUT
+{ id: "tout",    label: "Posts" },
+{ id: "promos",  label: "🎁 Promos" },
+{ id: "defis",   label: "🏆 Défis" },
+{ id: "postes",  label: "📬 Liés", ownerOnly: true },
+```
+
+#### Comportement galerie (vue par défaut)
+- Grille 3 colonnes de photos
+- Clic → ouvre `PostDetailModal` (fiche produit complète, pas simple lightbox)
+- Badge tag IA visible en bas-gauche de chaque photo (premier tag)
+- Badge 🎁 si promo, ✦ si produit enrichi
+
+#### Stats conditionnelles
+- Si vitrine < 30j ET tous les stats à 0 → badge "🆕 Nouvelle vitrine"
+- Sinon → stats non-nulles uniquement, "abonnés" → "voisins du quartier"
+
+#### Horaires dynamiques
+- `nextOpeningText(hours)` → "● Fermé · Ouvre lundi à 9h30"
+
+#### Suppression de post
+- Commerçant peut supprimer ses propres posts (bouton 🗑 dans VitrinePostCard)
+- Double confirmation : 1er clic → "Confirmer ?", 2e clic → suppression
 
 ---
 
 ### 19. Analyse IA des photos (post-tag)
 
-- `supabase/migrations/20260517_post_tags.sql` : colonne `tags TEXT[]` sur `posts` + index GIN
-- `supabase/functions/post-tag/index.ts` : Edge Function — reçoit `post_id` + `image_url`, appelle Claude Vision (haiku), retourne 5-8 mots-clés FR, met à jour `posts.tags`
-- `chipeur_nouveau_post.jsx` : helper `tagPhotoAsync()` appelé en fire & forget après chaque insert avec image (flow decouverte/bonplan)
-- Secret Supabase à ajouter : `ANTHROPIC_API_KEY`
-- Tags affichés dans la lightbox vitrine (sous le contenu du post)
+#### Fichiers
+- `supabase/migrations/20260517_post_tags.sql` : `tags TEXT[]` sur `posts` + index GIN
+- `supabase/functions/post-tag/index.ts` : Edge Function Claude Vision (haiku) → 5-8 mots-clés FR
 
-### 20. Refonte vitrine — drawer Infos + bannière simplifiée
+#### Règles de déclenchement
+- **Commerçant publie une photo** → `tagPhotoAsync()` fire & forget dans `chipeur_nouveau_post.jsx` (condition `profile?.role === "magasin"`)
+- **Voisin poste + commerçant accepte** → tag déclenché dans `handleAcceptPost` dans `chipeur_commerces.jsx`
+- **Voisin poste sans lien** → pas de tag
+- **Défis** → à faire (tâche #31)
 
-- Suppression des onglets "Vitrine / Infos"
-- `VitrineScreen` : bannière plein cadre (220px + safe-area) avec bouton "ℹ️ Infos" en bas-droite → ouvre un bottom drawer
-- Bottom drawer : fond semi-transparent, panneau qui monte, poignée, contenu `TabInfos`
-- Seul `TabVitrine` est affiché en contenu principal (plus de `activeTab`)
-- Lightbox enrichie : date du post, tags IA en pills sous le contenu
+#### Secrets Supabase
+- `ANTHROPIC_API_KEY` ✅ configuré
+
+#### Affichage
+- Tags en pills dans PostDetailModal / lightbox
+- Premier tag visible sur la miniature en grille galerie
 
 ---
 
-## À faire / en attente
-- Tester fix iOS écran blanc sur l'iPhone de la mère de Jenny
-- Google Analytics : actif, données visibles sous 24-48h
-- Fix 5 Claude Code (vite.config.js — séparer icônes `any` et `maskable`) : non appliqué
-- Fix 6 Claude Code (`useProfile.js:22` — guard userId) : non appliqué
-- Fix 7 Claude Code (`chipeur_messages.jsx:59` — behavior auto) : non appliqué
+## À faire / prochaine session
+
+### 🏆 Tags IA pour les défis commerçants (tâche #31)
+- Migration SQL : `tags TEXT[]` sur table `defis`
+- Appeler `post-tag` (ou variante) après création d'un défi avec photo par un commerçant
+- Afficher les tags sur les cartes défis dans la vitrine
 
 ### 🎬 Feature vidéo / Reels — À planifier
 Demandée par Jenny. Chantier estimé à 1-2 jours de travail.
 
 **Règles métier :**
 - Voisins : 1 vidéo max par post, durée max **10 secondes**
-- Commerçants : jusqu'à **10 min de vidéo au total** (ex : 20 vidéos de 30s), durée max **1 min par vidéo**
-- Stockage : Supabase Storage (abonnement payant Jenny — bucket à créer `post-videos`, public)
+- Commerçants : jusqu'à **10 min de vidéo au total**, durée max **1 min par vidéo**
+- Stockage : Supabase Storage bucket `post-videos` (public)
 
-**Travail à faire :**
-1. Migration SQL : colonne `video_url TEXT` + `media_type TEXT DEFAULT 'image'` sur table `posts`
-2. Colonne `video_seconds_used INT DEFAULT 0` sur table `profiles` (quota commerçants)
-3. Mise à jour `PhotoZone` dans `chipeur_nouveau_post.jsx` : accepter `video/*`, valider durée via `videoEl.duration`, afficher preview `<video>`
-4. Upload vers bucket Supabase `post-videos` (pas `images`)
-5. Mise à jour affichage dans `chipeur_fil.jsx` : rendu `<video autoPlay muted loop playsInline>` si `media_type === 'video'`
-6. Même mise à jour dans `chipeur_commerces.jsx` (vitrine), `chipeur_profil_voisin_1.jsx` (profil voisin)
-7. Vérifier et décrémenter/incrémenter `video_seconds_used` à chaque publication commerçant
-8. Compression côté client : pas d'API native navigateur — envisager un service tiers (Cloudflare Stream, Mux) ou accepter la taille brute avec une limite de 50 Mo/vidéo
+### Autres
+- Tester fix iOS écran blanc sur l'iPhone de la mère de Jenny
+- Fix vite.config.js — séparer icônes `any` et `maskable`
+- Fix `useProfile.js:22` — guard userId
+- Fix `chipeur_messages.jsx:59` — behavior auto
+
+---
+
+## Comment travailler avec Jenny
+
+**Profil :** Jenny est la fondatrice de Chipeur. Elle a une vision produit très claire mais des connaissances techniques limitées. Elle ne code pas elle-même.
+
+**Ce qui fonctionne bien :**
+- Expliquer les choix techniques en langage simple, sans jargon
+- Lui donner des commandes exactes à copier-coller dans le terminal
+- Lui dire exactement où cliquer dans les interfaces (Supabase, Vercel, GitHub)
+- Faire les modifications directement dans les fichiers sans lui demander de les éditer
+- Valider ses idées UX et proposer des améliorations concrètes ("fais au mieux")
+- Poser une seule question à la fois si besoin de clarification
+
+**Ce qu'il faut éviter :**
+- Supposer qu'elle sait où trouver quelque chose dans une interface
+- Lui donner du code à copier dans des fichiers (faire les edits directement)
+- Les explications trop longues ou trop techniques
+- Demander trop de confirmations — quand elle dit "go" ou "fais au mieux", on y va
+
+**Workflow typique :**
+1. Jenny décrit ce qu'elle veut en langage naturel
+2. Claude fait les modifications dans les fichiers directement
+3. Claude donne la commande git exacte à lancer
+4. Jenny copie-colle dans son terminal Windows (`C:\Users\jenny\chipeur`)
+5. Vercel déploie automatiquement après le push
+
+**Terminal :** Windows CMD, dossier `C:\Users\jenny\chipeur`
+**Supabase CLI :** non installée — utiliser l'interface web Supabase pour les fonctions et migrations
