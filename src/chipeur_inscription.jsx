@@ -448,6 +448,13 @@ function ScreenChoixCompte({ onChoose }) {
         title="J'ai un Magasin"
         desc="Je présente mon enseigne, mes collections et je touche mes clients du quartier."
       />
+      <Card
+        type="association"
+        icon="🏛️"
+        iconBg="#EBF5F0"
+        title="Association / Lieu local"
+        desc="Mairie, association sportive ou culturelle, service public, collectif citoyen…"
+      />
       <div style={{
         fontSize: 11, color: COLORS.ink2, textAlign: "center",
         marginTop: 8, opacity: 0.7, fontFamily: "'DM Sans', sans-serif",
@@ -827,7 +834,7 @@ function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
         <div style={{
           fontSize: 12, color: COLORS.ink2, marginBottom: 20,
           fontFamily: "'DM Sans', sans-serif",
-        }}>Ces infos apparaîtront sur ta page Vitrine publique.</div>
+        }}>Ces infos apparaîtront sur ta page publique sur Chipeur.</div>
 
         {/* Badge "Données importées depuis Google" */}
         {isFromGoogle && (
@@ -1219,13 +1226,14 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     // dans le profil même si l'upsert manuel échoue ensuite (ex: vérification email requise)
     const catFinal = cat || "Autre";
     const metierFinal = metier.trim() || cat || "Commerce";
+    const roleFinal = (accountType === "association" || catFinal === "Association" || catFinal === "Vie locale & Administratif") ? "lieu" : "magasin";
     const { data, error } = await supabase.auth.signUp({
       email: creds.email,
       password: creds.mdp,
       options: {
         data: {
           pseudo: nom,
-          role: "magasin",
+          role: roleFinal,
           categorie: catFinal,
           metier: metierFinal,
           quartier: adr || "",
@@ -1250,7 +1258,7 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         categorie:              catFinal,
         metier:                 metierFinal,
         age_range:              ageRange,
-        role:                   "magasin",
+        role:                   roleFinal,
         // Champs Google Places (null si saisie manuelle)
         phone:                  phone || null,
         website:                website || null,

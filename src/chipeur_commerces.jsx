@@ -2303,6 +2303,224 @@ function TabStats({ com }) {
   );
 }
 
+// ─── HELPER : détecte si un profil est une association / lieu local ───
+function isLocaleProfile(com) {
+  const cat = (com.categorie || com.category || "").toLowerCase();
+  return com.role === "lieu" || cat.includes("association") || cat.includes("vie locale") || cat.includes("administratif");
+}
+
+// ─── VITRINE LOCALE (associations, mairies, lieux) ───
+const CL = {
+  accent: "#0A3D2E", accentBg: "#EBF5F0", accentLight: "rgba(10,61,46,0.10)",
+};
+const LOCALE_TABS = [
+  { id: "actu",   label: "📰 Actus" },
+  { id: "events", label: "📅 Événements" },
+];
+
+function VitrineLocale({ com, onBack, user }) {
+  const [suivi, setSuivi]         = useState(false);
+  const [activeTab, setActiveTab] = useState("actu");
+  const [posts, setPosts]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [defis, setDefis]         = useState([]);
+  const [showInfos, setShowInfos] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+
+  // Suivi
+  useEffect(() => {
+    if (!user?.id || !com.id) return;
+    supabase.from("follows").select("id")
+      .eq("follower_id", user.id).eq("following_id", com.id).maybeSingle()
+      .then(({ data }) => { if (data) setSuivi(true); });
+  }, [user?.id, com.id]);
+
+  const handleSuivi = async () => {
+    if (!user?.id || !com.id) return;
+    const next = !suivi;
+    setSuivi(next);
+    if (next) {
+      await supabase.from("follows").insert({ follower_id: user.id, following_id: com.id });
+    } else {
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", com.id);
+    }
+  };
+
+  // Charger les actus (posts)
+  useEffect(() => {
+    if (!com.id) return;
+    setLoading(true);
+    supabase.from("posts")
+      .select("*, profiles:author_id(pseudo, avatar_url)")
+      .eq("author_id", com.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { setPosts(data || []); setLoading(false); });
+  }, [com.id]);
+
+  // Charger les événements (défis)
+  useEffect(() => {
+    if (!com.id) return;
+    supabase.from("defis").select("*")
+      .eq("user_id", com.id).order("created_at", { ascending: false })
+      .then(({ data }) => setDefis(data || []));
+  }, [com.id]);
+
+  const typeLabel = (() => {
+    const cat = (com.categorie || com.category || "").toLowerCase();
+    if (cat.includes("mairie")) return "🏛️ Mairie";
+    if (cat.includes("association")) return "🤝 Association";
+    if (cat.includes("école") || cat.includes("college") || cat.includes("lycée")) return "🎓 Établissement scolaire";
+    if (cat.includes("administratif") || cat.includes("vie locale")) return "🏛️ Service public";
+    return "🏛️ Lieu local";
+  })();
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+      <div style={{ flex: 1, overflowY: "auto" }}>
+
+        {/* Bannière */}
+        <div style={{ position: "relative", width: "100%", height: "calc(190px + env(safe-area-inset-top, 0px))", overflow: "hidden" }}>
+          <CoverImage src={com.cover} commerce={com} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 40%, rgba(10,61,46,0.75) 100%)" }} />
+          <button onClick={onBack} style={{ position: "absolute", top: "calc(14px + env(safe-area-inset-top, 0px))", left: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>‹</button>
+          <button onClick={handleSuivi} style={{ position: "absolute", top: "calc(14px + env(safe-area-inset-top, 0px))", right: 14, width: 34, height: 34, background: "rgba(255,255,255,0.9)", borderRadius: "50%", border: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+            {suivi ? "💚" : "🤍"}
+          </button>
+          <div style={{ position: "absolute", bottom: 14, left: 16, right: 16, display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+            <div style={{ flex: 1, minWidth: 0, marginRight: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: 0.5, marginBottom: 4 }}>{typeLabel}</div>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 21, color: "#fff", lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{com.name}</div>
+              {com.metier && com.metier !== com.name && (
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 3 }}>{com.metier}</div>
+              )}
+            </div>
+            <button onClick={() => setShowInfos(true)} style={{ background: "rgba(255,255,255,0.92)", border: "none", borderRadius: 12, padding: "7px 13px", fontSize: 12, fontWeight: 700, fontFamily: dm, color: C.ink, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 5, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+              ℹ️ Infos
+            </button>
+          </div>
+        </div>
+
+        {/* Bio si renseignée */}
+        {com.desc && (
+          <div style={{ background: CL.accentBg, borderBottom: `1px solid rgba(10,61,46,0.12)`, padding: "12px 16px" }}>
+            <div style={{ fontSize: 13, color: CL.accent, lineHeight: 1.6, fontWeight: 500 }}>{com.desc}</div>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 6, padding: "10px 16px 8px", background: C.bg, overflowX: "auto", scrollbarWidth: "none" }}>
+          {LOCALE_TABS.map(t => {
+            const isActive = activeTab === t.id;
+            return (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+                flexShrink: 0, border: "none", borderRadius: 20, cursor: "pointer",
+                padding: "7px 16px", fontSize: 12, fontWeight: 600, fontFamily: dm,
+                background: isActive ? CL.accent : C.pill,
+                color: isActive ? "#fff" : C.ink2,
+                transition: "all 0.15s",
+              }}>{t.label}</button>
+            );
+          })}
+        </div>
+
+        {/* ── Onglet ACTUS ── */}
+        {activeTab === "actu" && (
+          <div style={{ padding: "8px 16px 100px" }}>
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+            ) : posts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px" }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>📰</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucune actualité pour l'instant</div>
+                <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Les actualités et annonces apparaîtront ici.</div>
+              </div>
+            ) : (
+              posts.map(post => (
+                <div key={post.id} onClick={() => setSelectedPost(post)} style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 12, overflow: "hidden", cursor: "pointer" }}>
+                  {post.image_url && (
+                    <div style={{ width: "100%", height: 180, overflow: "hidden" }}>
+                      <img src={post.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  )}
+                  <div style={{ padding: "12px 14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: post.content ? 8 : 0 }}>
+                      <Avatar pseudo={post.profiles?.pseudo} avatarUrl={post.profiles?.avatar_url} size={28} />
+                      <div>
+                        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 12, color: C.ink }}>{post.profiles?.pseudo || com.name}</div>
+                        <div style={{ fontSize: 10, color: C.ink2 }}>{new Date(post.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</div>
+                      </div>
+                    </div>
+                    {post.content && <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.55 }}>{post.content}</div>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ── Onglet ÉVÉNEMENTS ── */}
+        {activeTab === "events" && (
+          <div style={{ padding: "8px 16px 100px" }}>
+            {defis.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px" }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>📅</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun événement prévu</div>
+                <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Les événements et activités apparaîtront ici.</div>
+              </div>
+            ) : (
+              defis.map(d => {
+                const now = new Date();
+                const enCours = !d.ended && (!d.ends_at || new Date(d.ends_at) > now);
+                const daysLeft = d.ends_at && !d.ended ? Math.max(0, Math.ceil((new Date(d.ends_at) - now) / 86400000)) : null;
+                return (
+                  <div key={d.id} style={{ background: C.card, borderRadius: 18, marginBottom: 12, border: `1.5px solid ${enCours ? "rgba(10,61,46,0.25)" : C.border}`, overflow: "hidden" }}>
+                    {d.photo_url && <div style={{ width: "100%", height: 130, overflow: "hidden" }}><img src={d.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
+                    <div style={{ padding: "12px 14px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, flex: 1 }}>{d.emoji || "📅"} {d.title}</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 8, background: enCours ? CL.accentBg : C.pill, color: enCours ? CL.accent : C.ink2, flexShrink: 0 }}>
+                          {enCours ? "En cours" : "Terminé"}
+                        </div>
+                      </div>
+                      {d.description && <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5, marginBottom: 8 }}>{d.description}</div>}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {d.reward && <span style={{ fontSize: 11, background: CL.accentBg, color: CL.accent, padding: "3px 9px", borderRadius: 8, fontWeight: 600 }}>🎁 {d.reward}</span>}
+                        {enCours && daysLeft !== null && <span style={{ fontSize: 11, background: CL.accentBg, color: CL.accent, padding: "3px 9px", borderRadius: 8, fontWeight: 600 }}>⏳ {daysLeft}j restants</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Modal post */}
+        {selectedPost && (
+          <PostDetailModal post={selectedPost} onClose={() => setSelectedPost(null)} isOwner={user?.id === com.id} comId={com.id} onEnrich={() => {}} />
+        )}
+      </div>
+
+      {/* Drawer Infos */}
+      {showInfos && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div onClick={() => setShowInfos(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
+          <div style={{ position: "relative", background: C.card, borderRadius: "22px 22px 0 0", paddingBottom: "env(safe-area-inset-bottom, 16px)", maxHeight: "82vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ width: 38, height: 4, borderRadius: 2, background: C.border, margin: "12px auto 0" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 0" }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>{com.name}</div>
+              <button onClick={() => setShowInfos(false)} style={{ background: C.pill, border: "none", borderRadius: "50%", width: 30, height: 30, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", color: C.ink2 }}>✕</button>
+            </div>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              <TabInfos com={com} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── VITRINE DÉTAIL ───
 function VitrineScreen({ com, onBack, user }) {
   const [suivi, setSuivi] = useState(false);
@@ -2897,7 +3115,9 @@ export default function ChipeurCommerces({ setPage, user }) {
       )}
 
       {screen === "vitrine" && selectedCom && (
-        <VitrineScreen com={selectedCom} onBack={() => setScreen("list")} user={user} />
+        isLocaleProfile(selectedCom)
+          ? <VitrineLocale com={selectedCom} onBack={() => setScreen("list")} user={user} />
+          : <VitrineScreen com={selectedCom} onBack={() => setScreen("list")} user={user} />
       )}
 
       <BottomNav active="commerces" onNavigate={setPage} onFab={() => setPage("nouveau")} />
