@@ -147,7 +147,7 @@ function profileToCommerce(p, postCount) {
     open_now: p.current_opening_hours?.open_now ?? null,
     vues: "—", int: "—",
     posts: postCount != null ? String(postCount) : "—",
-    plan: "Découverte",
+    plan: p.plan || "premium",
     planBg: C.pill,
     planColor: C.ink2,
     tag: `#${cat}`,
@@ -1214,10 +1214,22 @@ function PostDetailModal({ post, onClose, isOwner, comId, onEnrich }) {
 const VITRINE_MODES = [
   { id: "galerie", label: "📷 Photos" },
   { id: "tout",    label: "Posts" },
-  { id: "promos",  label: "🎁 Promos" },
-  { id: "defis",   label: "🏆 Défis" },
+  { id: "offres",  label: "🎯 Offres" },
   { id: "postes",  label: "📬 Liés", ownerOnly: true },
 ];
+
+// Sous-catégories vitrine par type de commerce (plan mixe / premium)
+const VITRINE_SUBFILTRES = {
+  "Mode":         ["Robes", "Pulls", "Jupes", "T-shirts", "Vestes", "Accessoires", "Soldes"],
+  "Beauté":       ["Soins", "Coiffure", "Ongles", "Maquillage", "Épilation", "Massage"],
+  "Restauration": ["Entrées", "Plats", "Desserts", "Boissons", "Menus", "Spécialités"],
+  "Alimentation": ["Fromages", "Charcuterie", "Boulangerie", "Bio", "Fruits", "Épicerie fine"],
+  "Artisan":      ["Bijoux", "Poterie", "Textile", "Bois", "Cuir", "Peinture"],
+  "Maison":       ["Déco", "Mobilier", "Luminaires", "Textile", "Jardinage"],
+  "Sport":        ["Cardio", "Yoga", "Arts martiaux", "Outdoor", "Vélo", "Pilates"],
+  "Culture":      ["Livres", "Musique", "Art", "Papeterie", "Cadeaux"],
+  "Services":     ["Réparation", "Pressing", "Informatique", "Plomberie"],
+};
 
 function VitrineChips({ activeMode, onChange, isOwner, counts = {} }) {
   const visible = VITRINE_MODES.filter(m => !m.ownerOnly || isOwner);
@@ -1304,7 +1316,7 @@ function DefiVitrine({ defi }) {
 }
 
 // ─── ONGLET VITRINE ───
-function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
+function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch = "" }) {
   const [posts, setPosts] = useState(realPosts);
   const [activeMode, setActiveMode] = useState("galerie");
   const [selectedPost, setSelectedPost] = useState(null);
@@ -1314,19 +1326,23 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
   const [loadingDefis, setLoadingDefis] = useState(false);
   const [linkedPosts, setLinkedPosts] = useState([]);
   const [loadingLinked, setLoadingLinked] = useState(false);
+  const [subFilter, setSubFilter] = useState("Tous");
   const touchXVit = useRef(null);
 
   useEffect(() => { setPosts(realPosts); }, [realPosts]);
 
-  // Charger les défis quand on passe en mode défis (sauf démo)
+  // Charger les défis dès le montage (pour le compteur dans l'onglet Offres)
   useEffect(() => {
-    if (com.isDemo || activeMode !== "defis" || defis.length > 0) return;
+    if (com.isDemo || defis.length > 0) return;
     setLoadingDefis(true);
     supabase.from("defis").select("*")
       .eq("user_id", com.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => { setDefis(data || []); setLoadingDefis(false); });
-  }, [activeMode, com.id]);
+  }, [com.id]);
+
+  // Réinitialiser le sous-filtre quand on change d'onglet
+  useEffect(() => { setSubFilter("Tous"); }, [activeMode]);
 
   // Charger les posts liés quand on passe en mode "postes" (owner seulement)
   useEffect(() => {
@@ -1395,28 +1411,81 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
 
   const isOwner = user?.id === com.id;
 
+  // Sous-filtres selon la catégorie du commerce (plan mixe / premium)
+  const subfiltres = (() => {
+    const cat = (com.categorie || com.category || "").toLowerCase();
+    for (const [themeKey, filters] of Object.entries(VITRINE_SUBFILTRES)) {
+      const theme = THEMES.find(t => t.key === themeKey);
+      if (theme && theme.match.some(m => cat.includes(m))) return filters;
+    }
+    return [];
+  })();
+
+  // Filtrage par recherche de tag IA ou sous-filtre catégorie
+  const filterPosts = (postsArr) => {
+    let result = postsArr;
+    if (tagSearch.trim()) {
+      const q = tagSearch.trim().toLowerCase();
+      result = result.filter(p =>
+        p.tags?.some(t => t.toLowerCase().includes(q)) ||
+        p.product_label?.toLowerCase().includes(q) ||
+        p.content?.toLowerCase().includes(q)
+      );
+    }
+    if (subFilter && subFilter !== "Tous") {
+      const sf = subFilter.toLowerCase();
+      result = result.filter(p =>
+        p.tags?.some(t => t.toLowerCase().includes(sf)) ||
+        p.product_label?.toLowerCase().includes(sf)
+      );
+    }
+    return result;
+  };
+
   // Listes filtrées
-  const photoPosts = posts.filter(p => !!p.image_url);
-  const filtered = activeMode === "galerie"  ? photoPosts
-    : activeMode === "cartes"  ? posts
-    : activeMode === "promos"  ? posts.filter(p => p.post_type === "bonplan" || p.post_type === "promo")
-    : posts; // "tout" = tout
+  const photoPosts = filterPosts(posts.filter(p => !!p.image_url));
+  const filteredTout = filterPosts(posts);
 
   const defisEnCours  = defis.filter(d => !d.ended);
   const defisTermines = defis.filter(d => !!d.ended);
 
   const counts = {
-    tout:   posts.length,
-    promos: posts.filter(p => p.post_type === "bonplan" || p.post_type === "promo").length,
-    defis:  defis.length,
+    tout:    posts.length,
+    offres:  posts.filter(p => p.post_type === "bonplan" || p.post_type === "promo").length + defis.length,
     galerie: photoPosts.length,
-    postes: linkedPosts.filter(p => p.linked_status === "pending").length,
+    postes:  linkedPosts.filter(p => p.linked_status === "pending").length,
   };
 
   return (
     <div style={{ padding: "0 0 100px" }}>
       {/* Chips mode */}
       <VitrineChips activeMode={activeMode} onChange={setActiveMode} isOwner={isOwner} counts={counts} />
+
+      {/* ── Sous-filtres catégorie (plan mixe / premium) ── */}
+      {(com.plan === "mixe" || com.plan === "premium") && (activeMode === "galerie" || activeMode === "tout") && subfiltres.length > 0 && (
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "0 16px 10px", scrollbarWidth: "none", background: C.bg }}>
+          {["Tous", ...subfiltres].map(f => {
+            const isOn = subFilter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setSubFilter(f)}
+                style={{
+                  flexShrink: 0,
+                  border: `1.5px solid ${isOn ? C.accent : "transparent"}`,
+                  borderRadius: 20, cursor: "pointer",
+                  padding: "5px 12px", fontSize: 11, fontWeight: 600, fontFamily: dm,
+                  background: isOn ? "rgba(255,87,51,0.08)" : C.pill,
+                  color: isOn ? C.accent : C.ink2,
+                  transition: "all 0.15s",
+                }}
+              >
+                {f}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Mode POSTS LIÉS (owner seulement) ── */}
       {activeMode === "postes" && isOwner && (
@@ -1537,37 +1606,58 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
         </div>
       )}
 
-      {/* ── Mode DÉFIS ── */}
-      {activeMode === "defis" && (
+      {/* ── Mode OFFRES (Promos + Défis regroupés) ── */}
+      {activeMode === "offres" && (
         <div style={{ padding: "0 16px" }}>
-          {loadingDefis ? (
-            <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
-          ) : defis.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 24px" }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>🏆</div>
-              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucun défi lancé</div>
-              <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Ce commerce n'a pas encore lancé de défi. Guettez les futures annonces !</div>
-            </div>
-          ) : (
-            <>
-              {defisEnCours.length > 0 && (
-                <>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: dm, marginBottom: 10, marginTop: 4 }}>
-                    🏆 Défis en cours
-                  </div>
-                  {defisEnCours.map(d => <DefiVitrine key={d.id} defi={d} />)}
-                </>
-              )}
-              {defisTermines.length > 0 && (
-                <>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: dm, marginBottom: 10, marginTop: defisEnCours.length > 0 ? 16 : 4 }}>
-                    🏁 Défis terminés
-                  </div>
-                  {defisTermines.map(d => <DefiVitrine key={d.id} defi={d} />)}
-                </>
-              )}
-            </>
-          )}
+          {(() => {
+            const promos = posts.filter(p => p.post_type === "bonplan" || p.post_type === "promo");
+            const hasContent = promos.length > 0 || defis.length > 0;
+            if (!hasContent && !loadingDefis) return (
+              <div style={{ textAlign: "center", padding: "48px 24px" }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>🎯</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>Aucune offre active</div>
+                <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>Les promos et défis de ce commerce apparaîtront ici.</div>
+              </div>
+            );
+            return (
+              <>
+                {/* Promos */}
+                {promos.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: dm, marginBottom: 10, marginTop: 4 }}>
+                      🎁 Promos & bons plans
+                    </div>
+                    {promos.map(post => (
+                      <VitrinePostCard key={post.id} post={post} userId={user?.id} comId={com.id} isOwner={isOwner} onEnrich={() => setEnrichingPost(post)} onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))} />
+                    ))}
+                  </>
+                )}
+                {/* Défis */}
+                {loadingDefis ? (
+                  <div style={{ textAlign: "center", padding: "20px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
+                ) : (
+                  <>
+                    {defisEnCours.length > 0 && (
+                      <>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: dm, marginBottom: 10, marginTop: promos.length > 0 ? 18 : 4 }}>
+                          🏆 Défis en cours
+                        </div>
+                        {defisEnCours.map(d => <DefiVitrine key={d.id} defi={d} />)}
+                      </>
+                    )}
+                    {defisTermines.length > 0 && (
+                      <>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.ink2, letterSpacing: 0.8, textTransform: "uppercase", fontFamily: dm, marginBottom: 10, marginTop: defisEnCours.length > 0 ? 16 : 4 }}>
+                          🏁 Défis terminés
+                        </div>
+                        {defisTermines.map(d => <DefiVitrine key={d.id} defi={d} />)}
+                      </>
+                    )}
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -1607,25 +1697,25 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis }) {
         )
       )}
 
-      {/* ── Mode TOUT, CARTES, PROMOS ── */}
-      {(activeMode === "tout" || activeMode === "cartes" || activeMode === "promos") && (
+      {/* ── Mode TOUT ── */}
+      {activeMode === "tout" && (
         loadingPosts ? (
           <div style={{ textAlign: "center", padding: "30px 0", color: C.ink2, fontSize: 13 }}>⏳ Chargement…</div>
-        ) : filtered.length === 0 ? (
+        ) : filteredTout.length === 0 ? (
           <div style={{ textAlign: "center", padding: "48px 24px" }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>{activeMode === "promos" ? "🎁" : "📸"}</div>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>📸</div>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: C.ink, marginBottom: 6 }}>
-              {activeMode === "promos" ? "Aucune promo active" : "Vitrine vide pour l'instant"}
+              {tagSearch || subFilter !== "Tous" ? "Aucun résultat" : "Vitrine vide pour l'instant"}
             </div>
             <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.5 }}>
-              {activeMode === "promos"
-                ? "Ce commerce n'a pas encore partagé de bon plan. Revenez bientôt !"
+              {tagSearch || subFilter !== "Tous"
+                ? "Essayez un autre mot-clé ou filtre."
                 : "Soyez parmi les premiers à le découvrir et à réagir !"}
             </div>
           </div>
         ) : (
           <div style={{ padding: "0 16px" }}>
-            {filtered.map(post => (
+            {filteredTout.map(post => (
               <VitrinePostCard
                 key={post.id}
                 post={post}
@@ -1899,19 +1989,10 @@ function VitrineScreen({ com, onBack, user }) {
     }
   };
   const [showInfos, setShowInfos] = useState(false);
+  const [tagSearch, setTagSearch] = useState("");
   const [realPosts, setRealPosts] = useState(com.isDemo ? DEMO_POSTS : []);
   const [loadingPosts, setLoadingPosts] = useState(!com.isDemo);
-  const [realPostCount, setRealPostCount] = useState(com.isDemo ? DEMO_POSTS.length : null);
-  const [followersCount, setFollowersCount] = useState(com.isDemo ? 12 : null);
-  const [reactionsCount, setReactionsCount] = useState(com.isDemo ? 47 : null);
 
-  useEffect(() => {
-    if (com.isDemo || !com.id) return;
-    // Abonnés
-    supabase.from("follows").select("id", { count: "exact", head: true })
-      .eq("following_id", com.id)
-      .then(({ count }) => setFollowersCount(count ?? 0));
-  }, [com.id]);
 
   useEffect(() => {
     if (com.isDemo || !com.id) return;
@@ -1960,24 +2041,11 @@ function VitrineScreen({ com, onBack, user }) {
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
       setRealPosts(allPosts);
-      setRealPostCount(allPosts.length);
       setLoadingPosts(false);
-
-      // Réactions totales
-      if (allPosts.length > 0) {
-        const ids = allPosts.map(p => p.id);
-        supabase.from("post_reactions").select("id", { count: "exact", head: true })
-          .in("post_id", ids)
-          .then(({ count }) => setReactionsCount(count ?? 0));
-      } else {
-        setReactionsCount(0);
-      }
     }
 
     loadPosts();
   }, [com.id]);
-
-  const displayPosts = realPostCount != null ? String(realPostCount) : com.posts;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
@@ -1999,7 +2067,9 @@ function VitrineScreen({ com, onBack, user }) {
           <div style={{ position: "absolute", bottom: 14, left: 16, right: 16, display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
             <div style={{ flex: 1, minWidth: 0, marginRight: 10 }}>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 22, color: "#fff", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{com.name}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>{com.cat}</div>
+              {(com.metier || com.category) && (
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 4 }}>{com.metier || com.category}</div>
+              )}
             </div>
             <button onClick={() => setShowInfos(true)} style={{ background: "rgba(255,255,255,0.92)", border: "none", borderRadius: 12, padding: "7px 13px", fontSize: 12, fontWeight: 700, fontFamily: dm, color: C.ink, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 5, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
               ℹ️ Infos
@@ -2007,46 +2077,32 @@ function VitrineScreen({ com, onBack, user }) {
           </div>
         </div>
 
-        {/* Stats — badge nouvelle vitrine ou compteurs réels */}
-        {(() => {
-          const allStatsLoaded = realPostCount !== null && followersCount !== null && reactionsCount !== null;
-          const allZeroStats = allStatsLoaded && realPostCount === 0 && followersCount === 0 && reactionsCount === 0;
-          const isNewVitrine = !com.isDemo && com.created_at
-            && (Date.now() - new Date(com.created_at).getTime()) < 30 * 24 * 60 * 60 * 1000;
-
-          if (allZeroStats && isNewVitrine) {
-            return (
-              <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 14, background: "rgba(255,87,51,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🆕</div>
-                <div>
-                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 13, color: C.ink }}>Nouvelle vitrine</div>
-                  <div style={{ fontSize: 11, color: C.ink2, marginTop: 2 }}>📍 Commerce vérifié · Venez les découvrir !</div>
-                </div>
-              </div>
-            );
-          }
-
-          const visibleStats = [
-            { n: displayPosts,          l: "posts",               icon: "📸", hide: !realPostCount },
-            { n: reactionsCount,        l: "réactions",           icon: "❤️", hide: !reactionsCount },
-            { n: followersCount,        l: "voisins du quartier", icon: "👥", hide: !followersCount },
-          ].filter(s => !s.hide);
-
-          if (!allStatsLoaded) return null; // loading silently
-          if (visibleStats.length === 0) return null;
-
-          return (
-            <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.card }}>
-              {visibleStats.map((s, i) => (
-                <div key={i} style={{ flex: 1, textAlign: "center", padding: "12px 0", borderRight: i < visibleStats.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                  <div style={{ fontSize: 11, marginBottom: 2 }}>{s.icon}</div>
-                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>{s.n}</div>
-                  <div style={{ fontSize: 9, color: C.ink2, marginTop: 1 }}>{s.l}</div>
-                </div>
-              ))}
-            </div>
-          );
-        })()}
+        {/* ── Barre de recherche par tags IA ── */}
+        <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "10px 14px" }}>
+          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <span style={{ position: "absolute", left: 12, fontSize: 15, color: C.ink2, pointerEvents: "none" }}>🔍</span>
+            <input
+              type="text"
+              value={tagSearch}
+              onChange={e => setTagSearch(e.target.value)}
+              placeholder="Rechercher un produit…"
+              style={{
+                width: "100%", boxSizing: "border-box",
+                border: `1.5px solid ${tagSearch ? C.accent : C.border}`,
+                borderRadius: 14, padding: "10px 36px 10px 38px",
+                fontSize: 13, fontFamily: dm, color: C.ink,
+                background: C.bg, outline: "none",
+                transition: "border-color 0.15s",
+              }}
+            />
+            {tagSearch && (
+              <button
+                onClick={() => setTagSearch("")}
+                style={{ position: "absolute", right: 10, background: C.pill, border: "none", borderRadius: "50%", width: 22, height: 22, cursor: "pointer", fontSize: 12, color: C.ink2, display: "flex", alignItems: "center", justifyContent: "center" }}
+              >✕</button>
+            )}
+          </div>
+        </div>
 
         {/* Bannière demo */}
         {com.isDemo && (
@@ -2060,24 +2116,9 @@ function VitrineScreen({ com, onBack, user }) {
         )}
 
         {/* Feed principal */}
-        <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} user={user} demoDefis={com.isDemo ? DEMO_DEFIS : undefined} />
+        <TabVitrine com={com} realPosts={realPosts} loadingPosts={loadingPosts} user={user} demoDefis={com.isDemo ? DEMO_DEFIS : undefined} tagSearch={tagSearch} />
       </div>
 
-      {/* Boutons Contacter + Y aller */}
-      <div style={{ position: "absolute", bottom: 90, left: 18, right: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, zIndex: 10 }}>
-        {com.phone ? (
-          <a href={`tel:${(com.phone || "").replace(/\s/g, "")}`} style={{ borderRadius: 16, padding: "15px 0", fontSize: 14, fontWeight: 700, fontFamily: dm, textAlign: "center", background: C.accent, color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(255,87,51,0.35)" }}>
-            📞 Contacter
-          </a>
-        ) : (
-          <div style={{ borderRadius: 16, padding: "15px 0", fontSize: 14, fontWeight: 700, fontFamily: dm, textAlign: "center", background: "rgba(255,255,255,0.85)", color: C.ink2, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            📞 Contacter
-          </div>
-        )}
-        <a href={`https://www.google.com/maps/search/${encodeURIComponent((com.name || "") + " Saint-Dié-des-Vosges")}`} target="_blank" rel="noreferrer" style={{ borderRadius: 16, padding: "15px 0", fontSize: 14, fontWeight: 700, fontFamily: dm, textAlign: "center", background: C.ink, color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 4px 14px rgba(26,23,20,0.25)" }}>
-          🗺️ Y aller
-        </a>
-      </div>
 
       {/* ── DRAWER INFOS ── */}
       {showInfos && (

@@ -255,6 +255,23 @@ Branche git : `feat/page-commerces-sections` (créer avec `git checkout -b feat/
 
 ---
 
+### 20. Refonte page vitrine commerçant (mai 2026)
+
+#### chipeur_commerces.jsx
+- **Banner** : suppression adresse/ville sous le nom → affiche `metier` ou `category` seulement
+- **Barre de recherche** : remplace le bloc stats (posts/réactions/abonnés) — recherche par tags IA sur `post.tags`, `product_label`, `content`
+- **Tabs** : `promos` + `défis` → regroupés dans `🎯 Offres` (promos d'abord, défis ensuite)
+- **Sous-filtres catégorie** : `VITRINE_SUBFILTRES` — chips sous les tabs pour plan `mixe` / `premium` (ex. Mode → Robes, Pulls, Jupes…)
+- **Champ `plan`** : `profileToCommerce` retourne `p.plan || "premium"` — défaut premium pendant phase test
+- **Défis chargés au montage** (eager) pour alimenter le compteur de l'onglet Offres
+- **Suppression des boutons fixes** Contacter / Y aller (accessibles via drawer ℹ️ Infos)
+
+#### supabase/migrations/20260518_plan_profile.sql
+- Colonne `plan TEXT DEFAULT 'premium' CHECK (IN découverte/mixe/premium)` sur `profiles`
+- Migration à appliquer via interface Supabase → SQL Editor
+
+---
+
 ## À faire / prochaine session
 
 ### 🏆 Tags IA pour les défis commerçants (tâche #31)
