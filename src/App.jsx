@@ -171,34 +171,10 @@ export default function App() {
     setShowFilTour(false);
   }
 
-  // ── Onboarding première visite ──────────────────────────────────────────
-  const [onboardingDone, setOnboardingDone] = useState(
-    () => safeStorage.getItem("chipeur_onboarding_done_v2") === "true"
-  );
-
-  // Si l'utilisateur est déjà connecté (compte existant), on saute l'onboarding
-  // et on marque la clé localStorage pour éviter de le revoir
-  useEffect(() => {
-    if (user && profile && !onboardingDone) {
-      safeStorage.setItem("chipeur_onboarding_done_v2", "true");
-      setOnboardingDone(true);
-    }
-  }, [user?.id, profile?.id]);
-
-  async function handleOnboardingDone() {
-    safeStorage.setItem("chipeur_onboarding_done_v2", "true");
-    setOnboardingDone(true);
-    if (user?.id) {
-      await supabase.from("profiles").update({ has_seen_onboarding: true }).eq("id", user.id);
-    }
-  }
+  // ── Onboarding désactivé temporairement ──────────────────────────────────
+  // (fiches explicatives retirées — à réintégrer sous une autre forme plus tard)
 
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
-
-  // Onboarding uniquement pour les visiteurs sans compte (jamais pour un utilisateur déjà connecté)
-  if (!onboardingDone && !user) {
-    return <Onboarding onDone={handleOnboardingDone} />;
-  }
 
   if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => setPage("fil")} />;
   if (page === "connexion")   return <Connexion   setPage={setPage} onAuth={() => setPage("fil")} />;
