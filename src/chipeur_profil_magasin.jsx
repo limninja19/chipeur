@@ -107,6 +107,7 @@ const JOURS_DEFAUT = [
 // ─── ÉCRAN MODIFIER LE PROFIL ───
 function EditProfilScreen({ onBack, profile, userId, onSaved }) {
   const [pseudo, setPseudo]       = useState(profile?.pseudo || "");
+  const [categorie, setCategorie] = useState(profile?.categorie || "");
   const [metier, setMetier]       = useState(profile?.metier || "");
   const [bio, setBio]             = useState(profile?.bio || "");
   const [quartier, setQuartier]   = useState(profile?.quartier || "");
@@ -183,12 +184,16 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
     setSaving(true);
     setError("");
     const horairesFiltres = horaires.filter(h => h.h.trim() !== "");
+    const roleFinal = (categorie === "Association" || categorie === "Vie locale & Administratif")
+      ? "lieu"
+      : (profile?.role === "lieu" ? "lieu" : (profile?.role || "magasin"));
     const updates = {
-      pseudo, metier, bio, quartier,
+      pseudo, categorie, metier, bio, quartier,
       phone, website, instagram, facebook,
       avatar_url: avatarUrl,
       horaires: horairesFiltres,
       photo_urls: photoUrls,
+      role: roleFinal,
     };
     const { error: err } = await supabase
       .from("profiles")
@@ -291,6 +296,46 @@ function EditProfilScreen({ onBack, profile, userId, onSaved }) {
           <div style={{ fontFamily: syne, fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 12 }}>Informations de base</div>
           <Label>Nom de l'enseigne</Label>
           <Input value={pseudo} onChange={e => setPseudo(e.target.value)} placeholder="Ex : Atelier Mona" />
+          <Label>Catégorie</Label>
+          <select
+            value={categorie}
+            onChange={e => setCategorie(e.target.value)}
+            style={{
+              width: "100%", padding: "9px 12px", borderRadius: 12,
+              border: `1.5px solid ${C.border}`, fontFamily: dm, fontSize: 12,
+              color: C.ink, background: C.bg, outline: "none", marginBottom: 10,
+              boxSizing: "border-box", appearance: "auto",
+            }}
+          >
+            <option value="">Choisir une catégorie…</option>
+            <optgroup label="🏪 Commerces">
+              <option>Mode &amp; Prêt-à-porter</option>
+              <option>Alimentation &amp; Épicerie</option>
+              <option>Décoration &amp; Maison</option>
+              <option>Sport &amp; Fitness</option>
+              <option>Services de proximité</option>
+              <option>Culture &amp; Librairie</option>
+            </optgroup>
+            <optgroup label="💄 Beauté &amp; Bien-être">
+              <option>Beauté &amp; Bien-être</option>
+            </optgroup>
+            <optgroup label="🍽️ Resto &amp; Ambiance">
+              <option>Restauration &amp; Ambiance</option>
+            </optgroup>
+            <optgroup label="🎨 Artisans">
+              <option>Artisan &amp; Créateur</option>
+            </optgroup>
+            <optgroup label="🎭 Divertissement">
+              <option>Divertissement</option>
+            </optgroup>
+            <optgroup label="🏛️ Vie locale">
+              <option>Vie locale &amp; Administratif</option>
+              <option>Association</option>
+            </optgroup>
+            <optgroup label="✨ Autre">
+              <option>Autre</option>
+            </optgroup>
+          </select>
           <Label>Métier précis</Label>
           <Input value={metier} onChange={e => setMetier(e.target.value)} placeholder="Ex : Photographe, Boulangerie, Imprimerie…" />
           <Label>Description / Présentation</Label>
