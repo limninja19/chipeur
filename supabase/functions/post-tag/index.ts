@@ -71,16 +71,21 @@ Deno.serve(async (req: Request) => {
     // ── Construire le prompt contextualisé ──
     const contextLine = metier || categorie
       ? `Ce post est publié par un commerce de type : "${metier || categorie}".
-IMPORTANT : génère des mots-clés pertinents pour CE type d'activité commerciale.
-Ignore ce qui est accessoire sur la photo (vêtements des personnes, fond, décor non lié au commerce).
-Concentre-toi sur les produits ou services visibles, les thèmes liés au métier, la qualité, l'usage.
-Exemple pour une imprimerie : flyer, impression couleur, communication, logo, cartes de visite — et NON : jeans, pull, sourire.
-Exemple pour une boulangerie : croissant, brioche, viennoiserie, dorée, artisanal — et NON : tablier, comptoir, lumière.`
-      : `Analyse cette photo d'un commerce local français.`;
+IMPORTANT : génère des tags pertinents pour CE type d'activité commerciale.
+Ignore ce qui est accessoire (visage des personnes, fond, décor sans rapport avec le commerce).
+Concentre-toi sur :
+- Les produits visibles : type, couleur, style, coupe, matière (ex : "robe rouge", "décolleté dos nu", "coton bio")
+- Les marques lisibles sur les produits ou emballages (ex : "Nike", "Levi's", "Coca-Cola")
+- Les services ou savoir-faire visibles (ex : "massage crânien", "balayage blond", "impression couleur")
+- Les caractéristiques qui aident à trouver ce produit dans une recherche (ex : "taille haute", "sans gluten", "fait main")
+Exemple pour une boutique mode : robe rouge, décolleté, coton, taille haute, fleuri, Zara — et NON : sourire, mur blanc, fond beige.
+Exemple pour une boulangerie : croissant doré, feuilleté, beurre, viennoiserie, artisanal — et NON : tablier, comptoir, lumière.`
+      : `Analyse cette photo d'un commerce local français. Décris les produits visibles avec leur couleur, style, matière et marque si lisible.`;
 
     const prompt = `${contextLine}
-Retourne UNIQUEMENT une liste de 5 à 8 mots-clés courts en français, séparés par des virgules.
-Ces mots-clés serviront de filtres de recherche dans une vitrine locale.
+Retourne UNIQUEMENT une liste de 6 à 10 tags en français, séparés par des virgules.
+Chaque tag peut faire 1 à 3 mots (ex : "robe rouge", "Nike", "fait main", "sans gluten").
+Ces tags serviront de filtres de recherche — sois précis et descriptif.
 Ne retourne rien d'autre que cette liste.`;
 
     // ── Appel Claude Vision ──
@@ -88,7 +93,7 @@ Ne retourne rien d'autre que cette liste.`;
 
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 150,
+      max_tokens: 200,
       messages: [
         {
           role: "user",
@@ -110,7 +115,7 @@ Ne retourne rien d'autre que cette liste.`;
     const tags = rawText
       .split(",")
       .map((t: string) => t.trim().toLowerCase())
-      .filter((t: string) => t.length > 0 && t.length < 40);
+      .filter((t: string) => t.length > 0 && t.length < 50);
 
     // ── Mettre à jour le post dans Supabase ──
     if (supabaseUrl && supabaseKey) {
