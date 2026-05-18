@@ -2,6 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import Avatar from "./Avatar";
 
+const SUPABASE_FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const FN_HEADERS = {
+  "Content-Type": "application/json",
+  "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+  "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+};
+
 const C = {
   bg: "#F5F2EE", card: "#FFFFFF", ink: "#1A1714", ink2: "#6B6560",
   accent: "#FF5733", accent2: "#F7A72D", pro: "#0A3D2E", proBg: "#EBF5F0",
@@ -1006,16 +1013,20 @@ function EventDetailScreen({ event, user, onBack }) {
 
 // ─── FORMULAIRE NOUVEL ÉVÉNEMENT ───
 function NouvelEvenementScreen({ user, onBack, onSuccess }) {
-  const [title, setTitle]         = useState("");
-  const [type, setType]           = useState("Fête");
-  const [date, setDate]           = useState("");
-  const [heure, setHeure]         = useState("");
-  const [lieu, setLieu]           = useState("");
-  const [desc, setDesc]           = useState("");
-  const [flyerFile, setFlyerFile] = useState(null);
+  const [title, setTitle]               = useState("");
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [customTag, setCustomTag]       = useState("");
+  const [date, setDate]                 = useState("");
+  const [heure, setHeure]               = useState("");
+  const [lieu, setLieu]                 = useState("");
+  const [desc, setDesc]                 = useState("");
+  const [flyerFile, setFlyerFile]       = useState(null);
   const [flyerPreview, setFlyerPreview] = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState(null);
+  const [flyerUrl, setFlyerUrl]         = useState(null);
+  const [scanning, setScanning]         = useState(false);
+  const [scanDone, setScanDone]         = useState(false);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState(null);
   const flyerRef = useRef();
 
   const inp = {
@@ -1024,11 +1035,57 @@ function NouvelEvenementScreen({ user, onBack, onSuccess }) {
     background: C.bg, color: C.ink, boxSizing: "border-box", outline: "none",
   };
 
-  const handleFlyerChange = (e) => {
+  const toDateInput = (txt) => {
+    if (!txt) return "";
+    const p = txt.split("/");
+    return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : txt;
+  };
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  const addCustomTag = () => {
+    const t = customTag.trim();
+    if (t && !selectedTags.includes(t)) setSelectedTags(prev => [...prev, t]);
+    setCustomTag("");
+  };
+
+  const handleFlyerChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setFlyerFile(file);
     setFlyerPreview(URL.createObjectURL(file));
+    setScanning(true);
+    setScanDone(false);
+    setError(null);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `evenements/flyers/${user?.id || "anon"}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, file);
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+      const url = urlData.publicUrl;
+      setFlyerUrl(url);
+      const res = await fetch(`${SUPABASE_FN_URL}/event-scan`, {
+        method: "POST", headers: FN_HEADERS, body: JSON.stringify({ image_url: url }),
+      });
+      const data = await res.json();
+      if (data.title)       setTitle(data.title);
+      if (data.date_text)   setDate(toDateInput(data.date_text));
+      if (data.time_text)   setHeure(data.time_text);
+      if (data.lieu)        setLieu(data.lieu);
+      if (data.description) setDesc(data.description);
+      const aiTags = [];
+      if (data.type && TYPES.includes(data.type)) aiTags.push(data.type);
+      if (Array.isArray(data.tags)) data.tags.forEach(t => { if (!aiTags.includes(t)) aiTags.push(t); });
+      if (aiTags.length > 0) setSelectedTags(aiTags);
+      setScanDone(true);
+    } catch (_) {
+      setError("Analyse du flyer impossible — remplis le formulaire manuellement.");
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -1036,151 +1093,135 @@ function NouvelEvenementScreen({ user, onBack, onSuccess }) {
     if (!date)         { setError("La date est obligatoire."); return; }
     setLoading(true);
     setError(null);
-
-    // Convertir YYYY-MM-DD → DD/MM/YYYY pour l'affichage
     const [y, m, jj] = date.split("-");
     const dateText = `${jj}/${m}/${y}`;
-
-    // Upload du flyer si présent
-    let flyerUrl = null;
-    if (flyerFile && user?.id) {
-      const ext = flyerFile.name.split(".").pop() || "jpg";
-      const path = `evenements/flyers/${user.id}_${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("images").upload(path, flyerFile);
-      if (upErr) { setError("Erreur upload flyer : " + upErr.message); setLoading(false); return; }
-      const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
-      flyerUrl = urlData.publicUrl;
-    }
-
     const { data, error: err } = await supabase
       .from("sorties")
       .insert({
         title:       title.trim(),
-        type,
+        type:        selectedTags[0] || "Autre",
+        tags:        selectedTags,
         date_text:   dateText,
         time_text:   heure.trim() || null,
         lieu:        lieu.trim() || null,
         description: desc.trim() || null,
         ville:       "Saint-Dié",
         author_id:   user?.id || null,
-        flyer_url:   flyerUrl,
+        flyer_url:   flyerUrl || null,
       })
       .select()
       .single();
-
     if (err) { setError(err.message); setLoading(false); return; }
     onSuccess(data);
   };
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: C.bg, fontFamily: dm,
-      color: C.ink, display: "flex", flexDirection: "column", zIndex: 50,
-    }}>
-      <div style={{
-        background: C.card, borderBottom: `1px solid ${C.border}`,
-        padding: "14px 16px", display: "flex", alignItems: "center",
-        gap: 12, flexShrink: 0,
-      }}>
+    <div style={{ position: "fixed", inset: 0, background: C.bg, fontFamily: dm, color: C.ink, display: "flex", flexDirection: "column", zIndex: 50 }}>
+      <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>←</button>
         <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink }}>Nouvel événement</div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+
+        {/* ── FLYER EN PREMIER ── */}
+        <div style={{ background: C.card, borderRadius: 18, padding: 16, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 8 }}>🖼️ AFFICHE / FLYER</label>
+          {!flyerPreview && (
+            <div style={{ background: "#EBF5F0", border: "1px solid #A7D7C5", borderRadius: 12, padding: "10px 12px", marginBottom: 10, display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>✨</span>
+              <div style={{ fontSize: 12, color: C.pro, lineHeight: 1.5 }}>
+                <b>L'IA remplit le formulaire automatiquement !</b><br />
+                Ajoute d'abord l'affiche — les champs se rempliront tout seuls.
+              </div>
+            </div>
+          )}
+          {flyerPreview ? (
+            <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 4 }}>
+              <img src={flyerPreview} alt="flyer" style={{ width: "100%", maxHeight: 220, objectFit: "cover", display: "block" }} />
+              {scanning && (
+                <div style={{ position: "absolute", inset: 0, background: "rgba(10,61,46,0.80)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                  <div style={{ fontSize: 34 }}>✨</div>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff" }}>Analyse en cours…</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>L'IA lit ton affiche</div>
+                </div>
+              )}
+              {scanDone && !scanning && (
+                <div style={{ position: "absolute", top: 10, left: 10, background: "#22C55E", borderRadius: 10, padding: "4px 10px", display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>✓ Formulaire rempli !</span>
+                </div>
+              )}
+              <button onClick={() => { setFlyerFile(null); setFlyerPreview(null); setFlyerUrl(null); setScanDone(false); }} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            </div>
+          ) : (
+            <div onClick={() => flyerRef.current?.click()} style={{ border: `2px dashed ${C.border}`, borderRadius: 14, padding: "24px 0", textAlign: "center", cursor: "pointer", background: C.bg }}>
+              <div style={{ fontSize: 36, marginBottom: 6 }}>🖼️</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.ink, marginBottom: 3 }}>Ajouter l'affiche</div>
+              <div style={{ fontSize: 11, color: C.ink2 }}>JPG, PNG — l'IA lit les infos automatiquement</div>
+            </div>
+          )}
+          <input ref={flyerRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFlyerChange} />
+        </div>
+
+        {/* ── FORMULAIRE ── */}
         <div style={{ background: C.card, borderRadius: 18, padding: 16, border: `1px solid ${C.border}` }}>
 
-          {/* Titre */}
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 4 }}>NOM DE L'ÉVÉNEMENT *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Marché de Noël, Concert de jazz…" style={inp} />
           </div>
 
-          {/* Type */}
+          {/* Étiquettes multi-sélection */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 6 }}>TYPE *</label>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 6 }}>ÉTIQUETTES <span style={{ fontWeight: 400 }}>(plusieurs possibles)</span></label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
               {TYPES.map(t => (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  style={{
-                    padding: "6px 14px", borderRadius: 20, border: "none",
-                    cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: dm,
-                    background: type === t ? C.ink : C.pill,
-                    color: type === t ? "#fff" : C.ink2,
-                  }}
-                >{t}</button>
+                <button key={t} onClick={() => toggleTag(t)} style={{ padding: "6px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: dm, background: selectedTags.includes(t) ? C.ink : C.pill, color: selectedTags.includes(t) ? "#fff" : C.ink2 }}>
+                  {selectedTags.includes(t) ? "✓ " : ""}{t}
+                </button>
               ))}
+            </div>
+            {/* Tags custom */}
+            {selectedTags.filter(t => !TYPES.includes(t)).length > 0 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                {selectedTags.filter(t => !TYPES.includes(t)).map(t => (
+                  <span key={t} style={{ padding: "5px 10px", borderRadius: 20, background: C.accent, color: "#fff", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                    {t}
+                    <button onClick={() => setSelectedTags(prev => prev.filter(x => x !== t))} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.8)", fontSize: 13, cursor: "pointer", padding: 0, lineHeight: 1 }}>✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 6 }}>
+              <input value={customTag} onChange={e => setCustomTag(e.target.value)} onKeyDown={e => e.key === "Enter" && addCustomTag()} placeholder="Créer une étiquette…" style={{ ...inp, marginBottom: 0, flex: 1 }} />
+              <button onClick={addCustomTag} disabled={!customTag.trim()} style={{ background: customTag.trim() ? C.accent : C.pill, color: customTag.trim() ? "#fff" : C.ink2, border: "none", borderRadius: 12, padding: "0 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>+ Ajouter</button>
             </div>
           </div>
 
-          {/* Date */}
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 4 }}>DATE *</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inp} />
           </div>
 
-          {/* Heure */}
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 4 }}>HORAIRES</label>
             <input value={heure} onChange={e => setHeure(e.target.value)} placeholder="Ex: 9h – 18h, à partir de 20h…" style={inp} />
           </div>
 
-          {/* Lieu */}
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 4 }}>LIEU</label>
             <input value={lieu} onChange={e => setLieu(e.target.value)} placeholder="Ex: Place du Marché, Salle des fêtes…" style={inp} />
           </div>
 
-          {/* Flyer / Affiche */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 6 }}>AFFICHE / FLYER <span style={{ fontWeight: 400, color: C.ink2 }}>(optionnel)</span></label>
-            {flyerPreview ? (
-              <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 6 }}>
-                <img src={flyerPreview} alt="flyer" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
-                <button
-                  onClick={() => { setFlyerFile(null); setFlyerPreview(null); }}
-                  style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                >✕</button>
-              </div>
-            ) : (
-              <div
-                onClick={() => flyerRef.current?.click()}
-                style={{ border: `2px dashed ${C.border}`, borderRadius: 14, padding: "18px 0", textAlign: "center", cursor: "pointer", background: C.bg }}
-              >
-                <div style={{ fontSize: 28, marginBottom: 4 }}>🖼️</div>
-                <div style={{ fontSize: 12, color: C.ink2 }}>Ajouter l'affiche de l'événement</div>
-              </div>
-            )}
-            <input ref={flyerRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFlyerChange} />
-          </div>
-
-          {/* Description */}
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 4 }}>DESCRIPTION</label>
-            <textarea
-              value={desc}
-              onChange={e => setDesc(e.target.value)}
-              placeholder="Décris l'événement…"
-              rows={3}
-              style={{ ...inp, resize: "none" }}
-            />
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Décris l'événement…" rows={3} style={{ ...inp, resize: "none" }} />
           </div>
 
           {error && <div style={{ fontSize: 11, color: "#E53935", marginBottom: 10 }}>{error}</div>}
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            style={{
-              width: "100%",
-              background: loading ? C.pill : C.accent,
-              color: loading ? C.ink2 : "#fff",
-              border: "none", borderRadius: 14, padding: 14,
-              fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: "pointer",
-            }}
-          >
-            {loading ? "Publication…" : "Publier l'événement"}
+          <button onClick={handleSubmit} disabled={loading || scanning} style={{ width: "100%", background: (loading || scanning) ? C.pill : C.accent, color: (loading || scanning) ? C.ink2 : "#fff", border: "none", borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: (loading || scanning) ? "not-allowed" : "pointer" }}>
+            {scanning ? "⏳ Analyse du flyer…" : loading ? "Publication…" : "Publier l'événement"}
           </button>
         </div>
       </div>
