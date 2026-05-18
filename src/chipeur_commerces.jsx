@@ -144,7 +144,13 @@ function profileToCommerce(p, postCount) {
     shortDesc: p.bio ? p.bio.substring(0, 80) + (p.bio.length > 80 ? "…" : "") : "",
     cover: p.avatar_url || p.cover_url || (p.photo_urls && p.photo_urls[0]) || null,
     gallery: p.photo_urls || [],
-    open_now: p.current_opening_hours?.open_now ?? null,
+    open_now: (() => {
+      // Priorité : calcul en temps réel depuis les horaires manuels
+      const fromHoraires = computeOpenNow(p.horaires);
+      if (fromHoraires !== null) return fromHoraires;
+      // Fallback : champ Google Places si disponible
+      return p.current_opening_hours?.open_now ?? null;
+    })(),
     vues: "—", int: "—",
     posts: postCount != null ? String(postCount) : "—",
     plan: p.plan || "premium",
@@ -2021,6 +2027,58 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
       )}
     </div>
   );
+}
+
+// Calcule si le commerce est ouvert maintenant à partir des horaires saisis manuellement
+// Retourne true (ouvert), false (fermé), ou null (pas d'info)
+function computeOpenNow(horaires) {
+  if (!Array.isArray(horaires) || horaires.length === 0) return null;
+  const DAYS_FR = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+  const now = new Date();
+  const dayIdx = now.getDay();
+  const currentDayFr = DAYS_FR[dayIdx];
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Parse "9h30" ou "9h" → minutes depuis minuit
+  const parseTime = (str) => {
+    if (!str) return null;
+    const m = str.trim().match(/^(\d{1,2})h(\d{2})?$/i);
+    if (!m) return null;
+    return parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0);
+  };
+
+  // Vérifie si le jour courant correspond à l'entrée (ex: "Lundi", "Lundi–Vendredi")
+  const dayMatches = (j) => {
+    if (!j) return false;
+    const norm = (s) => s.trim().toLowerCase().substring(0, 3);
+    if (norm(j) === norm(currentDayFr)) return true;
+    const parts = j.split(/[–\-]/);
+    if (parts.length === 2) {
+      const from = DAYS_FR.findIndex(d => norm(d) === norm(parts[0]));
+      const to   = DAYS_FR.findIndex(d => norm(d) === norm(parts[1]));
+      if (from >= 0 && to >= 0) {
+        return from <= to ? (dayIdx >= from && dayIdx <= to) : (dayIdx >= from || dayIdx <= to);
+      }
+    }
+    return false;
+  };
+
+  const entry = horaires.find(h => dayMatches(h.j));
+  if (!entry || !entry.h) return null;
+  const hVal = entry.h.trim();
+  if (hVal === "Fermé" || hVal === "—" || hVal === "") return false;
+
+  // Supporte les plages avec pause déjeuner : "9h–12h / 14h–19h"
+  const slots = hVal.split("/");
+  for (const slot of slots) {
+    const parts = slot.split(/[–\-]/);
+    if (parts.length >= 2) {
+      const open  = parseTime(parts[0]);
+      const close = parseTime(parts[1]);
+      if (open !== null && close !== null && currentMinutes >= open && currentMinutes < close) return true;
+    }
+  }
+  return false;
 }
 
 // Calcule le texte "Ouvre lundi à 9h30" à partir du tableau d'horaires
