@@ -740,6 +740,8 @@ function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
     "Divertissement":             ["Cinéma", "Musée", "Piscine", "Théâtre", "Salle de concert", "Bowling", "Escape game", "Karting", "Médiathèque", "Bibliothèque", "Patinoire", "Accrobranche", "Laser game", "Aquaparc"],
     // ── Vie locale ──
     "Vie locale & Administratif": ["Mairie", "Office de tourisme", "CAF", "CPAM", "Pôle emploi", "Centre des impôts", "Gendarmerie", "École", "Collège", "Lycée", "Université", "Maison des services", "Tribunal"],
+    // ── Associations ──
+    "Association":                ["Association sportive", "Association culturelle", "Association caritative", "Comité des fêtes", "Association de quartier", "Club de sport", "Association familiale", "Association d'entraide", "Amicale", "Collectif citoyen"],
     // ── Autre ──
     "Autre":                      [],
   };
@@ -898,6 +900,7 @@ function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
             </optgroup>
             <optgroup label="🏛️ Vie locale">
               <option>Vie locale & Administratif</option>
+              <option>Association</option>
             </optgroup>
             <optgroup label="✨ Autre">
               <option>Autre</option>

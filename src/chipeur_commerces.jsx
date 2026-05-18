@@ -27,7 +27,7 @@ const THEMES = [
   { key: "Culture",        emoji: "📚", match: ["culture","librairie","papeterie","cadeaux","art","musique"], short: "Culture" },
   { key: "Services",       emoji: "🔧", match: ["services","plomberie","électricité","informatique","pressing"], short: "Services" },
   { key: "Divertissement", emoji: "🎭", match: ["divertissement","cinéma","musée","piscine","théâtre","concert","bowling","escape","karting","médiathèque","bibliothèque","galerie","spectacle","accrobranche","patinoire","parc d'attractions","animation","aqua","laser"], short: "Divert." },
-  { key: "Vie locale",     emoji: "🏛️", match: ["vie locale","administratif","mairie","préfecture","caf","cpam","pôle emploi","impôts","tribunal","gendarmerie","école","collège","lycée","université","office de tourisme","service public","maison des services","sécurité sociale"], short: "Vie loc." },
+  { key: "Vie locale",     emoji: "🏛️", match: ["vie locale","administratif","mairie","préfecture","caf","cpam","pôle emploi","impôts","tribunal","gendarmerie","école","collège","lycée","université","office de tourisme","service public","maison des services","sécurité sociale","association","associatif","comité des fêtes","collectif","amicale","bénévole"], short: "Vie loc." },
   { key: "Autre",          emoji: "✨", match: [], short: "Autre", isAutre: true },
 ];
 
@@ -1343,6 +1343,7 @@ const VITRINE_SUBFILTRES = {
   "Sport":        ["Cardio", "Yoga", "Arts martiaux", "Outdoor", "Vélo", "Pilates"],
   "Culture":      ["Livres", "Musique", "Art", "Papeterie", "Cadeaux"],
   "Services":     ["Réparation", "Pressing", "Informatique", "Plomberie"],
+  "Association":  ["Événements", "Bénévolat", "Actualités", "Adhésion", "Sport", "Culture"],
 };
 
 function VitrineChips({ activeMode, onChange, isOwner, counts = {} }) {
