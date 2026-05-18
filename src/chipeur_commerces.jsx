@@ -145,11 +145,14 @@ function profileToCommerce(p, postCount) {
     cover: p.avatar_url || p.cover_url || (p.photo_urls && p.photo_urls[0]) || null,
     gallery: p.photo_urls || [],
     open_now: (() => {
-      // Priorité : calcul en temps réel depuis les horaires manuels
+      // 1. Priorité : periods Google (temps réel, jamais figé)
+      const fromPeriods = computeOpenNowFromPeriods(p.current_opening_hours?.periods);
+      if (fromPeriods !== null) return fromPeriods;
+      // 2. Fallback : horaires manuels
       const fromHoraires = computeOpenNow(p.horaires);
       if (fromHoraires !== null) return fromHoraires;
-      // Fallback : champ Google Places si disponible
-      return p.current_opening_hours?.open_now ?? null;
+      // 3. Rien de disponible → badge masqué
+      return null;
     })(),
     vues: "—", int: "—",
     posts: postCount != null ? String(postCount) : "—",
@@ -2027,6 +2030,38 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
       )}
     </div>
   );
+}
+
+// Calcule si le commerce est ouvert maintenant depuis les periods Google Places
+// periods = [{ open: { day: 1, time: "0900" }, close: { day: 1, time: "1900" } }, ...]
+// day: 0=Dimanche … 6=Samedi, time: "HHMM"
+function computeOpenNowFromPeriods(periods) {
+  if (!Array.isArray(periods) || periods.length === 0) return null;
+  const now = new Date();
+  const dayIdx = now.getDay();
+  const currentTime = now.getHours() * 100 + now.getMinutes(); // ex: 1430
+
+  for (const p of periods) {
+    const openDay  = p.open?.day;
+    const openTime = parseInt(p.open?.time  || "0000", 10);
+    const closeDay = p.close?.day;
+    const closeTime= parseInt(p.close?.time || "0000", 10);
+    if (openDay === undefined) continue;
+
+    if (openDay === dayIdx) {
+      if (closeDay === dayIdx) {
+        // Ouverture et fermeture le même jour
+        if (currentTime >= openTime && currentTime < closeTime) return true;
+      } else {
+        // Ouvert aujourd'hui, ferme demain (ex: nuit)
+        if (currentTime >= openTime) return true;
+      }
+    } else if (closeDay === dayIdx) {
+      // Ouvert hier, ferme aujourd'hui
+      if (currentTime < closeTime) return true;
+    }
+  }
+  return false;
 }
 
 // Calcule si le commerce est ouvert maintenant à partir des horaires saisis manuellement
