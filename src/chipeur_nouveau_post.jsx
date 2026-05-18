@@ -5,10 +5,12 @@ import { addXP } from "./chipeur_xp";
 import safeStorage from "./safeStorage";
 
 // Analyse la photo d'un post avec Claude Vision (fire & forget — n'attend pas la réponse)
-function tagPhotoAsync(postId, imageUrl) {
+// metier et categorie sont optionnels : s'ils sont fournis le prompt IA est contextualisé
+function tagPhotoAsync(postId, imageUrl, metier = "", categorie = "") {
   if (!postId || !imageUrl) return;
-  supabase.functions.invoke("post-tag", { body: { post_id: postId, image_url: imageUrl } })
-    .catch(err => console.warn("post-tag silencieux:", err));
+  supabase.functions.invoke("post-tag", {
+    body: { post_id: postId, image_url: imageUrl, metier, categorie }
+  }).catch(err => console.warn("post-tag silencieux:", err));
 }
 
 const C = {
@@ -1260,7 +1262,8 @@ export default function ChipeurNouveauPost({ setPage, user, profile, editPost, s
     }
     addXP(user.id, 10, "post_publie");
     // Analyse IA de la photo — uniquement pour les commerçants
-    if (image_url && postData?.id && profile?.role === "magasin") tagPhotoAsync(postData.id, image_url);
+    if (image_url && postData?.id && profile?.role === "magasin")
+      tagPhotoAsync(postData.id, image_url, profile?.metier || "", profile?.categorie || "");
     if (magasinId && postData?.id) {
       supabase.from("notifications").insert({
         user_id: magasinId,

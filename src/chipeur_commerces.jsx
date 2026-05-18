@@ -1503,9 +1503,16 @@ function TabVitrine({ com, realPosts, loadingPosts, user, demoDefis, tagSearch =
     // 1. Mettre à jour le statut du post
     await supabase.from("posts").update({ linked_status: "accepted" }).eq("id", post.id);
     // Analyse IA de la photo au moment de l'acceptation (fire & forget)
+    // On passe le métier du commerce pour des tags contextualisés
     if (post.image_url) {
-      supabase.functions.invoke("post-tag", { body: { post_id: post.id, image_url: post.image_url } })
-        .catch(() => {});
+      supabase.functions.invoke("post-tag", {
+        body: {
+          post_id: post.id,
+          image_url: post.image_url,
+          metier: com.metier || "",
+          categorie: com.categorie || com.category || "",
+        }
+      }).catch(() => {});
     }
     // 2. Créditer 10 XP Shop dans le wallet + profiles.xp_shop
     await addXPShop(post.author_id, com.id, 10);

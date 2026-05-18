@@ -1,5 +1,6 @@
 // Edge Function : post-tag
 // Analyse une photo de post avec Claude Vision et extrait des mots-clés en français.
+// Le prompt est contextualisé avec le métier du commerçant pour des tags pertinents.
 // Appelée en arrière-plan après chaque upload de photo dans un post.
 
 import Anthropic from "npm:@anthropic-ai/sdk@0.27.3";
@@ -15,7 +16,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { post_id, image_url } = await req.json();
+    const { post_id, image_url, metier: metierParam, categorie: categorieParam } = await req.json();
 
     if (!post_id || !image_url) {
       return new Response(JSON.stringify({ error: "post_id et image_url requis" }), {
@@ -25,6 +26,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const supabaseUrl  = Deno.env.get("SUPABASE_URL");
+    const supabaseKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
     if (!anthropicKey) {
       return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY manquante" }), {
         status: 500,
@@ -32,9 +36,56 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // ── Récupérer le métier du commerçant si non fourni ──
+    let metier    = metierParam   || "";
+    let categorie = categorieParam || "";
+
+    if ((!metier || !categorie) && supabaseUrl && supabaseKey) {
+      // 1. Récupérer l'author_id depuis le post
+      const postRes = await fetch(`${supabaseUrl}/rest/v1/posts?id=eq.${post_id}&select=author_id`, {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      });
+      const postData = await postRes.json();
+      const authorId = postData?.[0]?.author_id;
+
+      // 2. Récupérer le profil commerçant
+      if (authorId) {
+        const profileRes = await fetch(
+          `${supabaseUrl}/rest/v1/profiles?id=eq.${authorId}&select=metier,categorie`,
+          {
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+          }
+        );
+        const profileData = await profileRes.json();
+        metier    = metier    || profileData?.[0]?.metier    || "";
+        categorie = categorie || profileData?.[0]?.categorie || "";
+      }
+    }
+
+    // ── Construire le prompt contextualisé ──
+    const contextLine = metier || categorie
+      ? `Ce post est publié par un commerce de type : "${metier || categorie}".
+IMPORTANT : génère des mots-clés pertinents pour CE type d'activité commerciale.
+Ignore ce qui est accessoire sur la photo (vêtements des personnes, fond, décor non lié au commerce).
+Concentre-toi sur les produits ou services visibles, les thèmes liés au métier, la qualité, l'usage.
+Exemple pour une imprimerie : flyer, impression couleur, communication, logo, cartes de visite — et NON : jeans, pull, sourire.
+Exemple pour une boulangerie : croissant, brioche, viennoiserie, dorée, artisanal — et NON : tablier, comptoir, lumière.`
+      : `Analyse cette photo d'un commerce local français.`;
+
+    const prompt = `${contextLine}
+Retourne UNIQUEMENT une liste de 5 à 8 mots-clés courts en français, séparés par des virgules.
+Ces mots-clés serviront de filtres de recherche dans une vitrine locale.
+Ne retourne rien d'autre que cette liste.`;
+
+    // ── Appel Claude Vision ──
     const client = new Anthropic({ apiKey: anthropicKey });
 
-    // Analyse de la photo avec Claude Vision (Haiku = rapide et économique)
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 150,
@@ -48,11 +99,7 @@ Deno.serve(async (req: Request) => {
             },
             {
               type: "text",
-              text: `Analyse cette photo d'un commerce local français.
-Retourne UNIQUEMENT une liste de 5 à 8 mots-clés courts en français, séparés par des virgules.
-Ces mots-clés décrivent ce qu'on voit : couleurs, types de produits, ambiance, occasion, saison.
-Exemple de réponse : robe, rouge, été, nouveauté, mode femme, coton
-Ne retourne rien d'autre que cette liste de mots-clés.`,
+              text: prompt,
             },
           ],
         },
@@ -65,10 +112,7 @@ Ne retourne rien d'autre que cette liste de mots-clés.`,
       .map((t: string) => t.trim().toLowerCase())
       .filter((t: string) => t.length > 0 && t.length < 40);
 
-    // Mettre à jour le post dans Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
+    // ── Mettre à jour le post dans Supabase ──
     if (supabaseUrl && supabaseKey) {
       await fetch(`${supabaseUrl}/rest/v1/posts?id=eq.${post_id}`, {
         method: "PATCH",
@@ -82,9 +126,10 @@ Ne retourne rien d'autre que cette liste de mots-clés.`,
       });
     }
 
-    return new Response(JSON.stringify({ tags }), {
+    return new Response(JSON.stringify({ tags, metier, categorie }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (err) {
     console.error("Erreur post-tag:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
