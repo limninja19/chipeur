@@ -16,10 +16,13 @@ const TYPE_STYLES = {
   "Fête":         { bg: "#F3E8FF", color: "#6B21A8" },
   "Concert":      { bg: "#EFF6FF", color: "#1E40AF" },
   "Sport":        { bg: "#F0FDF4", color: "#166534" },
+  "Loto":         { bg: "#FEF9C3", color: "#854D0E" },
+  "Repas":        { bg: "#FFF1F2", color: "#9F1239" },
+  "Gratuit":      { bg: "#ECFDF5", color: "#065F46" },
   "Autre":        { bg: C.pill,    color: C.ink2 },
 };
 const DATE_COLORS = ["#FF5733", "#0F766E", "#7C3AED", "#185FA5", "#B45309", "#0A3D2E"];
-const TYPES = ["Vide-grenier", "Marché", "Fête", "Concert", "Sport", "Autre"];
+const TYPES = ["Vide-grenier", "Marché", "Fête", "Concert", "Sport", "Loto", "Repas", "Gratuit", "Autre"];
 
 function parseDate(dateText) {
   if (!dateText) return null;
@@ -47,6 +50,31 @@ function isWithinSevenDays(dateText) {
   return diff >= 0 && diff <= 7;
 }
 
+function isUpcoming(dateText) {
+  const d = parseDate(dateText);
+  if (!d) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const evDay = new Date(d); evDay.setHours(0,0,0,0);
+  return evDay >= today;
+}
+
+function isPast(dateText) {
+  const d = parseDate(dateText);
+  if (!d) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const evDay = new Date(d); evDay.setHours(0,0,0,0);
+  return evDay < today;
+}
+
+function isThisWeek(dateText) {
+  const d = parseDate(dateText);
+  if (!d) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const evDay = new Date(d); evDay.setHours(0,0,0,0);
+  const diff = (evDay - today) / (1000 * 60 * 60 * 24);
+  return diff >= 0 && diff <= 7;
+}
+
 function timeAgo(createdAt) {
   const diff = Date.now() - new Date(createdAt).getTime();
   const m = Math.floor(diff / 60000);
@@ -59,9 +87,9 @@ function timeAgo(createdAt) {
 
 // ─── FILTERS ───
 function Filters({ active, onSelect }) {
-  const filters = ["Tous", "Aujourd'hui", "Vide-grenier", "Marché", "Fête", "Concert", "Sport"];
+  const filters = ["Tous", "Aujourd'hui", "Cette semaine", "Marché", "Fête", "Concert", "Sport", "Vide-grenier", "Loto", "Repas", "Gratuit"];
   return (
-    <div style={{ display: "flex", gap: 6, padding: "0 12px 8px", overflowX: "auto", flexShrink: 0 }}>
+    <div style={{ display: "flex", gap: 6, padding: "0 12px 8px", overflowX: "auto", flexShrink: 0, scrollbarWidth: "none" }}>
       {filters.map(f => (
         <button key={f} onClick={() => onSelect(f)} style={{
           fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 20,
@@ -318,6 +346,63 @@ function EventCard({ s, idx, onClick, user, onDelete }) {
       {showParticipants && (
         <ParticipantsModal sortieId={s.id} onClose={() => setShowParticipants(false)} />
       )}
+    </div>
+  );
+}
+
+// ─── PAST EVENT CARD ───
+function PastEventCard({ s, idx, onClick }) {
+  const col = DATE_COLORS[idx % DATE_COLORS.length];
+  const d = parseDate(s.date_text);
+  const day = d ? d.getDate() : "—";
+  const month = d ? d.toLocaleDateString("fr-FR", { month: "short" }) : "";
+  const ts = TYPE_STYLES[s.type] || TYPE_STYLES["Autre"];
+
+  return (
+    <div
+      onClick={() => onClick(s)}
+      style={{
+        background: C.card, borderRadius: 18,
+        border: `1px solid ${C.border}`,
+        marginBottom: 10, overflow: "hidden", cursor: "pointer",
+        opacity: 0.85,
+      }}
+    >
+      {/* Flyer ou bandeau coloré */}
+      {s.flyer_url ? (
+        <div style={{ position: "relative", height: 120, overflow: "hidden" }}>
+          <img src={s.flyer_url} alt="flyer" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.75)" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 30%, rgba(26,23,20,0.7))" }} />
+          <div style={{ position: "absolute", bottom: 8, left: 12 }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#fff" }}>{s.title}</div>
+            {s.lieu && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.8)" }}>📍 {s.lieu}</div>}
+          </div>
+          <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.5)", borderRadius: 8, padding: "3px 8px" }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#fff" }}>📸 Voir les photos</span>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex" }}>
+          <div style={{ width: 52, flexShrink: 0, background: col, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 6px" }}>
+            <div style={{ fontFamily: syne, fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{day}</div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 2 }}>{month}</div>
+          </div>
+          <div style={{ flex: 1, padding: "10px 12px" }}>
+            <span style={{ display: "inline-block", fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 8, marginBottom: 4, background: ts.bg, color: ts.color }}>{s.type || "Événement"}</span>
+            <div style={{ fontFamily: syne, fontSize: 14, fontWeight: 700, color: C.ink, lineHeight: 1.2, marginBottom: 3 }}>{s.title}</div>
+            {s.lieu && <div style={{ fontSize: 11, color: C.ink2 }}>📍 {s.lieu}</div>}
+          </div>
+        </div>
+      )}
+      <div style={{ padding: "8px 12px 10px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 11, color: C.ink2 }}>
+          {s.date_text || ""}
+          {s.time_text ? ` · ${s.time_text}` : ""}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: C.accent, background: "#FFF0EE", borderRadius: 8, padding: "3px 10px" }}>
+          📸 Voir les photos
+        </div>
+      </div>
     </div>
   );
 }
@@ -678,10 +763,23 @@ function EventDetailScreen({ event, user, onBack }) {
       position: "fixed", inset: 0, background: C.bg, fontFamily: dm,
       color: C.ink, display: "flex", flexDirection: "column", zIndex: 50,
     }}>
+      {/* ── Bannière flyer (si présent) ── */}
+      {event.flyer_url && (
+        <div style={{ position: "relative", height: 200, flexShrink: 0, overflow: "hidden" }}>
+          <img src={event.flyer_url} alt="Flyer" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 50%, rgba(26,23,20,0.7) 100%)" }} />
+          <button onClick={onBack} style={{ position: "absolute", top: 14, left: 14, background: "rgba(0,0,0,0.4)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
+          <div style={{ position: "absolute", bottom: 14, left: 14, right: 14 }}>
+            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: "#fff", lineHeight: 1.2 }}>{event.title}</div>
+            {event.lieu && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>📍 {event.lieu}</div>}
+          </div>
+        </div>
+      )}
+
       {/* ── Header ── */}
       <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        {/* Title row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px 8px" }}>
+        {/* Title row — masqué si flyer affiché au-dessus */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px 8px", display: event.flyer_url ? "none" : "flex" }}>
           <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>←</button>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, lineHeight: 1.2 }}>{event.title}</div>
@@ -908,19 +1006,29 @@ function EventDetailScreen({ event, user, onBack }) {
 
 // ─── FORMULAIRE NOUVEL ÉVÉNEMENT ───
 function NouvelEvenementScreen({ user, onBack, onSuccess }) {
-  const [title, setTitle]       = useState("");
-  const [type, setType]         = useState("Fête");
-  const [date, setDate]         = useState("");
-  const [heure, setHeure]       = useState("");
-  const [lieu, setLieu]         = useState("");
-  const [desc, setDesc]         = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(null);
+  const [title, setTitle]         = useState("");
+  const [type, setType]           = useState("Fête");
+  const [date, setDate]           = useState("");
+  const [heure, setHeure]         = useState("");
+  const [lieu, setLieu]           = useState("");
+  const [desc, setDesc]           = useState("");
+  const [flyerFile, setFlyerFile] = useState(null);
+  const [flyerPreview, setFlyerPreview] = useState(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState(null);
+  const flyerRef = useRef();
 
   const inp = {
     width: "100%", border: `1px solid ${C.border}`, borderRadius: 12,
     padding: "10px 12px", fontSize: 13, fontFamily: dm,
     background: C.bg, color: C.ink, boxSizing: "border-box", outline: "none",
+  };
+
+  const handleFlyerChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFlyerFile(file);
+    setFlyerPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async () => {
@@ -933,6 +1041,17 @@ function NouvelEvenementScreen({ user, onBack, onSuccess }) {
     const [y, m, jj] = date.split("-");
     const dateText = `${jj}/${m}/${y}`;
 
+    // Upload du flyer si présent
+    let flyerUrl = null;
+    if (flyerFile && user?.id) {
+      const ext = flyerFile.name.split(".").pop() || "jpg";
+      const path = `evenements/flyers/${user.id}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, flyerFile);
+      if (upErr) { setError("Erreur upload flyer : " + upErr.message); setLoading(false); return; }
+      const { data: urlData } = supabase.storage.from("images").getPublicUrl(path);
+      flyerUrl = urlData.publicUrl;
+    }
+
     const { data, error: err } = await supabase
       .from("sorties")
       .insert({
@@ -944,6 +1063,7 @@ function NouvelEvenementScreen({ user, onBack, onSuccess }) {
         description: desc.trim() || null,
         ville:       "Saint-Dié",
         author_id:   user?.id || null,
+        flyer_url:   flyerUrl,
       })
       .select()
       .single();
@@ -1010,6 +1130,29 @@ function NouvelEvenementScreen({ user, onBack, onSuccess }) {
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 4 }}>LIEU</label>
             <input value={lieu} onChange={e => setLieu(e.target.value)} placeholder="Ex: Place du Marché, Salle des fêtes…" style={inp} />
+          </div>
+
+          {/* Flyer / Affiche */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: C.ink2, display: "block", marginBottom: 6 }}>AFFICHE / FLYER <span style={{ fontWeight: 400, color: C.ink2 }}>(optionnel)</span></label>
+            {flyerPreview ? (
+              <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 6 }}>
+                <img src={flyerPreview} alt="flyer" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+                <button
+                  onClick={() => { setFlyerFile(null); setFlyerPreview(null); }}
+                  style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.55)", border: "none", borderRadius: "50%", width: 28, height: 28, color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >✕</button>
+              </div>
+            ) : (
+              <div
+                onClick={() => flyerRef.current?.click()}
+                style={{ border: `2px dashed ${C.border}`, borderRadius: 14, padding: "18px 0", textAlign: "center", cursor: "pointer", background: C.bg }}
+              >
+                <div style={{ fontSize: 28, marginBottom: 4 }}>🖼️</div>
+                <div style={{ fontSize: 12, color: C.ink2 }}>Ajouter l'affiche de l'événement</div>
+              </div>
+            )}
+            <input ref={flyerRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFlyerChange} />
           </div>
 
           {/* Description */}
@@ -1124,6 +1267,7 @@ function BottomNav({ active, onNavigate, onFab }) {
 // ─── MAIN ───
 export default function ChipeurSorties({ setPage, user, profile, requireAuth, selectedSortieId, setSelectedSortieId, autoCreateSortie, setAutoCreateSortie }) {
   const [filter, setFilter]         = useState("Tous");
+  const [mainTab, setMainTab]       = useState("avenir"); // "avenir" | "passes"
   const [events, setEvents]         = useState([]);
   const [loading, setLoading]       = useState(true);
   const [fabOpen, setFabOpen]       = useState(false);
@@ -1175,10 +1319,16 @@ export default function ChipeurSorties({ setPage, user, profile, requireAuth, se
     }
   }, [selectedSortieId, events]);
 
+  // Sépare les événements en à venir / passés
+  const upcomingEvents = events.filter(s => isUpcoming(s.date_text));
+  const pastEvents     = events.filter(s => isPast(s.date_text)).reverse(); // plus récents en premier
+
   const filtered = (() => {
-    if (filter === "Tous") return events;
-    if (filter === "Aujourd'hui") return events.filter(s => s.date_text && isToday(s.date_text));
-    return events.filter(s => s.type === filter);
+    const base = mainTab === "passes" ? pastEvents : upcomingEvents;
+    if (filter === "Tous") return base;
+    if (filter === "Aujourd'hui") return base.filter(s => s.date_text && isToday(s.date_text));
+    if (filter === "Cette semaine") return base.filter(s => s.date_text && isThisWeek(s.date_text));
+    return base.filter(s => s.type === filter);
   })();
 
   // ── Écrans internes ──
@@ -1212,44 +1362,76 @@ export default function ChipeurSorties({ setPage, user, profile, requireAuth, se
       fontFamily: dm, color: C.ink,
       display: "flex", flexDirection: "column",
     }}>
-      <div style={{ padding: "8px 16px 4px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {/* ── Header ── */}
+      <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 8px" }}>
+          <button onClick={() => setPage("fil")} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}>←</button>
+          <h1 style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, margin: 0, flex: 1 }}>Événements</h1>
           <button
-            onClick={() => setPage("fil")}
-            style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: C.ink2, lineHeight: 1 }}
-          >←</button>
-          <h1 style={{ fontFamily: syne, fontSize: 20, fontWeight: 700, margin: 0 }}>Événements</h1>
+            onClick={() => requireAuth ? requireAuth(() => setScreen("nouveau")) : setScreen("nouveau")}
+            style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 12, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: dm }}
+          >+ Ajouter</button>
         </div>
-        <p style={{ fontSize: 11, color: C.ink2, marginTop: 1, marginLeft: 34 }}>
-          Sorties & activités près de chez toi
-        </p>
+        {/* Onglets À venir / Passés */}
+        <div style={{ display: "flex", borderTop: `1px solid ${C.border}` }}>
+          {[
+            { k: "avenir", label: `📅 À venir`, count: upcomingEvents.length },
+            { k: "passes", label: `📸 Passés`,  count: pastEvents.length },
+          ].map(t => (
+            <button
+              key={t.k}
+              onClick={() => { setMainTab(t.k); setFilter("Tous"); }}
+              style={{
+                flex: 1, padding: "10px 0", border: "none",
+                borderBottom: mainTab === t.k ? `2px solid ${C.accent}` : "2px solid transparent",
+                background: "none", fontFamily: dm, fontSize: 12, fontWeight: 600,
+                color: mainTab === t.k ? C.accent : C.ink2, cursor: "pointer",
+              }}
+            >
+              {t.label}
+              {t.count > 0 && (
+                <span style={{ marginLeft: 5, fontSize: 10, background: mainTab === t.k ? C.accent : C.pill, color: mainTab === t.k ? "#fff" : C.ink2, borderRadius: 10, padding: "1px 6px" }}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Filters active={filter} onSelect={setFilter} />
+      {/* Filtres (seulement sur À venir) */}
+      {mainTab === "avenir" && <Filters active={filter} onSelect={setFilter} />}
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px", paddingTop: 8 }}>
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: C.ink2 }}>Chargement…</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 16px" }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>📅</div>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>{mainTab === "passes" ? "📸" : "📅"}</div>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink, marginBottom: 6 }}>
-              Aucun événement
+              {mainTab === "passes" ? "Aucun événement passé" : "Aucun événement à venir"}
             </div>
             <div style={{ fontSize: 12, color: C.ink2, marginBottom: 16 }}>
-              Sois le premier à en partager un !
+              {mainTab === "passes" ? "Les photos des événements passés apparaîtront ici." : "Sois le premier à en partager un !"}
             </div>
-            <button
-              onClick={() => requireAuth ? requireAuth(() => setScreen("nouveau")) : setScreen("nouveau")}
-              style={{
-                background: C.accent, color: "#fff", border: "none",
-                borderRadius: 14, padding: "10px 20px",
-                fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm,
-              }}
-            >
-              + Ajouter un événement
-            </button>
+            {mainTab === "avenir" && (
+              <button
+                onClick={() => requireAuth ? requireAuth(() => setScreen("nouveau")) : setScreen("nouveau")}
+                style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 14, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: dm }}
+              >
+                + Ajouter un événement
+              </button>
+            )}
           </div>
+        ) : mainTab === "passes" ? (
+          filtered.map((s, i) => (
+            <PastEventCard
+              key={s.id}
+              s={s}
+              idx={i}
+              onClick={ev => { setSelectedEvent(ev); setScreen("detail"); }}
+            />
+          ))
         ) : (
           filtered.map((s, i) => (
             <EventCard
