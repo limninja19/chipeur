@@ -1,4 +1,5 @@
 import { useState } from "react";
+import InstallPWAModal from "./InstallPWAModal";
 
 // ─── DONNÉES RÈGLEMENT ────────────────────────────────────────────
 const REGLEMENT_ARTICLES = [
@@ -125,6 +126,10 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile, onProfil
   const [confirmSwitch, setConfirmSwitch] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+
+  // Détecte si déjà installée en PWA
+  const isInstalled = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
   const isMerchant = ["magasin", "artisan", "commercant"].includes(profile?.role);
 
@@ -322,6 +327,36 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile, onProfil
 
         {/* À propos */}
         <SectionTitle>À propos</SectionTitle>
+
+        {/* Bouton installer l'app */}
+        {!isInstalled && (
+          <div
+            onClick={() => setShowInstall(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: 12,
+              background: "#EBF5F0", borderRadius: 16, padding: "14px 16px",
+              marginBottom: 6, cursor: "pointer", border: "1px solid #A7D7C5",
+            }}
+          >
+            <div style={{ fontSize: 28, flexShrink: 0 }}>📲</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 14, color: "#0A3D2E" }}>
+                Installer l'app sur mon téléphone
+              </div>
+              <div style={{ fontSize: 11, color: "#3D7A65", marginTop: 2 }}>
+                Accès en 1 tap · Fonctionne comme une vraie app
+              </div>
+            </div>
+            <div style={{ fontSize: 16, color: "#0A3D2E" }}>›</div>
+          </div>
+        )}
+        {isInstalled && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", marginBottom: 6, background: "#F0FDF4", borderRadius: 16, border: "1px solid #A7D7C5" }}>
+            <span style={{ fontSize: 20 }}>✅</span>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#166534" }}>App installée sur l'écran d'accueil</div>
+          </div>
+        )}
+
         <Row icon="ℹ️" label="Chipeur — Pilote Saint-Dié" sublabel="Version 1.0 · Mai 2026" chevron={false} />
         <Row
           icon="💬"
@@ -363,6 +398,9 @@ export function SettingsDrawer({ open, onClose, setPage, user, profile, onProfil
           Pour toute demande : <a href="mailto:jennytassotto@gmail.com" style={{ color: C.accent }}>jennytassotto@gmail.com</a>
         </div>
       </div>
+
+      {/* Modale installation PWA */}
+      {showInstall && <InstallPWAModal onClose={() => setShowInstall(false)} />}
     </>
   );
 }
