@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  build: {
+    target: ["es2015", "chrome58", "firefox57", "safari11"],
+  },
   plugins: [
     react(),
     VitePWA({
