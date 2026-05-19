@@ -17,8 +17,8 @@ function getAge(birthYear) {
   return currentYear - birthYear;
 }
 
-export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
-  const [step, setStep]           = useState("age");      // age | credentials | type
+export default function SignupModal({ onClose, onSuccess, onMerchant, triggerLabel }) {
+  const [step, setStep]           = useState("type");     // type | age | credentials
   const [birthYear, setBirthYear] = useState("");
   const [email, setEmail]         = useState("");
   const [mdp, setMdp]             = useState("");
@@ -46,7 +46,7 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
     setStep("credentials");
   };
 
-  const handleCredentialsNext = () => {
+  const handleCredentialsNext = (onValid) => {
     if (!email.trim() || !pwdOk || !pseudo.trim()) {
       setError("Remplis tous les champs correctement.");
       return;
@@ -57,7 +57,7 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
       return;
     }
     setError("");
-    setStep("type");
+    onValid?.();
   };
 
   const handleSignup = async (accountType) => {
@@ -143,15 +143,67 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
           </div>
         </div>
 
-        {/* ── ÉTAPE 1 : ÂGE ── */}
-        {step === "age" && (
+        {/* ── ÉTAPE 0 : CHOIX TYPE ── */}
+        {step === "type" && (
           <>
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>🔥</div>
               <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink, marginBottom: 6 }}>
-                {triggerLabel || "Réagis, gagne de l'XP et débloque tes bons d'achat à Saint-Dié 🔥"}
+                {triggerLabel || "Rejoins la communauté de Saint-Dié !"}
               </div>
-              <div style={{ fontSize: 12, color: C.ink2 }}>10 secondes pour rejoindre le quartier</div>
+              <div style={{ fontSize: 12, color: C.ink2 }}>Tu es plutôt…</div>
+            </div>
+
+            {[
+              { type: "voisin",  icon: "🏘️", label: "Voisin·e",        desc: "Je découvre et partage les bons plans du quartier" },
+              { type: "magasin", icon: "🏪", label: "Commerce / Lieu",  desc: "Je représente un commerce, une asso ou un lieu local" },
+            ].map(t => (
+              <div
+                key={t.type}
+                onClick={() => {
+                  if (t.type === "voisin") {
+                    setStep("age");
+                  } else {
+                    // Commerçant → ferme la modale et va sur la page inscription complète
+                    onClose();
+                    onMerchant?.();
+                  }
+                }}
+                style={{
+                  border: `2px solid ${C.border}`, borderRadius: 18, padding: "16px 18px",
+                  marginBottom: 12, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 14,
+                }}
+              >
+                <div style={{ fontSize: 32 }}>{t.icon}</div>
+                <div>
+                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>{t.label}</div>
+                  <div style={{ fontSize: 12, color: C.ink2, marginTop: 2 }}>{t.desc}</div>
+                </div>
+                <div style={{ marginLeft: "auto", fontSize: 18, color: C.ink2 }}>›</div>
+              </div>
+            ))}
+
+            <div style={{ textAlign: "center", marginTop: 4 }}>
+              <span
+                onClick={() => { onClose(); }}
+                style={{ fontSize: 12, color: C.ink2, cursor: "pointer", textDecoration: "underline" }}
+              >
+                J'ai déjà un compte → Se connecter
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* ── ÉTAPE 1 : ÂGE (voisin seulement) ── */}
+        {step === "age" && (
+          <>
+            <button onClick={() => setStep("type")} style={{ background: "none", border: "none", fontSize: 13, color: C.ink2, cursor: "pointer", marginBottom: 12, padding: 0, fontFamily: dm }}>‹ Retour</button>
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 20, color: C.ink, marginBottom: 6 }}>
+                Une dernière chose…
+              </div>
+              <div style={{ fontSize: 12, color: C.ink2 }}>Ton année de naissance</div>
             </div>
 
             <div style={{ marginBottom: 16 }}>
@@ -204,6 +256,7 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
         {/* ── ÉTAPE 2 : EMAIL + MDP ── */}
         {step === "credentials" && (
           <>
+            <button onClick={() => setStep("age")} style={{ background: "none", border: "none", fontSize: 13, color: C.ink2, cursor: "pointer", marginBottom: 12, padding: 0, fontFamily: dm }}>‹ Retour</button>
             <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 4 }}>
               Crée ton compte
             </div>
@@ -260,46 +313,15 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
             {error && <div style={{ fontSize: 12, color: C.accent, marginBottom: 8 }}>⚠️ {error}</div>}
 
             <button
-              onClick={handleCredentialsNext}
+              onClick={() => handleCredentialsNext(() => handleSignup("voisin"))}
               style={{ width: "100%", padding: 14, borderRadius: 16, background: C.accent, color: "#fff", border: "none", fontSize: 15, fontWeight: 700, fontFamily: dm, cursor: "pointer", marginTop: 4 }}
-            >Continuer →</button>
+            >{loading ? "⏳ Création…" : "Créer mon compte →"}</button>
+            {error && <div style={{ fontSize: 12, color: C.accent, marginTop: 8 }}>⚠️ {error}</div>}
+            {loading && <div style={{ textAlign: "center", fontSize: 13, color: C.ink2, marginTop: 4 }}>⏳ Création du compte…</div>}
           </>
         )}
 
-        {/* ── ÉTAPE 3 : TYPE DE COMPTE ── */}
-        {step === "type" && (
-          <>
-            <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 4, textAlign: "center" }}>
-              Tu es...
-            </div>
-            <div style={{ fontSize: 12, color: C.ink2, textAlign: "center", marginBottom: 24 }}>Choisis ton profil</div>
-
-            {[
-              { type: "voisin",  icon: "🏘️", label: "Voisin·e",   desc: "Je découvre et partage les bons plans du quartier" },
-              { type: "magasin", icon: "🏪", label: "Commerce",   desc: "Je représente un commerce ou une boutique locale" },
-            ].map(t => (
-              <div
-                key={t.type}
-                onClick={() => !loading && handleSignup(t.type)}
-                style={{
-                  border: `2px solid ${C.border}`, borderRadius: 18, padding: "16px 18px",
-                  marginBottom: 12, cursor: loading ? "not-allowed" : "pointer",
-                  display: "flex", alignItems: "center", gap: 14,
-                  opacity: loading ? 0.6 : 1,
-                }}
-              >
-                <div style={{ fontSize: 32 }}>{t.icon}</div>
-                <div>
-                  <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 15, color: C.ink }}>{t.label}</div>
-                  <div style={{ fontSize: 12, color: C.ink2, marginTop: 2 }}>{t.desc}</div>
-                </div>
-              </div>
-            ))}
-
-            {error && <div style={{ fontSize: 12, color: C.accent, marginTop: 4 }}>⚠️ {error}</div>}
-            {loading && <div style={{ textAlign: "center", fontSize: 13, color: C.ink2, marginTop: 8 }}>⏳ Création du compte…</div>}
-          </>
-        )}
+        {/* Création du compte voisin au clic sur "Continuer" dans credentials */}
       </div>
     </div>
   );

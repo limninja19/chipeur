@@ -223,6 +223,7 @@ export default function App() {
         <SignupModal
           onClose={() => setShowSignup(false)}
           onSuccess={() => { setShowSignup(false); }}
+          onMerchant={() => { setShowSignup(false); setPageRaw("inscription"); }}
         />
       )}
 

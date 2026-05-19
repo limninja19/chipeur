@@ -29,78 +29,49 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
     { emoji: "🧑", bg: "#E8F4FD" },
   ];
 
+  const BadgeIcon = ({ emoji, count, onClick }) => (
+    <div onClick={onClick} style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>
+      {emoji}
+      {count > 0 && (
+        <div style={{
+          position: "absolute", top: -4, right: -6,
+          background: C.accent, color: "#fff", borderRadius: "50%",
+          width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", border: "1.5px solid #fff",
+        }}>{count > 9 ? "9+" : count}</div>
+      )}
+    </div>
+  );
+
   return (
     <div style={{ padding: "8px 16px 6px", flexShrink: 0 }}>
 
-      {/* Ligne 1 : logo + tagline + icônes (connecté) */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-
-        {/* Logo + tagline inline */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width="26" height="26" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="pinGradFil" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#FF5733"/>
-                <stop offset="100%" stopColor="#FF8C42"/>
-              </linearGradient>
-            </defs>
-            <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradFil)"/>
-            <circle cx="36" cy="26" r="10" fill="white"/>
-            <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
-          </svg>
-          <div>
-            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: -0.5, color: "#1A1A2E" }}>
-              chi<span style={{ color: C.accent }}>p</span>eur
-            </span>
-            {!user && (
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.ink2, marginLeft: 7 }}>
-                · Découvre ta ville
-              </span>
-            )}
-            {user && profile?.pseudo && (
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.ink2, marginLeft: 7 }}>
-                Bonjour {profile.pseudo} 👋
-              </span>
-            )}
+      {/* Ligne 1 : logo + tagline (toujours) */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <svg width="26" height="26" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="pinGradFil" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#FF5733"/>
+              <stop offset="100%" stopColor="#FF8C42"/>
+            </linearGradient>
+          </defs>
+          <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradFil)"/>
+          <circle cx="36" cy="26" r="10" fill="white"/>
+          <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
+        </svg>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
+            chi<span style={{ color: C.accent }}>p</span>eur
+          </div>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.accent, lineHeight: 1.4, marginTop: 2 }}>
+            Découvre ta ville, à travers tes voisins
           </div>
         </div>
-
-        {/* Droite : icônes notifications + messages (connecté) */}
-        {user && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div onClick={() => setPage("notifications")} style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>
-              🔔
-              {unreadNotifs > 0 && (
-                <div style={{
-                  position: "absolute", top: -4, right: -6,
-                  background: C.accent, color: "#fff",
-                  borderRadius: "50%", width: 16, height: 16,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
-                  border: "1.5px solid #fff",
-                }}>{unreadNotifs > 9 ? "9+" : unreadNotifs}</div>
-              )}
-            </div>
-            <div onClick={() => setPage("messages")} style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>
-              💬
-              {unreadMessages > 0 && (
-                <div style={{
-                  position: "absolute", top: -4, right: -6,
-                  background: C.accent, color: "#fff",
-                  borderRadius: "50%", width: 16, height: 16,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 9, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
-                  border: "1.5px solid #fff",
-                }}>{unreadMessages > 9 ? "9+" : unreadMessages}</div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Ligne 2 (non connecté) : boutons Se connecter + Rejoindre */}
       {!user && (
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button
             onClick={() => setPage("connexion")}
             style={{
@@ -122,12 +93,21 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
         </div>
       )}
 
-      {/* Ligne 2 (connecté) : bouton Voisins */}
+      {/* Ligne 2 (connecté) : Voisins à gauche + Bonjour + 🔔 + 💬 à droite */}
       {user && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
           <div onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: C.pill, borderRadius: 20, padding: "4px 10px" }}>
             <span style={{ fontSize: 14 }}>🫣</span>
             <span style={{ fontSize: 10, fontWeight: 700, color: C.ink2, fontFamily: "'DM Sans', sans-serif" }}>Voisins</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {profile?.pseudo && (
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.ink2 }}>
+                Bonjour {profile.pseudo} 👋
+              </span>
+            )}
+            <BadgeIcon emoji="🔔" count={unreadNotifs} onClick={() => setPage("notifications")} />
+            <BadgeIcon emoji="💬" count={unreadMessages} onClick={() => setPage("messages")} />
           </div>
         </div>
       )}
