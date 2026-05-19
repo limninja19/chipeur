@@ -151,7 +151,7 @@ function PasswordField({ label, placeholder, value, onChange, error }) {
 }
 
 // ─── SCREEN 0 : VÉRIFICATION D'ÂGE ───
-function ScreenAge({ onNext }) {
+function ScreenAge({ onNext, onBack }) {
   const [age, setAge] = useState(null); // null | "moins15" | "15-17" | "18plus"
   const [acceptParental, setAcceptParental] = useState(false);
 
@@ -166,13 +166,19 @@ function ScreenAge({ onNext }) {
     (age === "15-17" && acceptParental);
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "36px 24px 32px", display: "flex", flexDirection: "column" }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 32px", display: "flex", flexDirection: "column" }}>
+      {onBack && (
+        <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 13, color: COLORS.ink2, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "'DM Sans', sans-serif", marginBottom: 16, padding: 0 }}>
+          ‹ Retour
+        </button>
+      )}
       <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 26, color: COLORS.ink, textAlign: "center", marginBottom: 6 }}>
         chi<span style={{ color: COLORS.accent }}>p</span>eur
       </div>
-      <div style={{ fontSize: 13, color: COLORS.ink2, textAlign: "center", marginBottom: 32, fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ fontSize: 13, color: COLORS.ink2, textAlign: "center", marginBottom: 28, fontFamily: "'DM Sans', sans-serif" }}>
         Rejoins le fil mode de ton quartier
       </div>
+      <StepDots current={1} />
 
       <div style={{ background: COLORS.card, borderRadius: 20, border: `1px solid ${COLORS.border}`, padding: 20, marginBottom: 20 }}>
         <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 17, color: COLORS.ink, marginBottom: 6 }}>Avant tout…</div>
@@ -257,7 +263,7 @@ function ScreenAge({ onNext }) {
 }
 
 // ─── SCREEN 1 : INSCRIPTION ───
-function ScreenInscription({ onNext, ageRange }) {
+function ScreenInscription({ onNext, onBack, ageRange, loading }) {
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
@@ -274,9 +280,14 @@ function ScreenInscription({ onNext, ageRange }) {
 
   return (
     <div style={{
-      flex: 1, overflowY: "auto", padding: "28px 24px 32px",
+      flex: 1, overflowY: "auto", padding: "16px 24px 32px",
       display: "flex", flexDirection: "column",
     }}>
+      {onBack && (
+        <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 13, color: COLORS.ink2, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "'DM Sans', sans-serif", marginBottom: 16, padding: 0 }}>
+          ‹ Retour
+        </button>
+      )}
       <div style={{
         fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 26,
         color: COLORS.ink, textAlign: "center", marginBottom: 6,
@@ -284,12 +295,12 @@ function ScreenInscription({ onNext, ageRange }) {
         chi<span style={{ color: COLORS.accent }}>p</span>eur
       </div>
       <div style={{
-        fontSize: 13, color: COLORS.ink2, textAlign: "center", marginBottom: 32,
+        fontSize: 13, color: COLORS.ink2, textAlign: "center", marginBottom: 24,
         fontFamily: "'DM Sans', sans-serif",
       }}>
         Rejoins le fil mode de ton quartier
       </div>
-      <StepDots current={0} />
+      <StepDots current={1} />
       <Field label="PRÉNOM" placeholder="Comment tu t'appelles ?" value={prenom} onChange={setPrenom} />
       <Field label="EMAIL" type="email" placeholder="ton@email.fr" value={email} onChange={setEmail} />
       <PasswordField
@@ -345,15 +356,15 @@ function ScreenInscription({ onNext, ageRange }) {
       </div>
 
       <button
-        onClick={() => canProceed && onNext({ prenom, email, mdp })}
-        disabled={!canProceed}
+        onClick={() => canProceed && !loading && onNext({ prenom, email, mdp })}
+        disabled={!canProceed || loading}
         style={{
-          width: "100%", background: canProceed ? COLORS.accent : "#ccc", color: "#fff", border: "none",
+          width: "100%", background: canProceed && !loading ? COLORS.accent : "#ccc", color: "#fff", border: "none",
           borderRadius: 16, padding: 15, fontSize: 15, fontWeight: 600,
-          fontFamily: "'DM Sans', sans-serif", cursor: canProceed ? "pointer" : "not-allowed", marginTop: 8,
+          fontFamily: "'DM Sans', sans-serif", cursor: canProceed && !loading ? "pointer" : "not-allowed", marginTop: 8,
           transition: "background 0.2s",
         }}>
-        Créer mon compte →
+        {loading ? "⏳ Création du compte…" : "Continuer →"}
       </button>
       <div style={{
         textAlign: "center", marginTop: 16, fontSize: 13, color: COLORS.ink2,
@@ -383,7 +394,7 @@ function ScreenInscription({ onNext, ageRange }) {
 }
 
 // ─── SCREEN 2 : CHOIX COMPTE ───
-function ScreenChoixCompte({ onChoose }) {
+function ScreenChoixCompte({ onChoose, onBack }) {
   const [hovered, setHovered] = useState(null);
 
   const Card = ({ type, icon, iconBg, title, desc }) => (
@@ -425,7 +436,13 @@ function ScreenChoixCompte({ onChoose }) {
 
   return (
     <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 32px", display: "flex", flexDirection: "column" }}>
-      <StepDots current={1} />
+      <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 26, color: COLORS.ink, textAlign: "center", marginBottom: 6 }}>
+        chi<span style={{ color: COLORS.accent }}>p</span>eur
+      </div>
+      <div style={{ fontSize: 13, color: COLORS.ink2, textAlign: "center", marginBottom: 28, fontFamily: "'DM Sans', sans-serif" }}>
+        Rejoins la communauté de Saint-Dié
+      </div>
+      <StepDots current={0} />
       <div style={{
         fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20,
         color: COLORS.ink, marginBottom: 6,
@@ -433,7 +450,7 @@ function ScreenChoixCompte({ onChoose }) {
       <div style={{
         fontSize: 13, color: COLORS.ink2, marginBottom: 24, lineHeight: 1.5,
         fontFamily: "'DM Sans', sans-serif",
-      }}>Ce choix détermine comment tu utilises Chipeur. Tu ne pourras pas le changer ensuite.</div>
+      }}>Ce choix détermine comment tu utilises Chipeur.</div>
       <Card
         type="voisin"
         icon="🏘️"
@@ -458,7 +475,7 @@ function ScreenChoixCompte({ onChoose }) {
       <div style={{
         fontSize: 11, color: COLORS.ink2, textAlign: "center",
         marginTop: 8, opacity: 0.7, fontFamily: "'DM Sans', sans-serif",
-      }}>ℹ Ton compte est créé — pas de retour possible.</div>
+      }}>ℹ Ton type de compte détermine ta vitrine et tes fonctionnalités.</div>
     </div>
   );
 }
@@ -1148,57 +1165,66 @@ function ScreenSuccess({ accountType, onRestart, onFinish }) {
 
 // ─── APP SHELL ───
 export default function ChipeurInscription({ setPage, onAuth }) {
-  const [screen, setScreen] = useState("age");
+  // ← Le flux commence par le choix du type de compte
+  const [screen, setScreen] = useState("choix");
   const [ageRange, setAgeRange] = useState(null);
   const [accountType, setAccountType] = useState(null);
   const [creds, setCreds] = useState({ prenom: "", email: "", mdp: "" });
   const [signupError, setSignupError] = useState("");
   const [loadingSignup, setLoadingSignup] = useState(false);
-  // Données pré-remplies depuis Google Places (null si saisie manuelle)
   const [googleData, setGoogleData] = useState(null);
 
-  const handleChoose = async (type) => {
+  // Étape 1 : choix du type de compte → bifurcation du flux
+  const handleChoose = (type) => {
     setAccountType(type);
+    setSignupError("");
     if (type === "voisin") {
-      setLoadingSignup(true);
-      // Vérifier que le pseudo est disponible
-      const { data: existingPseudo } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("pseudo", creds.prenom.trim())
-        .maybeSingle();
-      if (existingPseudo) {
-        setSignupError("Ce pseudo est déjà pris. Choisis-en un autre !");
-        setLoadingSignup(false);
-        return;
-      }
-      const { data, error } = await supabase.auth.signUp({
-        email: creds.email,
-        password: creds.mdp,
-        options: { data: { pseudo: creds.prenom, age_range: ageRange } },
-      });
-      if (!error && data?.user) {
-        const refId = sessionStorage.getItem("chipeur_ref");
-        await supabase.from("profiles").upsert({
-          id: data.user.id,
-          pseudo: creds.prenom,
-          age_range: ageRange,
-          ...(refId && refId !== data.user.id ? { invited_by: refId } : {}),
-        });
-        await addXP(data.user.id, 50, "inscription");
-        // Récompense l'invitant (+20 XP)
-        if (refId && refId !== data.user.id) {
-          await addXP(refId, 20, "invitation_acceptee");
-          sessionStorage.removeItem("chipeur_ref");
-        }
-      }
-      setLoadingSignup(false);
-      if (error) { setSignupError(error.message); return; }
-      setScreen("success");
+      setScreen("age"); // voisin → vérification d'âge obligatoire
     } else {
-      // → étape intermédiaire : recherche Google Business
-      setScreen("google_search");
+      setScreen("inscription"); // commerçant/association → pas besoin de l'âge
     }
+  };
+
+  // Flux voisin : crée le compte directement après les credentials
+  const handleVoisinInscription = async ({ prenom, email, mdp }) => {
+    setCreds({ prenom, email, mdp });
+    setSignupError("");
+    setLoadingSignup(true);
+    const { data: existingPseudo } = await supabase
+      .from("profiles").select("id").eq("pseudo", prenom.trim()).maybeSingle();
+    if (existingPseudo) {
+      setSignupError("Ce pseudo est déjà pris. Choisis-en un autre !");
+      setLoadingSignup(false);
+      return;
+    }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: mdp,
+      options: { data: { pseudo: prenom, age_range: ageRange } },
+    });
+    if (!error && data?.user) {
+      const refId = sessionStorage.getItem("chipeur_ref");
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        pseudo: prenom,
+        age_range: ageRange,
+        ...(refId && refId !== data.user.id ? { invited_by: refId } : {}),
+      });
+      await addXP(data.user.id, 50, "inscription");
+      if (refId && refId !== data.user.id) {
+        await addXP(refId, 20, "invitation_acceptee");
+        sessionStorage.removeItem("chipeur_ref");
+      }
+    }
+    setLoadingSignup(false);
+    if (error) { setSignupError(error.message); return; }
+    setScreen("success");
+  };
+
+  // Flux commerçant : stocke les credentials et passe à la recherche Google
+  const handleMerchantInscription = ({ prenom, email, mdp }) => {
+    setCreds({ prenom, email, mdp });
+    setScreen("google_search");
   };
 
   const handleMagasinValidate = async ({
@@ -1209,24 +1235,18 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     setSignupError("");
     setLoadingSignup(true);
 
-    // Vérifier que le pseudo (nom) est disponible
     const { data: existingNom } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("pseudo", nom.trim())
-      .maybeSingle();
+      .from("profiles").select("id").eq("pseudo", nom.trim()).maybeSingle();
     if (existingNom) {
       setSignupError("Ce nom est déjà utilisé. Choisis un autre nom pour ta boutique !");
       setLoadingSignup(false);
       return;
     }
 
-    // 1. Créer le compte Supabase Auth
-    // On inclut toutes les infos dans les métadonnées pour que le trigger Supabase les copie
-    // dans le profil même si l'upsert manuel échoue ensuite (ex: vérification email requise)
     const catFinal = cat || "Autre";
     const metierFinal = metier.trim() || cat || "Commerce";
     const roleFinal = (accountType === "association" || catFinal === "Association" || catFinal === "Vie locale & Administratif") ? "lieu" : "magasin";
+
     const { data, error } = await supabase.auth.signUp({
       email: creds.email,
       password: creds.mdp,
@@ -1248,7 +1268,6 @@ export default function ChipeurInscription({ setPage, onAuth }) {
       return;
     }
 
-    // 2. Mettre à jour le profil avec les infos du magasin (complète le trigger auth)
     if (data?.user) {
       const { error: upsertErr } = await supabase.from("profiles").upsert({
         id:                     data.user.id,
@@ -1259,7 +1278,6 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         metier:                 metierFinal,
         age_range:              ageRange,
         role:                   roleFinal,
-        // Champs Google Places (null si saisie manuelle)
         phone:                  phone || null,
         website:                website || null,
         lat:                    lat || null,
@@ -1285,49 +1303,62 @@ export default function ChipeurInscription({ setPage, onAuth }) {
       fontFamily: "'DM Sans', sans-serif",
       display: "flex", flexDirection: "column",
     }}>
+      {signupError && (
+        <div style={{ padding: "10px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 13, textAlign: "center" }}>⚠️ {signupError}</div>
+      )}
 
-        {signupError && (
-          <div style={{ padding: "10px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 13, textAlign: "center" }}>⚠️ {signupError}</div>
-        )}
-        {screen === "age" && (
-          <ScreenAge onNext={(age) => { setAgeRange(age); setScreen("inscription"); }} />
-        )}
+      {/* Étape 0 : choix du type de compte (en premier) */}
+      {screen === "choix" && (
+        <ScreenChoixCompte onChoose={handleChoose} />
+      )}
 
-        {screen === "inscription" && (
-          <ScreenInscription ageRange={ageRange} onNext={(d) => { setCreds(d); setScreen("choix"); }} />
-        )}
+      {/* Étape 1a (voisin) : vérification d'âge */}
+      {screen === "age" && (
+        <ScreenAge
+          onNext={(age) => { setAgeRange(age); setScreen("inscription"); }}
+          onBack={() => setScreen("choix")}
+        />
+      )}
 
-        {screen === "choix" && (
-          <ScreenChoixCompte onChoose={handleChoose} />
-        )}
+      {/* Étape 1b : credentials (voisin après âge, commerçant directement) */}
+      {screen === "inscription" && (
+        <ScreenInscription
+          ageRange={ageRange}
+          loading={loadingSignup}
+          onNext={accountType === "voisin" ? handleVoisinInscription : handleMerchantInscription}
+          onBack={() => accountType === "voisin" ? setScreen("age") : setScreen("choix")}
+        />
+      )}
 
-        {screen === "google_search" && (
-          <ScreenGoogleSearch
-            onBack={() => setScreen("choix")}
-            onSkip={() => { setGoogleData(null); setScreen("magasin"); }}
-            onSelect={(data) => { setGoogleData(data); setScreen("magasin"); }}
-          />
-        )}
+      {/* Étape 2 (commerçant) : recherche Google Business */}
+      {screen === "google_search" && (
+        <ScreenGoogleSearch
+          onBack={() => setScreen("inscription")}
+          onSkip={() => { setGoogleData(null); setScreen("magasin"); }}
+          onSelect={(data) => { setGoogleData(data); setScreen("magasin"); }}
+        />
+      )}
 
-        {screen === "magasin" && (
-          <ScreenMagasin
-            onBack={() => setScreen("google_search")}
-            onValidate={handleMagasinValidate}
-            loading={loadingSignup}
-            initialData={googleData}
-          />
-        )}
+      {/* Étape 3 (commerçant) : détails enseigne + catégorie */}
+      {screen === "magasin" && (
+        <ScreenMagasin
+          onBack={() => setScreen("google_search")}
+          onValidate={handleMagasinValidate}
+          loading={loadingSignup}
+          initialData={googleData}
+        />
+      )}
 
-        {screen === "success" && (
-          <ScreenSuccess
-            accountType={accountType}
-            onRestart={() => { setScreen("inscription"); setAccountType(null); }}
-            onFinish={(dest) => {
-              if (onAuth) { onAuth(); }
-              setPage(dest === "profil" ? "profil" : "fil");
-            }}
-          />
-        )}
+      {screen === "success" && (
+        <ScreenSuccess
+          accountType={accountType}
+          onRestart={() => { setScreen("choix"); setAccountType(null); setAgeRange(null); }}
+          onFinish={(dest) => {
+            if (onAuth) { onAuth(); }
+            setPage(dest === "profil" ? "profil" : "fil");
+          }}
+        />
+      )}
     </div>
   );
 }

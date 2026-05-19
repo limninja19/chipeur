@@ -131,8 +131,17 @@ export default function SignupModal({ onClose, onSuccess, triggerLabel }) {
           padding: "24px 24px 40px", fontFamily: dm,
         }}
       >
-        {/* Barre de drag */}
-        <div style={{ width: 40, height: 4, background: C.pill, borderRadius: 2, margin: "0 auto 20px" }} />
+        {/* Barre de drag + bouton fermer */}
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ flex: 1 }} />
+          <div style={{ width: 40, height: 4, background: C.pill, borderRadius: 2 }} />
+          <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+            <button
+              onClick={onClose}
+              style={{ background: C.pill, border: "none", borderRadius: 10, width: 32, height: 32, fontSize: 16, cursor: "pointer", color: C.ink2, display: "flex", alignItems: "center", justifyContent: "center" }}
+            >✕</button>
+          </div>
+        </div>
 
         {/* ── ÉTAPE 1 : ÂGE ── */}
         {step === "age" && (
