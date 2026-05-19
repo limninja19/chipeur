@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   build: {
-    target: ["es2015", "chrome58", "firefox57", "safari11"],
+    target: ["es2015", "chrome58", "firefox57", "safari10.1"],
   },
   plugins: [
     react(),
