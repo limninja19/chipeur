@@ -1096,7 +1096,7 @@ function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
             cursor: loading || !nomMagasin.trim() || !acceptCGUM ? "not-allowed" : "pointer", marginTop: 8,
             transition: "background 0.2s",
           }}>
-          {loading ? "⏳ Création du compte…" : "Créer ma vitrine gratuitement →"}
+          {loading ? "⏳ En cours…" : "Continuer →"}
         </button>
       </div>
     </div>
@@ -1165,27 +1165,28 @@ function ScreenSuccess({ accountType, onRestart, onFinish }) {
 
 // ─── APP SHELL ───
 export default function ChipeurInscription({ setPage, onAuth }) {
-  // ← Le flux commence par le choix du type de compte
-  const [screen, setScreen] = useState("choix");
-  const [ageRange, setAgeRange] = useState(null);
+  const [screen, setScreen]           = useState("choix");
+  const [ageRange, setAgeRange]       = useState(null);
   const [accountType, setAccountType] = useState(null);
-  const [creds, setCreds] = useState({ prenom: "", email: "", mdp: "" });
+  const [creds, setCreds]             = useState({ prenom: "", email: "", mdp: "" });
+  const [googleData, setGoogleData]   = useState(null);
+  // Données du formulaire magasin, stockées avant la création du compte
+  const [magasinFormData, setMagasinFormData] = useState(null);
   const [signupError, setSignupError] = useState("");
   const [loadingSignup, setLoadingSignup] = useState(false);
-  const [googleData, setGoogleData] = useState(null);
 
-  // Étape 1 : choix du type de compte → bifurcation du flux
+  // Étape 0 : choix du type
   const handleChoose = (type) => {
     setAccountType(type);
     setSignupError("");
     if (type === "voisin") {
-      setScreen("age"); // voisin → vérification d'âge obligatoire
+      setScreen("age");              // voisin → âge → email/mdp
     } else {
-      setScreen("inscription"); // commerçant/association → pas besoin de l'âge
+      setScreen("google_search");    // commerçant → Google Business en PREMIER
     }
   };
 
-  // Flux voisin : crée le compte directement après les credentials
+  // ── FLUX VOISIN ──────────────────────────────────────────────────────────────
   const handleVoisinInscription = async ({ prenom, email, mdp }) => {
     setCreds({ prenom, email, mdp });
     setSignupError("");
@@ -1198,16 +1199,13 @@ export default function ChipeurInscription({ setPage, onAuth }) {
       return;
     }
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password: mdp,
+      email, password: mdp,
       options: { data: { pseudo: prenom, age_range: ageRange } },
     });
     if (!error && data?.user) {
       const refId = sessionStorage.getItem("chipeur_ref");
       await supabase.from("profiles").upsert({
-        id: data.user.id,
-        pseudo: prenom,
-        age_range: ageRange,
+        id: data.user.id, pseudo: prenom, age_range: ageRange,
         ...(refId && refId !== data.user.id ? { invited_by: refId } : {}),
       });
       await addXP(data.user.id, 50, "inscription");
@@ -1221,73 +1219,54 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     setScreen("success");
   };
 
-  // Flux commerçant : stocke les credentials et passe à la recherche Google
-  const handleMerchantInscription = ({ prenom, email, mdp }) => {
-    setCreds({ prenom, email, mdp });
-    setScreen("google_search");
+  // ── FLUX COMMERÇANT ──────────────────────────────────────────────────────────
+  // Étape 2 : le formulaire magasin est rempli → on stocke les données et on passe à l'email/mdp
+  const handleMagasinFormDone = (formData) => {
+    setMagasinFormData(formData);
+    setScreen("inscription"); // email/mdp en DERNIER
   };
 
-  const handleMagasinValidate = async ({
-    nom, cat, metier, adr, phone, website, desc, plan,
-    google_place_id, google_data, opening_hours, current_opening_hours,
-    photo_urls, lat, lng,
-  }) => {
+  // Étape 3 : email/mdp → crée le compte avec toutes les données déjà stockées
+  const handleMerchantInscription = async ({ prenom, email, mdp }) => {
+    setCreds({ prenom, email, mdp });
     setSignupError("");
     setLoadingSignup(true);
 
+    const {
+      nom, cat, metier, adr, phone, website, desc,
+      google_place_id, google_data, opening_hours, current_opening_hours,
+      photo_urls, lat, lng,
+    } = magasinFormData || {};
+
     const { data: existingNom } = await supabase
-      .from("profiles").select("id").eq("pseudo", nom.trim()).maybeSingle();
+      .from("profiles").select("id").eq("pseudo", (nom || "").trim()).maybeSingle();
     if (existingNom) {
       setSignupError("Ce nom est déjà utilisé. Choisis un autre nom pour ta boutique !");
       setLoadingSignup(false);
       return;
     }
 
-    const catFinal = cat || "Autre";
-    const metierFinal = metier.trim() || cat || "Commerce";
-    const roleFinal = (accountType === "association" || catFinal === "Association" || catFinal === "Vie locale & Administratif") ? "lieu" : "magasin";
+    const catFinal    = cat || "Autre";
+    const metierFinal = (metier || "").trim() || cat || "Commerce";
+    const roleFinal   = (accountType === "association" || catFinal === "Association" || catFinal === "Vie locale & Administratif") ? "lieu" : "magasin";
 
     const { data, error } = await supabase.auth.signUp({
-      email: creds.email,
-      password: creds.mdp,
+      email, password: mdp,
       options: {
-        data: {
-          pseudo: nom,
-          role: roleFinal,
-          categorie: catFinal,
-          metier: metierFinal,
-          quartier: adr || "",
-          bio: desc || "",
-        },
+        data: { pseudo: nom, role: roleFinal, categorie: catFinal, metier: metierFinal, quartier: adr || "", bio: desc || "" },
       },
     });
-
-    if (error) {
-      setSignupError(error.message);
-      setLoadingSignup(false);
-      return;
-    }
+    if (error) { setSignupError(error.message); setLoadingSignup(false); return; }
 
     if (data?.user) {
       const { error: upsertErr } = await supabase.from("profiles").upsert({
-        id:                     data.user.id,
-        pseudo:                 nom,
-        bio:                    desc || "",
-        quartier:               adr || "",
-        categorie:              catFinal,
-        metier:                 metierFinal,
-        age_range:              ageRange,
-        role:                   roleFinal,
-        phone:                  phone || null,
-        website:                website || null,
-        lat:                    lat || null,
-        lng:                    lng || null,
-        google_place_id:        google_place_id || null,
-        google_data:            google_data || null,
-        google_synced_at:       google_place_id ? new Date().toISOString() : null,
-        opening_hours:          opening_hours || null,
-        current_opening_hours:  current_opening_hours || null,
-        photo_urls:             photo_urls?.length > 0 ? photo_urls : null,
+        id: data.user.id, pseudo: nom, bio: desc || "", quartier: adr || "",
+        categorie: catFinal, metier: metierFinal, age_range: ageRange, role: roleFinal,
+        phone: phone || null, website: website || null, lat: lat || null, lng: lng || null,
+        google_place_id: google_place_id || null, google_data: google_data || null,
+        google_synced_at: google_place_id ? new Date().toISOString() : null,
+        opening_hours: opening_hours || null, current_opening_hours: current_opening_hours || null,
+        photo_urls: photo_urls?.length > 0 ? photo_urls : null,
       });
       if (upsertErr) console.warn("Upsert profil magasin:", upsertErr.message);
     }
@@ -1300,19 +1279,16 @@ export default function ChipeurInscription({ setPage, onAuth }) {
     <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
       background: COLORS.bg, overflow: "hidden",
-      fontFamily: "'DM Sans', sans-serif",
-      display: "flex", flexDirection: "column",
+      fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column",
     }}>
       {signupError && (
         <div style={{ padding: "10px 16px", background: "#FFF0EE", color: "#C0392B", fontSize: 13, textAlign: "center" }}>⚠️ {signupError}</div>
       )}
 
-      {/* Étape 0 : choix du type de compte (en premier) */}
-      {screen === "choix" && (
-        <ScreenChoixCompte onChoose={handleChoose} />
-      )}
+      {/* 0 — Choix du type de compte */}
+      {screen === "choix" && <ScreenChoixCompte onChoose={handleChoose} />}
 
-      {/* Étape 1a (voisin) : vérification d'âge */}
+      {/* 1a — Voisin : vérification d'âge */}
       {screen === "age" && (
         <ScreenAge
           onNext={(age) => { setAgeRange(age); setScreen("inscription"); }}
@@ -1320,41 +1296,41 @@ export default function ChipeurInscription({ setPage, onAuth }) {
         />
       )}
 
-      {/* Étape 1b : credentials (voisin après âge, commerçant directement) */}
-      {screen === "inscription" && (
-        <ScreenInscription
-          ageRange={ageRange}
-          loading={loadingSignup}
-          onNext={accountType === "voisin" ? handleVoisinInscription : handleMerchantInscription}
-          onBack={() => accountType === "voisin" ? setScreen("age") : setScreen("choix")}
-        />
-      )}
-
-      {/* Étape 2 (commerçant) : recherche Google Business */}
+      {/* 1b — Commerçant : Google Business EN PREMIER */}
       {screen === "google_search" && (
         <ScreenGoogleSearch
-          onBack={() => setScreen("inscription")}
+          onBack={() => setScreen("choix")}
           onSkip={() => { setGoogleData(null); setScreen("magasin"); }}
           onSelect={(data) => { setGoogleData(data); setScreen("magasin"); }}
         />
       )}
 
-      {/* Étape 3 (commerçant) : détails enseigne + catégorie */}
+      {/* 2 — Commerçant : nom + catégorie + détails (juste après Google) */}
       {screen === "magasin" && (
         <ScreenMagasin
           onBack={() => setScreen("google_search")}
-          onValidate={handleMagasinValidate}
-          loading={loadingSignup}
+          onValidate={handleMagasinFormDone}
+          loading={false}
           initialData={googleData}
+        />
+      )}
+
+      {/* 3 — Email / mot de passe (voisin après âge, commerçant en dernier) */}
+      {screen === "inscription" && (
+        <ScreenInscription
+          ageRange={ageRange}
+          loading={loadingSignup}
+          onNext={accountType === "voisin" ? handleVoisinInscription : handleMerchantInscription}
+          onBack={() => accountType === "voisin" ? setScreen("age") : setScreen("magasin")}
         />
       )}
 
       {screen === "success" && (
         <ScreenSuccess
           accountType={accountType}
-          onRestart={() => { setScreen("choix"); setAccountType(null); setAgeRange(null); }}
+          onRestart={() => { setScreen("choix"); setAccountType(null); setAgeRange(null); setMagasinFormData(null); }}
           onFinish={(dest) => {
-            if (onAuth) { onAuth(); }
+            if (onAuth) onAuth();
             setPage(dest === "profil" ? "profil" : "fil");
           }}
         />
