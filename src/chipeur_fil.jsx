@@ -30,65 +30,44 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
   ];
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 16px 6px", flexShrink: 0 }}>
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <svg width="28" height="28" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="pinGradFil" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#FF5733"/>
-              <stop offset="100%" stopColor="#FF8C42"/>
-            </linearGradient>
-          </defs>
-          <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradFil)"/>
-          <circle cx="36" cy="26" r="10" fill="white"/>
-          <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
-        </svg>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, lineHeight: 1, letterSpacing: -0.5, color: "#1A1A2E" }}>
-            chi<span style={{ color: C.accent }}>p</span>eur
-          </div>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, letterSpacing: -0.1, color: C.accent, lineHeight: 1.6, marginTop: 5 }}>
-            Découvre ta ville,<br />à travers tes voisins
+    <div style={{ padding: "8px 16px 6px", flexShrink: 0 }}>
+
+      {/* Ligne 1 : logo + tagline + icônes (connecté) */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+
+        {/* Logo + tagline inline */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="26" height="26" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="pinGradFil" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#FF5733"/>
+                <stop offset="100%" stopColor="#FF8C42"/>
+              </linearGradient>
+            </defs>
+            <path d="M36 6C24.95 6 16 14.95 16 26C16 38.5 36 66 36 66C36 66 56 38.5 56 26C56 14.95 47.05 6 36 6Z" fill="url(#pinGradFil)"/>
+            <circle cx="36" cy="26" r="10" fill="white"/>
+            <path d="M39 19L32 27H37L34 34L41 26H36L39 19Z" fill="#FF5733"/>
+          </svg>
+          <div>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: -0.5, color: "#1A1A2E" }}>
+              chi<span style={{ color: C.accent }}>p</span>eur
+            </span>
+            {!user && (
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.ink2, marginLeft: 7 }}>
+                · Découvre ta ville
+              </span>
+            )}
+            {user && profile?.pseudo && (
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.ink2, marginLeft: 7 }}>
+                Bonjour {profile.pseudo} 👋
+              </span>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Centre : bonjour pseudo */}
-      {profile?.pseudo && (
-        <div style={{ flex: 1, textAlign: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.ink2, padding: "0 8px" }}>
-          Bonjour {profile.pseudo} 👋
-        </div>
-      )}
-
-      {/* Droite : icônes + voisins en dessous */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
-
-        {/* Ligne 1 : boutons auth ou cloche + messages */}
-        {!user ? (
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              onClick={() => setPage("connexion")}
-              style={{
-                background: "transparent", border: `1.5px solid ${C.border}`,
-                borderRadius: 20, padding: "6px 12px",
-                fontSize: 12, fontWeight: 600, cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif", color: C.ink2,
-              }}
-            >Se connecter</button>
-            <button
-              onClick={() => requireAuth?.(() => {})}
-              style={{
-                background: C.accent, border: "none",
-                borderRadius: 20, padding: "6px 12px",
-                fontSize: 12, fontWeight: 700, cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif", color: "#fff",
-              }}
-            >Rejoindre 🔥</button>
-          </div>
-        ) : (
+        {/* Droite : icônes notifications + messages (connecté) */}
+        {user && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Cloche notifications */}
             <div onClick={() => setPage("notifications")} style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>
               🔔
               {unreadNotifs > 0 && (
@@ -102,7 +81,6 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
                 }}>{unreadNotifs > 9 ? "9+" : unreadNotifs}</div>
               )}
             </div>
-            {/* Messages */}
             <div onClick={() => setPage("messages")} style={{ position: "relative", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>
               💬
               {unreadMessages > 0 && (
@@ -118,14 +96,42 @@ function AppHeader({ setPage, profile, user, requireAuth }) {
             </div>
           </div>
         )}
-
-        {/* Ligne 2 : bouton Voisins (toujours visible) */}
-        <div onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: C.pill, borderRadius: 20, padding: "4px 10px" }}>
-          <span style={{ fontSize: 14 }}>🫣</span>
-          <span style={{ fontSize: 10, fontWeight: 700, color: C.ink2, fontFamily: "'DM Sans', sans-serif" }}>Voisins</span>
-        </div>
-
       </div>
+
+      {/* Ligne 2 (non connecté) : boutons Se connecter + Rejoindre */}
+      {!user && (
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button
+            onClick={() => setPage("connexion")}
+            style={{
+              background: "transparent", border: `1.5px solid ${C.border}`,
+              borderRadius: 20, padding: "8px 14px",
+              fontSize: 12, fontWeight: 600, cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif", color: C.ink2,
+            }}
+          >Se connecter</button>
+          <button
+            onClick={() => requireAuth?.(() => {})}
+            style={{
+              flex: 1, background: C.accent, border: "none",
+              borderRadius: 20, padding: "8px 14px",
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif", color: "#fff",
+            }}
+          >Rejoindre 🔥</button>
+        </div>
+      )}
+
+      {/* Ligne 2 (connecté) : bouton Voisins */}
+      {user && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+          <div onClick={() => setPage("voisins")} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: C.pill, borderRadius: 20, padding: "4px 10px" }}>
+            <span style={{ fontSize: 14 }}>🫣</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: C.ink2, fontFamily: "'DM Sans', sans-serif" }}>Voisins</span>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
