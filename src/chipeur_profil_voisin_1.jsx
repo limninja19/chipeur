@@ -1387,7 +1387,7 @@ function TabRewards({ user }) {
         });
       } catch (_) {}
     } else {
-      navigator.clipboard.writeText(inviteLink);
+      navigator.clipboard?.writeText(inviteLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
