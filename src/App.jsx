@@ -98,6 +98,17 @@ export default function App() {
     setPageRaw(newPage);
   }, []);
 
+  // Capturer l'événement d'installation PWA (Android/Chrome)
+  // Stocké sur window pour être accessible dans InstallPWAModal sans prop-drilling
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      window.__chipeurInstallPrompt = e;
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
   // Écouter le bouton Retour (Android / navigateur)
   useEffect(() => {
     const handlePop = () => {
