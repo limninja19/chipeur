@@ -1164,10 +1164,11 @@ function ScreenSuccess({ accountType, onRestart, onFinish }) {
 }
 
 // ─── APP SHELL ───
-export default function ChipeurInscription({ setPage, onAuth }) {
-  const [screen, setScreen]           = useState("choix");
+export default function ChipeurInscription({ setPage, onAuth, initialType }) {
+  // Si initialType est fourni (ex: "magasin" depuis la SignupModal), on saute le choix
+  const [screen, setScreen]           = useState(["magasin","association"].includes(initialType) ? "google_search" : "choix");
   const [ageRange, setAgeRange]       = useState(null);
-  const [accountType, setAccountType] = useState(null);
+  const [accountType, setAccountType] = useState(initialType || null);
   const [creds, setCreds]             = useState({ prenom: "", email: "", mdp: "" });
   const [googleData, setGoogleData]   = useState(null);
   // Données du formulaire magasin, stockées avant la création du compte

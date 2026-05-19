@@ -161,6 +161,7 @@ export default function App() {
   }, [user, profile]);
 
   const [showSignup, setShowSignup] = useState(false);
+  const [inscriptionType, setInscriptionType] = useState(null);
 
   // ── Modales post-inscription ─────────────────────────────────────────────
   const [showInstall, setShowInstall] = useState(
@@ -187,7 +188,7 @@ export default function App() {
 
   if (user === undefined || (user && profileLoading)) return <SplashScreen />;
 
-  if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => setPage("fil")} />;
+  if (page === "inscription") return <Inscription setPage={setPage} onAuth={() => setPage("fil")} initialType={inscriptionType} />;
   if (page === "connexion")   return <Connexion   setPage={setPage} onAuth={() => setPage("fil")} />;
 
   // Props communes — user peut être null (visiteur libre)
@@ -223,7 +224,7 @@ export default function App() {
         <SignupModal
           onClose={() => setShowSignup(false)}
           onSuccess={() => { setShowSignup(false); }}
-          onMerchant={() => { setShowSignup(false); setPageRaw("inscription"); }}
+          onMerchant={() => { setShowSignup(false); setInscriptionType("magasin"); setPageRaw("inscription"); }}
         />
       )}
 

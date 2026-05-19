@@ -155,8 +155,9 @@ export default function SignupModal({ onClose, onSuccess, onMerchant, triggerLab
             </div>
 
             {[
-              { type: "voisin",  icon: "🏘️", label: "Voisin·e",        desc: "Je découvre et partage les bons plans du quartier" },
-              { type: "magasin", icon: "🏪", label: "Commerce / Lieu",  desc: "Je représente un commerce, une asso ou un lieu local" },
+              { type: "voisin",      icon: "🏘️", label: "Voisin·e",               desc: "Je découvre et partage les bons plans du quartier" },
+              { type: "magasin",     icon: "🏪", label: "J'ai un Magasin",          desc: "Je présente mon enseigne et touche mes clients du quartier" },
+              { type: "association", icon: "🏛️", label: "Association / Lieu local", desc: "Mairie, association sportive ou culturelle, collectif citoyen…" },
             ].map(t => (
               <div
                 key={t.type}
@@ -164,9 +165,9 @@ export default function SignupModal({ onClose, onSuccess, onMerchant, triggerLab
                   if (t.type === "voisin") {
                     setStep("age");
                   } else {
-                    // Commerçant → ferme la modale et va sur la page inscription complète
+                    // Commerçant / Association → ferme la modale et va sur la page inscription complète
                     onClose();
-                    onMerchant?.();
+                    onMerchant?.(t.type);
                   }
                 }}
                 style={{
