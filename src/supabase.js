@@ -3,35 +3,49 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// ── Storage sécurisé pour iOS WebView / navigation privée / iMessage ──
-// localStorage peut throw un SecurityError avant même le try/catch sur certains iOS.
-// On détecte la disponibilité une fois, puis on bascule sur un store en mémoire.
+// ── Storage à 3 niveaux pour iOS PWA / iMessage / navigation privée ──
+// Certains iPhones bloquent localStorage même en PWA installée (réglages confidentialité).
+// Ordre de préférence : localStorage → sessionStorage → mémoire (in-memory)
+// La session persiste tant que l'app est ouverte ; sur localStorage dispo = reste connecté.
+
 const _mem = {};
-let _lsOk = null;
-function lsAvailable() {
-  if (_lsOk !== null) return _lsOk;
+
+function testStorage(storage) {
   try {
-    localStorage.setItem("__sb_test__", "1");
-    localStorage.removeItem("__sb_test__");
-    _lsOk = true;
+    const k = "__chipeur_ok__";
+    storage.setItem(k, "1");
+    storage.removeItem(k);
+    return true;
   } catch (_) {
-    _lsOk = false;
+    return false;
   }
-  return _lsOk;
+}
+
+// Testé une seule fois au démarrage
+const _lsOk = testStorage(window.localStorage);
+const _ssOk = !_lsOk && testStorage(window.sessionStorage);
+
+function pick() {
+  if (_lsOk) return window.localStorage;
+  if (_ssOk) return window.sessionStorage;
+  return null;
 }
 
 const safeStorage = {
   getItem(key) {
-    if (!lsAvailable()) return _mem[key] ?? null;
-    try { return localStorage.getItem(key); } catch (_) { return _mem[key] ?? null; }
+    const s = pick();
+    if (s) { try { return s.getItem(key); } catch (_) {} }
+    return _mem[key] ?? null;
   },
   setItem(key, value) {
-    if (!lsAvailable()) { _mem[key] = value; return; }
-    try { localStorage.setItem(key, value); } catch (_) { _mem[key] = value; }
+    const s = pick();
+    if (s) { try { s.setItem(key, value); return; } catch (_) {} }
+    _mem[key] = value;
   },
   removeItem(key) {
-    if (!lsAvailable()) { delete _mem[key]; return; }
-    try { localStorage.removeItem(key); } catch (_) { delete _mem[key]; }
+    const s = pick();
+    if (s) { try { s.removeItem(key); } catch (_) {} }
+    delete _mem[key];
   },
 };
 
