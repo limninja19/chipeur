@@ -1040,9 +1040,89 @@ function EnrichModal({ post, onClose, onSaved }) {
 }
 
 // ─── CARTE POST VITRINE ───
-function VitrinePostCard({ post, userId, comId, isOwner, onEnrich, onDelete }) {
-  const [lightbox, setLightbox] = useState(false);
+function EditPostModal({ post, onClose, onSaved }) {
+  const [content, setContent]   = useState(post.content || "");
+  const [imageUrl, setImageUrl] = useState(post.image_url || "");
+  const [newFile, setNewFile]   = useState(null);
+  const [preview, setPreview]   = useState(post.image_url || "");
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState("");
+  const fileRef = useRef();
+
+  const handleImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNewFile(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError("");
+    let finalUrl = imageUrl;
+    // Upload nouvelle image si choisie
+    if (newFile) {
+      const ext = newFile.name.split(".").pop() || "jpg";
+      const path = `posts/${post.author_id}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("images").upload(path, newFile, { upsert: false });
+      if (upErr) { setError("Erreur upload : " + upErr.message); setSaving(false); return; }
+      const { data } = supabase.storage.from("images").getPublicUrl(path);
+      finalUrl = data.publicUrl;
+    }
+    const { error: err } = await supabase
+      .from("posts")
+      .update({ content: content.trim(), image_url: finalUrl })
+      .eq("id", post.id);
+    if (err) { setError("Erreur : " + err.message); setSaving(false); return; }
+    onSaved({ ...post, content: content.trim(), image_url: finalUrl });
+    onClose();
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 300, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.card, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 480, padding: "20px 16px 40px", maxHeight: "88vh", overflowY: "auto", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontFamily: syne, fontWeight: 700, fontSize: 16, color: C.ink }}>✏️ Modifier le post</div>
+          <button onClick={onClose} style={{ background: C.pill, border: "none", borderRadius: 10, padding: "6px 10px", fontSize: 14, cursor: "pointer" }}>✕</button>
+        </div>
+        {/* Photo */}
+        {preview && (
+          <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 10 }}>
+            <img src={preview} alt="" style={{ width: "100%", maxHeight: 220, objectFit: "cover", display: "block" }} />
+            <button onClick={() => fileRef.current?.click()} style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: 10, padding: "6px 12px", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: dm }}>
+              📷 Changer la photo
+            </button>
+          </div>
+        )}
+        {!preview && (
+          <div onClick={() => fileRef.current?.click()} style={{ border: `2px dashed ${C.border}`, borderRadius: 14, padding: "20px 0", textAlign: "center", cursor: "pointer", marginBottom: 10, background: C.bg }}>
+            <div style={{ fontSize: 28, marginBottom: 4 }}>📷</div>
+            <div style={{ fontSize: 12, color: C.ink2 }}>Ajouter une photo</div>
+          </div>
+        )}
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
+        {/* Texte */}
+        <textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          placeholder="Texte du post…"
+          rows={4}
+          style={{ width: "100%", border: `1.5px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontSize: 13, fontFamily: dm, color: C.ink, background: C.bg, outline: "none", resize: "vertical", boxSizing: "border-box", marginBottom: 12 }}
+        />
+        {error && <div style={{ fontSize: 11, color: "#E53935", marginBottom: 8 }}>{error}</div>}
+        <button onClick={handleSave} disabled={saving} style={{ width: "100%", background: saving ? "#ccc" : C.accent, color: "#fff", border: "none", borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 700, fontFamily: dm, cursor: saving ? "not-allowed" : "pointer" }}>
+          {saving ? "Enregistrement…" : "Enregistrer"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function VitrinePostCard({ post: initialPost, userId, comId, isOwner, onEnrich, onDelete }) {
+  const [post, setPost]             = useState(initialPost);
+  const [lightbox, setLightbox]     = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showEdit, setShowEdit]     = useState(false);
   const timeAgo = (ts) => {
     const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
     if (diff < 1) return "À l'instant";
@@ -1051,7 +1131,8 @@ function VitrinePostCard({ post, userId, comId, isOwner, onEnrich, onDelete }) {
     return Math.floor(diff / 1440) + "j";
   };
   const canEnrich = isOwner && post.magasin_id === comId;
-  const canDelete = !!onDelete && userId && post.author_id === userId;
+  // Le commerçant peut supprimer/modifier ses propres posts ET tous les posts liés à sa vitrine
+  const canManage = isOwner && (post.author_id === userId || post.magasin_id === comId);
   const hasEnrichment = post.product_label || post.product_price;
 
   const handleDelete = async () => {
@@ -1067,6 +1148,13 @@ function VitrinePostCard({ post, userId, comId, isOwner, onEnrich, onDelete }) {
           <button onClick={() => setLightbox(false)} style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", color: "#fff", fontSize: 18, cursor: "pointer" }}>✕</button>
           <img src={post.image_url} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "90vh", objectFit: "contain", borderRadius: 12 }} />
         </div>
+      )}
+      {showEdit && (
+        <EditPostModal
+          post={post}
+          onClose={() => setShowEdit(false)}
+          onSaved={(updated) => setPost(updated)}
+        />
       )}
       <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}`, marginBottom: 10, overflow: "hidden" }}>
         {/* Header auteur */}
@@ -1087,7 +1175,13 @@ function VitrinePostCard({ post, userId, comId, isOwner, onEnrich, onDelete }) {
                 {hasEnrichment ? "✏️ Enrichi" : "✦ Enrichir"}
               </button>
             )}
-            {canDelete && (
+            {canManage && (
+              <button
+                onClick={() => setShowEdit(true)}
+                style={{ background: C.pill, color: C.ink2, border: "none", borderRadius: 10, padding: "5px 10px", fontSize: 13, cursor: "pointer" }}
+                title="Modifier">✏️</button>
+            )}
+            {canManage && (
               <button
                 onClick={handleDelete}
                 onBlur={() => setConfirmDelete(false)}
