@@ -552,7 +552,8 @@ function PlaceResult({ place, onSelect, isSelected }) {
 }
 
 // ── Écran principal recherche Google ────────────────────────────────────────
-function ScreenGoogleSearch({ onBack, onSelect, onSkip }) {
+function ScreenGoogleSearch({ onBack, onSelect, onSkip, accountType }) {
+  const isAsso = accountType === "association";
   const [query, setQuery]         = useState("");
   const [results, setResults]     = useState([]);
   const [loading, setLoading]     = useState(false);
@@ -636,17 +637,19 @@ function ScreenGoogleSearch({ onBack, onSelect, onSkip }) {
 
         {/* Titre */}
         <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 20, color: COLORS.ink, marginBottom: 4 }}>
-          Trouve ton commerce
+          {isAsso ? "Trouve ton association / lieu" : "Trouve ton commerce"}
         </div>
         <div style={{ fontSize: 13, color: COLORS.ink2, marginBottom: 22, lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif" }}>
-          On pré-remplit ta fiche depuis Google. Plus rapide que tout saisir à la main !
+          {isAsso
+            ? "On pré-remplit ta fiche depuis Google. Sinon tu pourras tout saisir manuellement."
+            : "On pré-remplit ta fiche depuis Google. Plus rapide que tout saisir à la main !"}
         </div>
 
         {/* Champ de recherche */}
         <div style={{ position: "relative", marginBottom: 6 }}>
           <input
             type="text"
-            placeholder="Nom du commerce, adresse…"
+            placeholder={isAsso ? "Nom de l'association, adresse…" : "Nom du commerce, adresse…"}
             value={query}
             onChange={e => { setQuery(e.target.value); setSelected(null); }}
             autoFocus
@@ -731,7 +734,8 @@ function ScreenGoogleSearch({ onBack, onSelect, onSkip }) {
 }
 
 // ─── SCREEN 3 : INSCRIPTION MAGASIN ───
-function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
+function ScreenMagasin({ onBack, onValidate, loading, initialData, accountType }) {
+  const isAsso = accountType === "association";
   const isFromGoogle = Boolean(initialData?.place_id);
 
   const [selectedPlan, setSelectedPlan] = useState("test");
@@ -880,7 +884,7 @@ function ScreenMagasin({ onBack, onValidate, loading, initialData }) {
         }}>Informations</div>
 
         <input
-          placeholder="Nom de l'enseigne"
+          placeholder={isAsso ? "Nom de l'association / du lieu" : "Nom de l'enseigne"}
           value={nomMagasin}
           onChange={e => setNomMagasin(e.target.value)}
           onFocus={() => setFocused("nom")}
@@ -1300,6 +1304,7 @@ export default function ChipeurInscription({ setPage, onAuth, initialType }) {
       {/* 1b — Commerçant : Google Business EN PREMIER */}
       {screen === "google_search" && (
         <ScreenGoogleSearch
+          accountType={accountType}
           onBack={() => setScreen("choix")}
           onSkip={() => { setGoogleData(null); setScreen("magasin"); }}
           onSelect={(data) => { setGoogleData(data); setScreen("magasin"); }}
@@ -1313,6 +1318,7 @@ export default function ChipeurInscription({ setPage, onAuth, initialType }) {
           onValidate={handleMagasinFormDone}
           loading={false}
           initialData={googleData}
+          accountType={accountType}
         />
       )}
 
