@@ -4,40 +4,41 @@
 
 const _mem = {};
 
-function testStorage(storage) {
+let _store = null;
+
+// On entoure l'accès à window.localStorage dans un try/catch global
+// car sur iOS restreint, même lire la propriété lève un SecurityError
+try {
+  window.localStorage.setItem("__chipeur_ok__", "1");
+  window.localStorage.removeItem("__chipeur_ok__");
+  _store = window.localStorage;
+} catch (_) {}
+
+if (!_store) {
   try {
-    const k = "__chipeur_ok__";
-    storage.setItem(k, "1");
-    storage.removeItem(k);
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
-
-const _lsOk = testStorage(window.localStorage);
-const _ssOk = !_lsOk && testStorage(window.sessionStorage);
-
-function pick() {
-  if (_lsOk) return window.localStorage;
-  if (_ssOk) return window.sessionStorage;
-  return null;
+    window.sessionStorage.setItem("__chipeur_ok__", "1");
+    window.sessionStorage.removeItem("__chipeur_ok__");
+    _store = window.sessionStorage;
+  } catch (_) {}
 }
 
 const safeStorage = {
   getItem(key, fallback = null) {
-    const s = pick();
-    if (s) { try { return s.getItem(key) ?? fallback; } catch (_) {} }
+    if (_store) {
+      try { return _store.getItem(key) ?? fallback; } catch (_) {}
+    }
     return _mem[key] ?? fallback;
   },
   setItem(key, value) {
-    const s = pick();
-    if (s) { try { s.setItem(key, value); return; } catch (_) {} }
+    if (_store) {
+      try { _store.setItem(key, value); return; } catch (_) {}
+    }
     _mem[key] = value;
   },
   removeItem(key) {
-    const s = pick();
-    if (s) { try { s.removeItem(key); } catch (_) {} }
+    if (_store) {
+      try { _store.removeItem(key); } catch (_) {}
+    }
     delete _mem[key];
   },
 };
